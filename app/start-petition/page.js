@@ -2,7 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaYoutube, FaPlus, FaCircleInfo, FaCircleCheck, FaCircleExclamation, FaPaw, FaGamepad, FaCouch, FaPersonRunning, FaLaptopCode, FaPlane, FaGraduationCap, FaHeartPulse, FaHandFist, FaLeaf, FaLandmarkDome, FaSpa, FaSpinner, FaTags, FaXmark } from "react-icons/fa6";
+import {
+  FaYoutube,
+  FaPlus,
+  FaCircleInfo,
+  FaCircleCheck,
+  FaCircleExclamation,
+  FaPaw,
+  FaGamepad,
+  FaCouch,
+  FaPersonRunning,
+  FaLaptopCode,
+  FaPlane,
+  FaGraduationCap,
+  FaHeartPulse,
+  FaHandFist,
+  FaLeaf,
+  FaLandmarkDome,
+  FaSpa,
+  FaSpinner,
+  FaTags,
+  FaXmark,
+} from "react-icons/fa6";
 import { useAuth } from "../../context/AuthContext";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -24,6 +45,22 @@ const iconMap = {
   FaHandFist: FaHandFist,
   FaTags: FaTags, // Default icon for custom categories
 };
+
+const normalizeAadhaarNumber = (value = "") =>
+  value.toString().replace(/\D/g, "");
+
+const createInitialAadhaarOtpState = () => ({
+  otp: "",
+  otpSent: false,
+  otpSessionToken: "",
+  verified: false,
+  verificationToken: "",
+  sending: false,
+  verifying: false,
+  error: "",
+  success: "",
+  maskedAadhaar: "",
+});
 
 export default function StartPetitionPage() {
   const { user, loading: authLoading, clearUser } = useAuth();
@@ -47,6 +84,7 @@ export default function StartPetitionPage() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState("");
+  const [aadhaarOtp, setAadhaarOtp] = useState(createInitialAadhaarOtpState);
   // Signing requirements settings
   const [signingRequirements, setSigningRequirements] = useState({
     constituency: {
@@ -92,7 +130,8 @@ export default function StartPetitionPage() {
       maxLength: 150,
       pattern: null,
       message: "Title must be between 10-150 characters",
-      example: "e.g., 'Stop Illegal Deforestation in Western Ghats' or 'Improve Road Safety in School Zones'"
+      example:
+        "e.g., 'Stop Illegal Deforestation in Western Ghats' or 'Improve Road Safety in School Zones'",
     },
 
     // Step 2 - Recipients
@@ -101,8 +140,9 @@ export default function StartPetitionPage() {
       minLength: 3,
       maxLength: 100,
       pattern: /^[a-zA-Z\s.'-]+$/,
-      message: "Please enter a valid name (letters, spaces, and basic punctuation only)",
-      example: "e.g., 'Dr. Rajesh Kumar' or 'Smt. Priya Sharma'"
+      message:
+        "Please enter a valid name (letters, spaces, and basic punctuation only)",
+      example: "e.g., 'Dr. Rajesh Kumar' or 'Smt. Priya Sharma'",
     },
     recipientOrganization: {
       required: false,
@@ -110,7 +150,8 @@ export default function StartPetitionPage() {
       maxLength: 150,
       pattern: null,
       message: "Organization name should be at least 3 characters",
-      example: "e.g., 'Ministry of Environment' or 'Municipal Corporation of Delhi'"
+      example:
+        "e.g., 'Ministry of Environment' or 'Municipal Corporation of Delhi'",
     },
     recipientEmail: {
       required: false,
@@ -118,7 +159,7 @@ export default function StartPetitionPage() {
       maxLength: 100,
       pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
       message: "Please enter a valid email address",
-      example: "e.g., 'official@ministry.gov.in' or 'contact@organization.org'"
+      example: "e.g., 'official@ministry.gov.in' or 'contact@organization.org'",
     },
     recipientPhone: {
       required: false,
@@ -126,7 +167,7 @@ export default function StartPetitionPage() {
       maxLength: 15,
       pattern: /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/,
       message: "Please enter a valid phone number (10-15 digits)",
-      example: "e.g., '+91 98765 43210' or '011-23456789'"
+      example: "e.g., '+91 98765 43210' or '011-23456789'",
     },
 
     // Step 3
@@ -136,7 +177,8 @@ export default function StartPetitionPage() {
       maxLength: 2000,
       pattern: null,
       message: "Problem description must be between 50-2000 characters",
-      example: "Describe who is affected, what the issue is, and why it matters. Be specific about locations, numbers, and impact."
+      example:
+        "Describe who is affected, what the issue is, and why it matters. Be specific about locations, numbers, and impact.",
     },
     solution: {
       required: true,
@@ -144,15 +186,18 @@ export default function StartPetitionPage() {
       maxLength: 1500,
       pattern: null,
       message: "Solution must be between 30-1500 characters",
-      example: "What specific action do you want the decision maker to take? Be clear about timelines and expected outcomes."
+      example:
+        "What specific action do you want the decision maker to take? Be clear about timelines and expected outcomes.",
     },
     videoUrl: {
       required: false,
       minLength: 0,
       maxLength: 500,
-      pattern: /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]{11}$/,
+      pattern:
+        /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]{11}$/,
       message: "Please enter a valid YouTube URL",
-      example: "e.g., 'https://www.youtube.com/watch?v=abc123xyz' or 'https://youtu.be/abc123xyz'"
+      example:
+        "e.g., 'https://www.youtube.com/watch?v=abc123xyz' or 'https://youtu.be/abc123xyz'",
     },
 
     // Step 4 - Petition Starter
@@ -162,7 +207,7 @@ export default function StartPetitionPage() {
       maxLength: 100,
       pattern: /^[a-zA-Z\s.'-]+$/,
       message: "Please enter your full legal name (letters and spaces only)",
-      example: "e.g., 'Rajesh Kumar Singh' or 'Priya Sharma'"
+      example: "e.g., 'Rajesh Kumar Singh' or 'Priya Sharma'",
     },
     starterAge: {
       required: true,
@@ -170,7 +215,7 @@ export default function StartPetitionPage() {
       maxLength: 3,
       pattern: /^(?:1[89]|[2-9][0-9]|1[01][0-9]|120)$/,
       message: "Age must be between 18-120 years",
-      example: "e.g., '25' or '45' (You must be 18+ to create a petition)"
+      example: "e.g., '25' or '45' (You must be 18+ to create a petition)",
     },
     starterEmail: {
       required: true,
@@ -178,7 +223,7 @@ export default function StartPetitionPage() {
       maxLength: 100,
       pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
       message: "Please enter a valid email address",
-      example: "e.g., 'yourname@gmail.com' or 'yourname@company.co.in'"
+      example: "e.g., 'yourname@gmail.com' or 'yourname@company.co.in'",
     },
     starterMobile: {
       required: true,
@@ -186,7 +231,7 @@ export default function StartPetitionPage() {
       maxLength: 15,
       pattern: /^[6-9]\d{9}$/,
       message: "Please enter a valid 10-digit Indian mobile number",
-      example: "e.g., '9876543210' (without country code, starting with 6-9)"
+      example: "e.g., '9876543210' (without country code, starting with 6-9)",
     },
     starterLocation: {
       required: true,
@@ -194,7 +239,8 @@ export default function StartPetitionPage() {
       maxLength: 200,
       pattern: null,
       message: "Location must be at least 5 characters",
-      example: "e.g., 'Andheri West, Mumbai, Maharashtra' or 'Sector 15, Noida, UP'"
+      example:
+        "e.g., 'Andheri West, Mumbai, Maharashtra' or 'Sector 15, Noida, UP'",
     },
     starterComment: {
       required: false,
@@ -202,7 +248,8 @@ export default function StartPetitionPage() {
       maxLength: 500,
       pattern: null,
       message: "Comment must be under 500 characters",
-      example: "Share why this cause is important to you or any additional context"
+      example:
+        "Share why this cause is important to you or any additional context",
     },
     aadharNumber: {
       required: true,
@@ -212,26 +259,34 @@ export default function StartPetitionPage() {
       pattern: null,
       customValidator: (value) => {
         // Strip all non-digit characters
-        const digitsOnly = value.replace(/\D/g, '');
+        const digitsOnly = value.replace(/\D/g, "");
         // Must be exactly 12 digits and start with 2-9
         if (digitsOnly.length !== 12) {
-          return { isValid: false, error: "Aadhar number must be exactly 12 digits" };
+          return {
+            isValid: false,
+            error: "Aadhar number must be exactly 12 digits",
+          };
         }
         if (!/^[2-9]/.test(digitsOnly)) {
-          return { isValid: false, error: "Aadhar number cannot start with 0 or 1" };
+          return {
+            isValid: false,
+            error: "Aadhar number cannot start with 0 or 1",
+          };
         }
         return { isValid: true, error: null };
       },
       message: "Please enter a valid 12-digit Aadhar number",
-      example: "e.g., '2345 6789 0123' or '234567890123' (12 digits, cannot start with 0 or 1)"
+      example:
+        "e.g., '2345 6789 0123' or '234567890123' (12 digits, cannot start with 0 or 1)",
     },
     panNumber: {
       required: false,
       minLength: 10,
       maxLength: 10,
       pattern: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
-      message: "Please enter a valid PAN number (5 letters, 4 digits, 1 letter)",
-      example: "e.g., 'ABCDE1234F' (Format: XXXXX0000X - all uppercase)"
+      message:
+        "Please enter a valid PAN number (5 letters, 4 digits, 1 letter)",
+      example: "e.g., 'ABCDE1234F' (Format: XXXXX0000X - all uppercase)",
     },
     voterNumber: {
       required: false,
@@ -239,7 +294,8 @@ export default function StartPetitionPage() {
       maxLength: 10,
       pattern: /^[A-Z]{3}[0-9]{7}$/,
       message: "Please enter a valid Voter ID (3 letters + 7 digits)",
-      example: "e.g., 'ABC1234567' (Format: XXX0000000 - 3 uppercase letters + 7 digits)"
+      example:
+        "e.g., 'ABC1234567' (Format: XXX0000000 - 3 uppercase letters + 7 digits)",
     },
     pincode: {
       required: false,
@@ -247,7 +303,8 @@ export default function StartPetitionPage() {
       maxLength: 6,
       pattern: /^[1-9][0-9]{5}$/,
       message: "Please enter a valid 6-digit Indian pincode",
-      example: "e.g., '400001' (Mumbai) or '110001' (Delhi) - cannot start with 0"
+      example:
+        "e.g., '400001' (Mumbai) or '110001' (Delhi) - cannot start with 0",
     },
     mpConstituencyNumber: {
       required: false,
@@ -255,7 +312,8 @@ export default function StartPetitionPage() {
       maxLength: 5,
       pattern: /^[1-9][0-9]{0,4}$/,
       message: "Please enter a valid constituency number (1-543)",
-      example: "e.g., '1' to '543' - Find your constituency number at eci.gov.in"
+      example:
+        "e.g., '1' to '543' - Find your constituency number at eci.gov.in",
     },
     mlaConstituencyNumber: {
       required: false,
@@ -263,8 +321,9 @@ export default function StartPetitionPage() {
       maxLength: 5,
       pattern: /^[1-9][0-9]{0,4}$/,
       message: "Please enter a valid constituency number",
-      example: "e.g., '1' to '403' (varies by state) - Find yours at your state election commission"
-    }
+      example:
+        "e.g., '1' to '403' (varies by state) - Find yours at your state election commission",
+    },
   };
 
   // ===== VALIDATION HELPER FUNCTIONS =====
@@ -291,12 +350,18 @@ export default function StartPetitionPage() {
 
     // Check min length
     if (rules.minLength && trimmedValue.length < rules.minLength) {
-      return { isValid: false, error: `Must be at least ${rules.minLength} characters` };
+      return {
+        isValid: false,
+        error: `Must be at least ${rules.minLength} characters`,
+      };
     }
 
     // Check max length
     if (rules.maxLength && trimmedValue.length > rules.maxLength) {
-      return { isValid: false, error: `Must be no more than ${rules.maxLength} characters` };
+      return {
+        isValid: false,
+        error: `Must be no more than ${rules.maxLength} characters`,
+      };
     }
 
     // Check pattern
@@ -312,7 +377,7 @@ export default function StartPetitionPage() {
   };
 
   const markFieldTouched = (fieldName) => {
-    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+    setTouchedFields((prev) => ({ ...prev, [fieldName]: true }));
   };
 
   // Handle authentication loading and redirect
@@ -327,7 +392,8 @@ export default function StartPetitionPage() {
     const fetchCategories = async () => {
       try {
         setCategoriesLoading(true);
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const backendUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const response = await fetch(`${backendUrl}/api/categories`);
 
         if (response.ok) {
@@ -371,7 +437,8 @@ export default function StartPetitionPage() {
     setCategoryError("");
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const response = await fetch(`${backendUrl}/api/categories`, {
         method: "POST",
         headers: {
@@ -420,7 +487,8 @@ export default function StartPetitionPage() {
           if (draft.userId === user.uid || draft.userId === user.id) {
             if (draft.formData) setFormData(draft.formData);
             if (draft.recipients) setRecipients(draft.recipients);
-            if (draft.selectedCategories) setSelectedCategories(draft.selectedCategories);
+            if (draft.selectedCategories)
+              setSelectedCategories(draft.selectedCategories);
             if (draft.step) setStep(draft.step);
             setShowDraftNotification(true);
             setTimeout(() => setShowDraftNotification(false), 5000);
@@ -520,6 +588,7 @@ export default function StartPetitionPage() {
     setSelectedImage(null);
     setTouchedFields({});
     setCaptchaVerified(false);
+    setAadhaarOtp(createInitialAadhaarOtpState());
     setShowDraftNotification(false);
   };
 
@@ -550,9 +619,9 @@ export default function StartPetitionPage() {
   // Toggle category selection
   const toggleCategory = (categoryId) => {
     setSelectedCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId]
+      prev.includes(categoryId) ?
+        prev.filter((id) => id !== categoryId)
+      : [...prev, categoryId],
     );
   };
 
@@ -561,7 +630,9 @@ export default function StartPetitionPage() {
     return recipients.some((recipient) => {
       const nameValid = validateField("recipientName", recipient.name).isValid;
       // Email is optional - only validate if provided
-      const emailValid = !recipient.email || validateField("recipientEmail", recipient.email).isValid;
+      const emailValid =
+        !recipient.email ||
+        validateField("recipientEmail", recipient.email).isValid;
       return nameValid && emailValid;
     });
   };
@@ -569,7 +640,9 @@ export default function StartPetitionPage() {
   const isStep3Valid = () => {
     const problemValid = validateField("problem", formData.problem).isValid;
     const solutionValid = validateField("solution", formData.solution).isValid;
-    const videoValid = !formData.videoUrl || validateField("videoUrl", formData.videoUrl).isValid;
+    const videoValid =
+      !formData.videoUrl ||
+      validateField("videoUrl", formData.videoUrl).isValid;
     return problemValid && solutionValid && videoValid;
   };
 
@@ -588,13 +661,19 @@ export default function StartPetitionPage() {
       validations.push(validateField("panNumber", formData.starter.panNumber));
     }
     if (formData.starter.voterNumber) {
-      validations.push(validateField("voterNumber", formData.starter.voterNumber));
+      validations.push(
+        validateField("voterNumber", formData.starter.voterNumber),
+      );
     }
     if (formData.starter.pincode) {
       validations.push(validateField("pincode", formData.starter.pincode));
     }
 
-    return validations.every(v => v.isValid) && captchaVerified;
+    return (
+      validations.every((v) => v.isValid) &&
+      captchaVerified &&
+      aadhaarOtp.verified
+    );
   };
 
   // Function to check if current step is valid
@@ -622,7 +701,7 @@ export default function StartPetitionPage() {
 
   const updateRecipient = (index, field, value) => {
     const updatedRecipients = recipients.map((recipient, i) =>
-      i === index ? { ...recipient, [field]: value } : recipient
+      i === index ? { ...recipient, [field]: value } : recipient,
     );
     setRecipients(updatedRecipients);
   };
@@ -639,9 +718,208 @@ export default function StartPetitionPage() {
     }
   };
 
+  const handleSendAadhaarOtp = async () => {
+    markFieldTouched("aadharNumber");
+
+    const aadhaarValidation = validateField(
+      "aadharNumber",
+      formData.starter.aadharNumber,
+    );
+
+    if (!aadhaarValidation.isValid) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: aadhaarValidation.error || "Please enter a valid Aadhaar number",
+        success: "",
+      }));
+      return;
+    }
+
+    if (!user?.token) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: "Please login again to continue verification",
+        success: "",
+      }));
+      return;
+    }
+
+    try {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        sending: true,
+        error: "",
+        success: "",
+      }));
+
+      const response = await fetch("/api/aadhaar/send-otp", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          aadhaarNumber: formData.starter.aadharNumber,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to send Aadhaar OTP");
+      }
+
+      if (result.testMode) {
+        setAadhaarOtp((prev) => ({
+          ...prev,
+          sending: false,
+          otpSent: false,
+          otpSessionToken: "",
+          verified: false,
+          verificationToken: "",
+          otp: "",
+          success: "",
+          error:
+            result.message ||
+            "Test mode is enabled. Real OTP SMS will not be delivered.",
+          maskedAadhaar: result.maskedAadhaar || "",
+        }));
+        return;
+      }
+
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        sending: false,
+        otpSent: true,
+        otpSessionToken: result.otpSessionToken || "",
+        verified: false,
+        verificationToken: "",
+        otp: "",
+        success: result.message || "OTP sent successfully",
+        error: "",
+        maskedAadhaar: result.maskedAadhaar || "",
+      }));
+    } catch (error) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        sending: false,
+        otpSent: false,
+        otpSessionToken: "",
+        verified: false,
+        verificationToken: "",
+        error: error.message || "Failed to send Aadhaar OTP",
+        success: "",
+      }));
+    }
+  };
+
+  const handleVerifyAadhaarOtp = async () => {
+    const aadhaarValidation = validateField(
+      "aadharNumber",
+      formData.starter.aadharNumber,
+    );
+
+    if (!aadhaarValidation.isValid) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: aadhaarValidation.error || "Please enter a valid Aadhaar number",
+        success: "",
+      }));
+      return;
+    }
+
+    if (!aadhaarOtp.otpSessionToken) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: "Please send OTP first",
+        success: "",
+      }));
+      return;
+    }
+
+    const otpValue = String(aadhaarOtp.otp || "").trim();
+    if (!/^\d{4,8}$/.test(otpValue)) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: "Please enter a valid OTP",
+        success: "",
+      }));
+      return;
+    }
+
+    if (!user?.token) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: "Please login again to continue verification",
+        success: "",
+      }));
+      return;
+    }
+
+    try {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        verifying: true,
+        error: "",
+        success: "",
+      }));
+
+      const response = await fetch("/api/aadhaar/verify-otp", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          aadhaarNumber: formData.starter.aadharNumber,
+          otp: otpValue,
+          otpSessionToken: aadhaarOtp.otpSessionToken,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to verify Aadhaar OTP");
+      }
+
+      const verificationToken =
+        result.aadhaarVerificationToken || result.aadharVerificationToken;
+
+      if (!verificationToken) {
+        throw new Error("Verification token missing in response");
+      }
+
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        verifying: false,
+        verified: true,
+        verificationToken,
+        success: result.message || "Aadhaar verified successfully",
+        error: "",
+        maskedAadhaar: result.maskedAadhaar || prev.maskedAadhaar,
+      }));
+    } catch (error) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        verifying: false,
+        verified: false,
+        verificationToken: "",
+        error: error.message || "Failed to verify Aadhaar OTP",
+        success: "",
+      }));
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      if (!aadhaarOtp.verified || !aadhaarOtp.verificationToken) {
+        setIsSubmitting(false);
+        alert("Please complete Aadhaar OTP verification before submitting.");
+        return;
+      }
+
       const submitData = new FormData();
       submitData.append("title", formData.title);
       submitData.append("country", formData.country);
@@ -657,21 +935,34 @@ export default function StartPetitionPage() {
       };
       submitData.append("petitionDetails", JSON.stringify(petitionDetails));
       submitData.append("petitionStarter", JSON.stringify(formData.starter));
+      submitData.append(
+        "aadhaarVerificationToken",
+        aadhaarOtp.verificationToken,
+      );
+      submitData.append(
+        "aadharVerificationToken",
+        aadhaarOtp.verificationToken,
+      );
 
       if (selectedImage) {
         submitData.append("image", selectedImage);
       }
 
       // Add signing requirements settings
-      submitData.append("signingRequirements", JSON.stringify({
-        constituency: {
-          required: signingRequirements.constituency.required,
-          allowedConstituency: signingRequirements.constituency.allowedConstituency?.trim() || undefined,
-        },
-        aadhar: {
-          required: signingRequirements.aadhar.required,
-        },
-      }));
+      submitData.append(
+        "signingRequirements",
+        JSON.stringify({
+          constituency: {
+            required: signingRequirements.constituency.required,
+            allowedConstituency:
+              signingRequirements.constituency.allowedConstituency?.trim() ||
+              undefined,
+          },
+          aadhar: {
+            required: signingRequirements.aadhar.required,
+          },
+        }),
+      );
 
       // Check if user and token are available
       if (!user || !user.token) {
@@ -711,7 +1002,7 @@ export default function StartPetitionPage() {
       }
     } catch (error) {
       console.error("Submission error:", error);
-      alert("Failed to submit petition. Please try again.");
+      alert(error.message || "Failed to submit petition. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -731,10 +1022,11 @@ export default function StartPetitionPage() {
     const showError = isTouched && !validation.isValid && value !== "";
     const showSuccess = isTouched && validation.isValid && value !== "";
 
-    const inputClasses = `w-full border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-[#F43676] focus:outline-none transition-all duration-200 ${showError ? "border-red-400 bg-red-50" :
-      showSuccess ? "border-green-400 bg-green-50" :
-        "border-gray-300"
-      }`;
+    const inputClasses = `w-full border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-[#F43676] focus:outline-none transition-all duration-200 ${
+      showError ? "border-red-400 bg-red-50"
+      : showSuccess ? "border-green-400 bg-green-50"
+      : "border-gray-300"
+    }`;
 
     return {
       className: inputClasses,
@@ -742,7 +1034,7 @@ export default function StartPetitionPage() {
       showSuccess,
       error: validation.error,
       rules,
-      isTouched
+      isTouched,
     };
   };
 
@@ -777,7 +1069,9 @@ export default function StartPetitionPage() {
                 </div>
                 <div>
                   <p className="font-medium text-blue-800">Draft Restored</p>
-                  <p className="text-sm text-blue-600">We saved your progress. You can continue where you left off!</p>
+                  <p className="text-sm text-blue-600">
+                    We saved your progress. You can continue where you left off!
+                  </p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -817,7 +1111,9 @@ export default function StartPetitionPage() {
               </p>
               <label className="block mb-2 font-medium">
                 Petition Title <span className="text-red-500">*</span>
-                <span className="text-gray-400 text-sm ml-2">(10-150 characters)</span>
+                <span className="text-gray-400 text-sm ml-2">
+                  (10-150 characters)
+                </span>
               </label>
               {(() => {
                 const props = getInputProps("title", formData.title);
@@ -827,13 +1123,19 @@ export default function StartPetitionPage() {
                       <input
                         type="text"
                         value={formData.title}
-                        onChange={(e) => handleInputChange("title", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("title", e.target.value)
+                        }
                         onBlur={() => markFieldTouched("title")}
                         className={props.className}
                         placeholder="Enter a clear, compelling petition title..."
                       />
-                      {props.showError && <FaCircleExclamation className="absolute right-3 top-3 text-red-500" />}
-                      {props.showSuccess && <FaCircleCheck className="absolute right-3 top-3 text-green-500" />}
+                      {props.showError && (
+                        <FaCircleExclamation className="absolute right-3 top-3 text-red-500" />
+                      )}
+                      {props.showSuccess && (
+                        <FaCircleCheck className="absolute right-3 top-3 text-green-500" />
+                      )}
                     </div>
                     {props.showError && (
                       <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
@@ -841,45 +1143,56 @@ export default function StartPetitionPage() {
                         {props.error}
                       </p>
                     )}
-                    {props.rules?.example && !props.showError && formData.title === "" && (
-                      <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                        <FaCircleInfo className="text-xs text-blue-400" />
-                        {props.rules.example}
-                      </p>
-                    )}
+                    {props.rules?.example &&
+                      !props.showError &&
+                      formData.title === "" && (
+                        <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                          <FaCircleInfo className="text-xs text-blue-400" />
+                          {props.rules.example}
+                        </p>
+                      )}
                   </div>
                 );
               })()}
               {/* Character counter for title */}
-              <p className={`text-xs mt-1 text-right ${formData.title.length < 10 ? "text-orange-500" :
-                formData.title.length > 150 ? "text-red-500" :
-                  "text-gray-400"
-                }`}>
+              <p
+                className={`text-xs mt-1 text-right ${
+                  formData.title.length < 10 ? "text-orange-500"
+                  : formData.title.length > 150 ? "text-red-500"
+                  : "text-gray-400"
+                }`}
+              >
                 {formData.title.length}/150 characters
-                {formData.title.length > 0 && formData.title.length < 10 && " (minimum 10)"}
+                {formData.title.length > 0 &&
+                  formData.title.length < 10 &&
+                  " (minimum 10)"}
               </p>
 
               {/* Category Selection */}
               <div className="mt-8">
                 <label className="block mb-3 font-medium">
                   Select Categories <span className="text-red-500">*</span>
-                  <span className="text-gray-400 text-sm ml-2">(at least one required)</span>
+                  <span className="text-gray-400 text-sm ml-2">
+                    (at least one required)
+                  </span>
                 </label>
                 <p className="text-sm text-gray-500 mb-4 flex items-center gap-1">
                   <FaCircleInfo className="text-blue-400" />
-                  Choose categories that best describe your petition. This helps people find your cause.
+                  Choose categories that best describe your petition. This helps
+                  people find your cause.
                 </p>
 
                 {/* Categories Loading State */}
-                {categoriesLoading ? (
+                {categoriesLoading ?
                   <div className="flex items-center justify-center py-8">
                     <FaSpinner className="animate-spin text-2xl text-[#F43676] mr-2" />
                     <span className="text-gray-500">Loading categories...</span>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                : <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {categories.map((category) => {
-                      const isSelected = selectedCategories.includes(category.id);
+                      const isSelected = selectedCategories.includes(
+                        category.id,
+                      );
                       return (
                         <motion.button
                           key={category.id}
@@ -887,14 +1200,19 @@ export default function StartPetitionPage() {
                           onClick={() => toggleCategory(category.id)}
                           whileHover={{ scale: 1.03 }}
                           whileTap={{ scale: 0.97 }}
-                          className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all duration-200 text-sm font-medium ${isSelected
-                            ? "border-[#F43676] bg-gradient-to-r from-[#F43676]/10 to-[#2D3A8C]/10 text-[#F43676] shadow-md"
+                          className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all duration-200 text-sm font-medium ${
+                            isSelected ?
+                              "border-[#F43676] bg-gradient-to-r from-[#F43676]/10 to-[#2D3A8C]/10 text-[#F43676] shadow-md"
                             : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
-                            }`}
+                          }`}
                         >
                           {(() => {
                             const IconComponent = category.icon;
-                            return <IconComponent className={`text-lg ${isSelected ? 'text-[#F43676]' : 'text-[#2D3A8C]'}`} />;
+                            return (
+                              <IconComponent
+                                className={`text-lg ${isSelected ? "text-[#F43676]" : "text-[#2D3A8C]"}`}
+                              />
+                            );
                           })()}
                           <span>{category.label}</span>
                           {isSelected && (
@@ -916,7 +1234,7 @@ export default function StartPetitionPage() {
                       <span>Create Category</span>
                     </motion.button>
                   </div>
-                )}
+                }
 
                 {/* Category validation feedback */}
                 {selectedCategories.length === 0 && (
@@ -928,7 +1246,11 @@ export default function StartPetitionPage() {
                 {selectedCategories.length > 0 && (
                   <p className="text-green-600 text-sm mt-3 flex items-center gap-1">
                     <FaCircleCheck className="text-xs" />
-                    {selectedCategories.length} {selectedCategories.length === 1 ? "category" : "categories"} selected
+                    {selectedCategories.length}{" "}
+                    {selectedCategories.length === 1 ?
+                      "category"
+                    : "categories"}{" "}
+                    selected
                   </p>
                 )}
               </div>
@@ -940,27 +1262,44 @@ export default function StartPetitionPage() {
                   Signing Requirements (Optional)
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  You can require signers to provide their constituency number and/or Aadhar number. Select any or both to enhance identity verification for your petition.
+                  You can require signers to provide their constituency number
+                  and/or Aadhar number. Select any or both to enhance identity
+                  verification for your petition.
                 </p>
 
                 {/* Toggle for constituency requirement */}
                 <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 mb-3">
                   <div>
-                    <p className="font-medium text-gray-700">Require Constituency Number to Sign</p>
-                    <p className="text-sm text-gray-500">Signers must enter their constituency number</p>
+                    <p className="font-medium text-gray-700">
+                      Require Constituency Number to Sign
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Signers must enter their constituency number
+                    </p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSigningRequirements(prev => ({
-                      ...prev,
-                      constituency: { ...prev.constituency, required: !prev.constituency.required }
-                    }))}
-                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${signingRequirements.constituency.required ? 'bg-[#2D3A8C]' : 'bg-gray-300'
-                      }`}
+                    onClick={() =>
+                      setSigningRequirements((prev) => ({
+                        ...prev,
+                        constituency: {
+                          ...prev.constituency,
+                          required: !prev.constituency.required,
+                        },
+                      }))
+                    }
+                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
+                      signingRequirements.constituency.required ?
+                        "bg-[#2D3A8C]"
+                      : "bg-gray-300"
+                    }`}
                   >
                     <span
-                      className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${signingRequirements.constituency.required ? 'translate-x-7' : 'translate-x-0'
-                        }`}
+                      className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                        signingRequirements.constituency.required ?
+                          "translate-x-7"
+                        : "translate-x-0"
+                      }`}
                     />
                   </button>
                 </div>
@@ -970,7 +1309,7 @@ export default function StartPetitionPage() {
                   {signingRequirements.constituency.required && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
+                      animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden mb-3"
                     >
@@ -979,26 +1318,37 @@ export default function StartPetitionPage() {
                           Restrict to Specific Constituency (Optional)
                         </label>
                         <p className="text-sm text-gray-500 mb-3">
-                          Leave blank to allow any constituency, or enter a specific number to restrict signing.
+                          Leave blank to allow any constituency, or enter a
+                          specific number to restrict signing.
                         </p>
                         <input
                           type="text"
-                          value={signingRequirements.constituency.allowedConstituency}
-                          onChange={(e) => setSigningRequirements(prev => ({
-                            ...prev,
-                            constituency: {
-                              ...prev.constituency,
-                              allowedConstituency: e.target.value
-                            }
-                          }))}
+                          value={
+                            signingRequirements.constituency.allowedConstituency
+                          }
+                          onChange={(e) =>
+                            setSigningRequirements((prev) => ({
+                              ...prev,
+                              constituency: {
+                                ...prev.constituency,
+                                allowedConstituency: e.target.value,
+                              },
+                            }))
+                          }
                           placeholder="e.g., 123 or leave empty for any constituency"
                           className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-[#F43676] focus:outline-none transition-all duration-200"
                           maxLength={10}
                         />
-                        {signingRequirements.constituency.allowedConstituency && (
+                        {signingRequirements.constituency
+                          .allowedConstituency && (
                           <p className="text-blue-600 text-sm mt-2 flex items-center gap-1">
                             <FaCircleInfo className="text-xs" />
-                            Only users with constituency number &quot;{signingRequirements.constituency.allowedConstituency}&quot; can sign this petition.
+                            Only users with constituency number &quot;
+                            {
+                              signingRequirements.constituency
+                                .allowedConstituency
+                            }
+                            &quot; can sign this petition.
                           </p>
                         )}
                       </div>
@@ -1009,21 +1359,36 @@ export default function StartPetitionPage() {
                 {/* Toggle for Aadhar requirement */}
                 <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
                   <div>
-                    <p className="font-medium text-gray-700">Require Aadhar Number to Sign</p>
-                    <p className="text-sm text-gray-500">Signers must enter their Aadhar number for verification</p>
+                    <p className="font-medium text-gray-700">
+                      Require Aadhar Number to Sign
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Signers must enter their Aadhar number for verification
+                    </p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSigningRequirements(prev => ({
-                      ...prev,
-                      aadhar: { ...prev.aadhar, required: !prev.aadhar.required }
-                    }))}
-                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${signingRequirements.aadhar.required ? 'bg-[#2D3A8C]' : 'bg-gray-300'
-                      }`}
+                    onClick={() =>
+                      setSigningRequirements((prev) => ({
+                        ...prev,
+                        aadhar: {
+                          ...prev.aadhar,
+                          required: !prev.aadhar.required,
+                        },
+                      }))
+                    }
+                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
+                      signingRequirements.aadhar.required ?
+                        "bg-[#2D3A8C]"
+                      : "bg-gray-300"
+                    }`}
                   >
                     <span
-                      className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${signingRequirements.aadhar.required ? 'translate-x-7' : 'translate-x-0'
-                        }`}
+                      className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                        signingRequirements.aadhar.required ?
+                          "translate-x-7"
+                        : "translate-x-0"
+                      }`}
                     />
                   </button>
                 </div>
@@ -1047,7 +1412,9 @@ export default function StartPetitionPage() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-bold text-gray-800">Create New Category</h3>
+                        <h3 className="text-xl font-bold text-gray-800">
+                          Create New Category
+                        </h3>
                         <button
                           type="button"
                           onClick={() => setShowCategoryModal(false)}
@@ -1058,7 +1425,8 @@ export default function StartPetitionPage() {
                       </div>
 
                       <p className="text-gray-500 text-sm mb-4">
-                        Create a custom category for your petition. This will be visible to all users. (Max 15 characters)
+                        Create a custom category for your petition. This will be
+                        visible to all users. (Max 15 characters)
                       </p>
 
                       <input
@@ -1098,17 +1466,16 @@ export default function StartPetitionPage() {
                           disabled={creatingCategory || !newCategoryName.trim()}
                           className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2"
                         >
-                          {creatingCategory ? (
+                          {creatingCategory ?
                             <>
                               <FaSpinner className="animate-spin" />
                               Creating...
                             </>
-                          ) : (
-                            <>
+                          : <>
                               <FaPlus />
                               Create
                             </>
-                          )}
+                          }
                         </button>
                       </div>
                     </motion.div>
@@ -1131,25 +1498,45 @@ export default function StartPetitionPage() {
                 Who can make it happen?
               </h2>
               <p className="mb-2 font-medium text-gray-600">
-                Add contact details of decision makers who have the power to address your petition.
+                Add contact details of decision makers who have the power to
+                address your petition.
               </p>
               <p className="mb-4 text-sm text-gray-500 flex items-center gap-1">
                 <FaCircleInfo className="text-blue-400" />
-                At least one recipient with a valid name (3+ characters) is required. Email is optional.
+                At least one recipient with a valid name (3+ characters) is
+                required. Email is optional.
               </p>
               <div className="space-y-4">
                 {recipients.map((recipient, recipientIdx) => {
-                  const nameValidation = validateField("recipientName", recipient.name);
-                  const emailValidation = validateField("recipientEmail", recipient.email);
-                  const phoneValidation = recipient.phone ? validateField("recipientPhone", recipient.phone) : { isValid: true };
+                  const nameValidation = validateField(
+                    "recipientName",
+                    recipient.name,
+                  );
+                  const emailValidation = validateField(
+                    "recipientEmail",
+                    recipient.email,
+                  );
+                  const phoneValidation =
+                    recipient.phone ?
+                      validateField("recipientPhone", recipient.phone)
+                    : { isValid: true };
 
                   return (
-                    <div key={recipientIdx} className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+                    <div
+                      key={recipientIdx}
+                      className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3"
+                    >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-600">Decision Maker #{recipientIdx + 1}</span>
+                        <span className="text-sm font-medium text-gray-600">
+                          Decision Maker #{recipientIdx + 1}
+                        </span>
                         {recipientIdx > 0 && (
                           <button
-                            onClick={() => setRecipients(recipients.filter((_, i) => i !== recipientIdx))}
+                            onClick={() =>
+                              setRecipients(
+                                recipients.filter((_, i) => i !== recipientIdx),
+                              )
+                            }
                             className="text-red-500 text-sm hover:underline"
                           >
                             Remove
@@ -1166,50 +1553,84 @@ export default function StartPetitionPage() {
                           <input
                             type="text"
                             value={recipient.name}
-                            onChange={(e) => updateRecipient(recipientIdx, "name", e.target.value)}
-                            onBlur={() => markFieldTouched(`recipient_${recipientIdx}_name`)}
-                            className={`w-full border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-[#F43676] transition-all ${touchedFields[`recipient_${recipientIdx}_name`] && !nameValidation.isValid && recipient.name
-                              ? "border-red-400 bg-red-50"
-                              : touchedFields[`recipient_${recipientIdx}_name`] && nameValidation.isValid && recipient.name
-                                ? "border-green-400 bg-green-50"
-                                : "border-gray-300"
-                              }`}
+                            onChange={(e) =>
+                              updateRecipient(
+                                recipientIdx,
+                                "name",
+                                e.target.value,
+                              )
+                            }
+                            onBlur={() =>
+                              markFieldTouched(`recipient_${recipientIdx}_name`)
+                            }
+                            className={`w-full border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-[#F43676] transition-all ${
+                              (
+                                touchedFields[
+                                  `recipient_${recipientIdx}_name`
+                                ] &&
+                                !nameValidation.isValid &&
+                                recipient.name
+                              ) ?
+                                "border-red-400 bg-red-50"
+                              : (
+                                touchedFields[
+                                  `recipient_${recipientIdx}_name`
+                                ] &&
+                                nameValidation.isValid &&
+                                recipient.name
+                              ) ?
+                                "border-green-400 bg-green-50"
+                              : "border-gray-300"
+                            }`}
                             placeholder="e.g., Dr. Rajesh Kumar or Hon. Smt. Nirmala Sitharaman"
                           />
-                          {touchedFields[`recipient_${recipientIdx}_name`] && nameValidation.isValid && recipient.name && (
-                            <FaCircleCheck className="absolute right-3 top-3 text-green-500" />
-                          )}
+                          {touchedFields[`recipient_${recipientIdx}_name`] &&
+                            nameValidation.isValid &&
+                            recipient.name && (
+                              <FaCircleCheck className="absolute right-3 top-3 text-green-500" />
+                            )}
                         </div>
                         {!recipient.name && (
                           <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                             <FaCircleInfo className="text-blue-400" />
-                            Enter the decision maker&apos;s full name with title if applicable
+                            Enter the decision maker&apos;s full name with title
+                            if applicable
                           </p>
                         )}
-                        {touchedFields[`recipient_${recipientIdx}_name`] && !nameValidation.isValid && recipient.name && (
-                          <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                            <FaCircleExclamation className="text-xs" />
-                            {nameValidation.error}
-                          </p>
-                        )}
+                        {touchedFields[`recipient_${recipientIdx}_name`] &&
+                          !nameValidation.isValid &&
+                          recipient.name && (
+                            <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                              <FaCircleExclamation className="text-xs" />
+                              {nameValidation.error}
+                            </p>
+                          )}
                       </div>
 
                       {/* Organization Field */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Office/Organization <span className="text-gray-400">(optional)</span>
+                          Office/Organization{" "}
+                          <span className="text-gray-400">(optional)</span>
                         </label>
                         <input
                           type="text"
                           value={recipient.organization}
-                          onChange={(e) => updateRecipient(recipientIdx, "organization", e.target.value)}
+                          onChange={(e) =>
+                            updateRecipient(
+                              recipientIdx,
+                              "organization",
+                              e.target.value,
+                            )
+                          }
                           className="w-full border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-[#F43676] border-gray-300"
                           placeholder="e.g., Ministry of Environment or Municipal Corporation of Delhi"
                         />
                         {!recipient.organization && (
                           <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                             <FaCircleInfo className="text-blue-400" />
-                            The government ministry, department, or organization they represent
+                            The government ministry, department, or organization
+                            they represent
                           </p>
                         )}
                       </div>
@@ -1217,62 +1638,117 @@ export default function StartPetitionPage() {
                       {/* Email Field */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Email Address <span className="text-gray-400">(optional)</span>
+                          Email Address{" "}
+                          <span className="text-gray-400">(optional)</span>
                         </label>
                         <div className="relative">
                           <input
                             type="email"
                             value={recipient.email}
-                            onChange={(e) => updateRecipient(recipientIdx, "email", e.target.value)}
-                            onBlur={() => markFieldTouched(`recipient_${recipientIdx}_email`)}
-                            className={`w-full border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-[#F43676] transition-all ${touchedFields[`recipient_${recipientIdx}_email`] && !emailValidation.isValid && recipient.email
-                              ? "border-red-400 bg-red-50"
-                              : touchedFields[`recipient_${recipientIdx}_email`] && emailValidation.isValid && recipient.email
-                                ? "border-green-400 bg-green-50"
-                                : "border-gray-300"
-                              }`}
+                            onChange={(e) =>
+                              updateRecipient(
+                                recipientIdx,
+                                "email",
+                                e.target.value,
+                              )
+                            }
+                            onBlur={() =>
+                              markFieldTouched(
+                                `recipient_${recipientIdx}_email`,
+                              )
+                            }
+                            className={`w-full border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-[#F43676] transition-all ${
+                              (
+                                touchedFields[
+                                  `recipient_${recipientIdx}_email`
+                                ] &&
+                                !emailValidation.isValid &&
+                                recipient.email
+                              ) ?
+                                "border-red-400 bg-red-50"
+                              : (
+                                touchedFields[
+                                  `recipient_${recipientIdx}_email`
+                                ] &&
+                                emailValidation.isValid &&
+                                recipient.email
+                              ) ?
+                                "border-green-400 bg-green-50"
+                              : "border-gray-300"
+                            }`}
                             placeholder="e.g., secretary@ministry.gov.in or contact@organization.org"
                           />
-                          {touchedFields[`recipient_${recipientIdx}_email`] && emailValidation.isValid && recipient.email && (
-                            <FaCircleCheck className="absolute right-3 top-3 text-green-500" />
-                          )}
+                          {touchedFields[`recipient_${recipientIdx}_email`] &&
+                            emailValidation.isValid &&
+                            recipient.email && (
+                              <FaCircleCheck className="absolute right-3 top-3 text-green-500" />
+                            )}
                         </div>
                         {!recipient.email && (
                           <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                             <FaCircleInfo className="text-blue-400" />
-                            Official email address where petition will be delivered
+                            Official email address where petition will be
+                            delivered
                           </p>
                         )}
-                        {touchedFields[`recipient_${recipientIdx}_email`] && !emailValidation.isValid && recipient.email && (
-                          <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                            <FaCircleExclamation className="text-xs" />
-                            {emailValidation.error}
-                          </p>
-                        )}
+                        {touchedFields[`recipient_${recipientIdx}_email`] &&
+                          !emailValidation.isValid &&
+                          recipient.email && (
+                            <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                              <FaCircleExclamation className="text-xs" />
+                              {emailValidation.error}
+                            </p>
+                          )}
                       </div>
 
                       {/* Phone Field */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Phone Number <span className="text-gray-400">(optional)</span>
+                          Phone Number{" "}
+                          <span className="text-gray-400">(optional)</span>
                         </label>
                         <div className="relative">
                           <input
                             type="tel"
                             value={recipient.phone}
-                            onChange={(e) => updateRecipient(recipientIdx, "phone", e.target.value)}
-                            onBlur={() => markFieldTouched(`recipient_${recipientIdx}_phone`)}
-                            className={`w-full border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-[#F43676] transition-all ${touchedFields[`recipient_${recipientIdx}_phone`] && !phoneValidation.isValid && recipient.phone
-                              ? "border-red-400 bg-red-50"
-                              : touchedFields[`recipient_${recipientIdx}_phone`] && phoneValidation.isValid && recipient.phone
-                                ? "border-green-400 bg-green-50"
-                                : "border-gray-300"
-                              }`}
+                            onChange={(e) =>
+                              updateRecipient(
+                                recipientIdx,
+                                "phone",
+                                e.target.value,
+                              )
+                            }
+                            onBlur={() =>
+                              markFieldTouched(
+                                `recipient_${recipientIdx}_phone`,
+                              )
+                            }
+                            className={`w-full border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-[#F43676] transition-all ${
+                              (
+                                touchedFields[
+                                  `recipient_${recipientIdx}_phone`
+                                ] &&
+                                !phoneValidation.isValid &&
+                                recipient.phone
+                              ) ?
+                                "border-red-400 bg-red-50"
+                              : (
+                                touchedFields[
+                                  `recipient_${recipientIdx}_phone`
+                                ] &&
+                                phoneValidation.isValid &&
+                                recipient.phone
+                              ) ?
+                                "border-green-400 bg-green-50"
+                              : "border-gray-300"
+                            }`}
                             placeholder="e.g., +91 11 2338 8911 or 011-23388911"
                           />
-                          {touchedFields[`recipient_${recipientIdx}_phone`] && phoneValidation.isValid && recipient.phone && (
-                            <FaCircleCheck className="absolute right-3 top-3 text-green-500" />
-                          )}
+                          {touchedFields[`recipient_${recipientIdx}_phone`] &&
+                            phoneValidation.isValid &&
+                            recipient.phone && (
+                              <FaCircleCheck className="absolute right-3 top-3 text-green-500" />
+                            )}
                         </div>
                         {!recipient.phone && (
                           <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
@@ -1280,12 +1756,14 @@ export default function StartPetitionPage() {
                             Official phone or landline number (if available)
                           </p>
                         )}
-                        {touchedFields[`recipient_${recipientIdx}_phone`] && !phoneValidation.isValid && recipient.phone && (
-                          <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                            <FaCircleExclamation className="text-xs" />
-                            {phoneValidation.error}
-                          </p>
-                        )}
+                        {touchedFields[`recipient_${recipientIdx}_phone`] &&
+                          !phoneValidation.isValid &&
+                          recipient.phone && (
+                            <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                              <FaCircleExclamation className="text-xs" />
+                              {phoneValidation.error}
+                            </p>
+                          )}
                       </div>
                     </div>
                   );
@@ -1302,7 +1780,9 @@ export default function StartPetitionPage() {
                   </label>
                   <select
                     value={formData.country}
-                    onChange={(e) => handleInputChange("country", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("country", e.target.value)
+                    }
                     className="w-full border p-3 rounded-lg shadow-sm border-gray-300 focus:ring-2 focus:ring-[#F43676]"
                   >
                     <option>India</option>
@@ -1333,7 +1813,8 @@ export default function StartPetitionPage() {
               </h2>
               <p className="mb-4 text-sm text-gray-500 flex items-center gap-1">
                 <FaCircleInfo className="text-blue-400" />
-                Describe your cause clearly to help supporters understand and sign your petition.
+                Describe your cause clearly to help supporters understand and
+                sign your petition.
               </p>
 
               {/* Problem Description */}
@@ -1341,7 +1822,9 @@ export default function StartPetitionPage() {
                 <h3 className="font-semibold mb-2">
                   Describe the People Involved and the Problem They Are Facing{" "}
                   <span className="text-red-500">*</span>
-                  <span className="text-gray-400 text-sm ml-2">(50-2000 characters)</span>
+                  <span className="text-gray-400 text-sm ml-2">
+                    (50-2000 characters)
+                  </span>
                 </h3>
                 {(() => {
                   const props = getInputProps("problem", formData.problem);
@@ -1349,7 +1832,9 @@ export default function StartPetitionPage() {
                     <div className="relative">
                       <textarea
                         value={formData.problem}
-                        onChange={(e) => handleInputChange("problem", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("problem", e.target.value)
+                        }
                         onBlur={() => markFieldTouched("problem")}
                         className={props.className}
                         placeholder="Describe who is affected, what the issue is, where it's happening, and why it matters. Be specific with facts, numbers, and real examples..."
@@ -1361,18 +1846,25 @@ export default function StartPetitionPage() {
                           {props.error}
                         </p>
                       )}
-                      {props.rules?.example && !props.showError && formData.problem === "" && (
-                        <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                          <FaCircleInfo className="text-xs text-blue-400" />
-                          {props.rules.example}
-                        </p>
-                      )}
-                      <p className={`text-xs mt-1 text-right ${formData.problem.length < 50 ? "text-orange-500" :
-                        formData.problem.length > 2000 ? "text-red-500" :
-                          "text-gray-400"
-                        }`}>
+                      {props.rules?.example &&
+                        !props.showError &&
+                        formData.problem === "" && (
+                          <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                            <FaCircleInfo className="text-xs text-blue-400" />
+                            {props.rules.example}
+                          </p>
+                        )}
+                      <p
+                        className={`text-xs mt-1 text-right ${
+                          formData.problem.length < 50 ? "text-orange-500"
+                          : formData.problem.length > 2000 ? "text-red-500"
+                          : "text-gray-400"
+                        }`}
+                      >
                         {formData.problem.length}/2000 characters
-                        {formData.problem.length > 0 && formData.problem.length < 50 && " (minimum 50)"}
+                        {formData.problem.length > 0 &&
+                          formData.problem.length < 50 &&
+                          " (minimum 50)"}
                       </p>
                     </div>
                   );
@@ -1384,7 +1876,9 @@ export default function StartPetitionPage() {
                 <h3 className="font-semibold mb-2">
                   Describe the Solution You Are Proposing{" "}
                   <span className="text-red-500">*</span>
-                  <span className="text-gray-400 text-sm ml-2">(30-1500 characters)</span>
+                  <span className="text-gray-400 text-sm ml-2">
+                    (30-1500 characters)
+                  </span>
                 </h3>
                 {(() => {
                   const props = getInputProps("solution", formData.solution);
@@ -1392,7 +1886,9 @@ export default function StartPetitionPage() {
                     <div className="relative">
                       <textarea
                         value={formData.solution}
-                        onChange={(e) => handleInputChange("solution", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("solution", e.target.value)
+                        }
                         onBlur={() => markFieldTouched("solution")}
                         className={props.className}
                         placeholder="What specific action do you want the decision maker to take? Be clear about timelines, expected outcomes, and how this will help the affected people..."
@@ -1404,18 +1900,25 @@ export default function StartPetitionPage() {
                           {props.error}
                         </p>
                       )}
-                      {props.rules?.example && !props.showError && formData.solution === "" && (
-                        <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                          <FaCircleInfo className="text-xs text-blue-400" />
-                          {props.rules.example}
-                        </p>
-                      )}
-                      <p className={`text-xs mt-1 text-right ${formData.solution.length < 30 ? "text-orange-500" :
-                        formData.solution.length > 1500 ? "text-red-500" :
-                          "text-gray-400"
-                        }`}>
+                      {props.rules?.example &&
+                        !props.showError &&
+                        formData.solution === "" && (
+                          <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                            <FaCircleInfo className="text-xs text-blue-400" />
+                            {props.rules.example}
+                          </p>
+                        )}
+                      <p
+                        className={`text-xs mt-1 text-right ${
+                          formData.solution.length < 30 ? "text-orange-500"
+                          : formData.solution.length > 1500 ? "text-red-500"
+                          : "text-gray-400"
+                        }`}
+                      >
                         {formData.solution.length}/1500 characters
-                        {formData.solution.length > 0 && formData.solution.length < 30 && " (minimum 30)"}
+                        {formData.solution.length > 0 &&
+                          formData.solution.length < 30 &&
+                          " (minimum 30)"}
                       </p>
                     </div>
                   );
@@ -1425,13 +1928,14 @@ export default function StartPetitionPage() {
               {/* Image Upload */}
               <div className="mb-6">
                 <label className="block font-medium mb-2">
-                  Upload a Supporting Image <span className="text-gray-400">(optional)</span>
+                  Upload a Supporting Image{" "}
+                  <span className="text-gray-400">(optional)</span>
                 </label>
                 <div
                   className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer mb-2 relative hover:border-[#F43676] transition-colors"
                   onClick={() => document.getElementById("imageUpload").click()}
                 >
-                  {selectedImage ? (
+                  {selectedImage ?
                     <Image
                       src={URL.createObjectURL(selectedImage)}
                       alt="Selected"
@@ -1439,12 +1943,13 @@ export default function StartPetitionPage() {
                       width={500}
                       height={300}
                     />
-                  ) : (
-                    <>
+                  : <>
                       <FaPlus className="text-gray-400 text-4xl mb-2" />
-                      <p className="text-gray-500 text-sm">Click to upload an image</p>
+                      <p className="text-gray-500 text-sm">
+                        Click to upload an image
+                      </p>
                     </>
-                  )}
+                  }
                   <input
                     id="imageUpload"
                     type="file"
@@ -1455,46 +1960,65 @@ export default function StartPetitionPage() {
                 </div>
                 <p className="text-xs text-gray-500 flex items-center gap-1">
                   <FaCircleInfo className="text-blue-400" />
-                  Add a powerful image that represents your cause (JPG, PNG, or GIF, max 2MB, Dimensions: 855x350px)
+                  Add a powerful image that represents your cause (JPG, PNG, or
+                  GIF, max 2MB, Dimensions: 855x350px)
                 </p>
               </div>
 
               {/* YouTube Video URL */}
               <div className="mb-4">
                 <label className="block font-medium mb-2">
-                  YouTube Video Link <span className="text-gray-400">(optional)</span>
+                  YouTube Video Link{" "}
+                  <span className="text-gray-400">(optional)</span>
                 </label>
                 <div className="relative">
                   <input
                     type="url"
                     value={formData.videoUrl}
-                    onChange={(e) => handleInputChange("videoUrl", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("videoUrl", e.target.value)
+                    }
                     onBlur={() => markFieldTouched("videoUrl")}
-                    className={`w-full border p-3 rounded-lg shadow-sm pl-10 focus:ring-2 focus:ring-[#F43676] transition-all ${touchedFields.videoUrl && formData.videoUrl && !validateField("videoUrl", formData.videoUrl).isValid
-                      ? "border-red-400 bg-red-50"
-                      : touchedFields.videoUrl && formData.videoUrl && validateField("videoUrl", formData.videoUrl).isValid
-                        ? "border-green-400 bg-green-50"
-                        : "border-gray-300"
-                      }`}
+                    className={`w-full border p-3 rounded-lg shadow-sm pl-10 focus:ring-2 focus:ring-[#F43676] transition-all ${
+                      (
+                        touchedFields.videoUrl &&
+                        formData.videoUrl &&
+                        !validateField("videoUrl", formData.videoUrl).isValid
+                      ) ?
+                        "border-red-400 bg-red-50"
+                      : (
+                        touchedFields.videoUrl &&
+                        formData.videoUrl &&
+                        validateField("videoUrl", formData.videoUrl).isValid
+                      ) ?
+                        "border-green-400 bg-green-50"
+                      : "border-gray-300"
+                    }`}
                     placeholder="e.g., https://www.youtube.com/watch?v=abc123xyz or https://youtu.be/abc123xyz"
                   />
                   <FaYoutube className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500 text-xl" />
-                  {touchedFields.videoUrl && formData.videoUrl && validateField("videoUrl", formData.videoUrl).isValid && (
-                    <FaCircleCheck className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
-                  )}
+                  {touchedFields.videoUrl &&
+                    formData.videoUrl &&
+                    validateField("videoUrl", formData.videoUrl).isValid && (
+                      <FaCircleCheck className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
+                    )}
                 </div>
                 {!formData.videoUrl && (
                   <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                     <FaCircleInfo className="text-blue-400" />
-                    Add a YouTube video explaining your cause to increase engagement
+                    Add a YouTube video explaining your cause to increase
+                    engagement
                   </p>
                 )}
-                {touchedFields.videoUrl && formData.videoUrl && !validateField("videoUrl", formData.videoUrl).isValid && (
-                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                    <FaCircleExclamation className="text-xs" />
-                    Please enter a valid YouTube URL (e.g., youtube.com/watch?v=... or youtu.be/...)
-                  </p>
-                )}
+                {touchedFields.videoUrl &&
+                  formData.videoUrl &&
+                  !validateField("videoUrl", formData.videoUrl).isValid && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <FaCircleExclamation className="text-xs" />
+                      Please enter a valid YouTube URL (e.g.,
+                      youtube.com/watch?v=... or youtu.be/...)
+                    </p>
+                  )}
               </div>
             </motion.div>
           )}
@@ -1513,7 +2037,8 @@ export default function StartPetitionPage() {
               </h2>
               <p className="mb-4 text-sm text-gray-500 flex items-center gap-1">
                 <FaCircleInfo className="text-blue-400" />
-                Your personal information helps verify your identity as the petition creator. Fields marked with * are required.
+                Your personal information helps verify your identity as the
+                petition creator. Fields marked with * are required.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1525,13 +2050,24 @@ export default function StartPetitionPage() {
                   <input
                     type="text"
                     value={formData.starter.name}
-                    onChange={(e) => handleInputChange("starter.name", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("starter.name", e.target.value)
+                    }
                     onBlur={() => markFieldTouched("starterName")}
-                    className={getInputProps("starterName", formData.starter.name).className}
+                    className={
+                      getInputProps("starterName", formData.starter.name)
+                        .className
+                    }
                     placeholder="e.g., Rajesh Kumar Singh"
                   />
-                  {getInputProps("starterName", formData.starter.name).showError && (
-                    <p className="text-red-500 text-sm mt-1">{getInputProps("starterName", formData.starter.name).error}</p>
+                  {getInputProps("starterName", formData.starter.name)
+                    .showError && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {
+                        getInputProps("starterName", formData.starter.name)
+                          .error
+                      }
+                    </p>
                   )}
                   {formData.starter.name === "" && (
                     <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
@@ -1549,13 +2085,21 @@ export default function StartPetitionPage() {
                   <input
                     type="number"
                     value={formData.starter.age}
-                    onChange={(e) => handleInputChange("starter.age", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("starter.age", e.target.value)
+                    }
                     onBlur={() => markFieldTouched("starterAge")}
-                    className={getInputProps("starterAge", formData.starter.age).className}
+                    className={
+                      getInputProps("starterAge", formData.starter.age)
+                        .className
+                    }
                     placeholder="e.g., 25 (must be 18+)"
                   />
-                  {getInputProps("starterAge", formData.starter.age).showError && (
-                    <p className="text-red-500 text-sm mt-1">{getInputProps("starterAge", formData.starter.age).error}</p>
+                  {getInputProps("starterAge", formData.starter.age)
+                    .showError && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {getInputProps("starterAge", formData.starter.age).error}
+                    </p>
                   )}
                   {formData.starter.age === "" && (
                     <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
@@ -1573,13 +2117,24 @@ export default function StartPetitionPage() {
                   <input
                     type="email"
                     value={formData.starter.email}
-                    onChange={(e) => handleInputChange("starter.email", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("starter.email", e.target.value)
+                    }
                     onBlur={() => markFieldTouched("starterEmail")}
-                    className={getInputProps("starterEmail", formData.starter.email).className}
+                    className={
+                      getInputProps("starterEmail", formData.starter.email)
+                        .className
+                    }
                     placeholder="e.g., yourname@gmail.com"
                   />
-                  {getInputProps("starterEmail", formData.starter.email).showError && (
-                    <p className="text-red-500 text-sm mt-1">{getInputProps("starterEmail", formData.starter.email).error}</p>
+                  {getInputProps("starterEmail", formData.starter.email)
+                    .showError && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {
+                        getInputProps("starterEmail", formData.starter.email)
+                          .error
+                      }
+                    </p>
                   )}
                   {formData.starter.email === "" && (
                     <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
@@ -1597,13 +2152,24 @@ export default function StartPetitionPage() {
                   <input
                     type="tel"
                     value={formData.starter.mobile}
-                    onChange={(e) => handleInputChange("starter.mobile", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("starter.mobile", e.target.value)
+                    }
                     onBlur={() => markFieldTouched("starterMobile")}
-                    className={getInputProps("starterMobile", formData.starter.mobile).className}
+                    className={
+                      getInputProps("starterMobile", formData.starter.mobile)
+                        .className
+                    }
                     placeholder="e.g., 9876543210"
                   />
-                  {getInputProps("starterMobile", formData.starter.mobile).showError && (
-                    <p className="text-red-500 text-sm mt-1">{getInputProps("starterMobile", formData.starter.mobile).error}</p>
+                  {getInputProps("starterMobile", formData.starter.mobile)
+                    .showError && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {
+                        getInputProps("starterMobile", formData.starter.mobile)
+                          .error
+                      }
+                    </p>
                   )}
                   {formData.starter.mobile === "" && (
                     <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
@@ -1621,13 +2187,28 @@ export default function StartPetitionPage() {
                   <input
                     type="text"
                     value={formData.starter.location}
-                    onChange={(e) => handleInputChange("starter.location", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("starter.location", e.target.value)
+                    }
                     onBlur={() => markFieldTouched("starterLocation")}
-                    className={getInputProps("starterLocation", formData.starter.location).className}
+                    className={
+                      getInputProps(
+                        "starterLocation",
+                        formData.starter.location,
+                      ).className
+                    }
                     placeholder="e.g., Andheri West, Mumbai, Maharashtra"
                   />
-                  {getInputProps("starterLocation", formData.starter.location).showError && (
-                    <p className="text-red-500 text-sm mt-1">{getInputProps("starterLocation", formData.starter.location).error}</p>
+                  {getInputProps("starterLocation", formData.starter.location)
+                    .showError && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {
+                        getInputProps(
+                          "starterLocation",
+                          formData.starter.location,
+                        ).error
+                      }
+                    </p>
                   )}
                   {formData.starter.location === "" && (
                     <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
@@ -1640,13 +2221,19 @@ export default function StartPetitionPage() {
                 {/* Comment/Notes */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Comment/Notes <span className="text-gray-400">(optional)</span>
+                    Comment/Notes{" "}
+                    <span className="text-gray-400">(optional)</span>
                   </label>
                   <textarea
                     value={formData.starter.comment}
-                    onChange={(e) => handleInputChange("starter.comment", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("starter.comment", e.target.value)
+                    }
                     onBlur={() => markFieldTouched("starterComment")}
-                    className={getInputProps("starterComment", formData.starter.comment).className}
+                    className={
+                      getInputProps("starterComment", formData.starter.comment)
+                        .className
+                    }
                     placeholder="Share why this cause is important to you or any additional context..."
                     rows={3}
                   />
@@ -1661,10 +2248,13 @@ export default function StartPetitionPage() {
 
               {/* Identity Verification Section */}
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold mb-2 text-gray-700">Identity Verification</h3>
+                <h3 className="text-lg font-semibold mb-2 text-gray-700">
+                  Identity Verification
+                </h3>
                 <p className="mb-4 text-sm text-gray-500 flex items-center gap-1">
                   <FaCircleInfo className="text-blue-400" />
-                  Provide at least your Aadhar number for identity verification. Other documents are optional.
+                  Provide at least your Aadhar number for identity verification.
+                  Other documents are optional.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1679,34 +2269,84 @@ export default function StartPetitionPage() {
                           type="text"
                           value={formData.starter.aadharNumber}
                           onChange={(e) => {
+                            const previousDigits = normalizeAadhaarNumber(
+                              formData.starter.aadharNumber,
+                            );
                             // Remove all non-digits
-                            let value = e.target.value.replace(/\D/g, '');
+                            let value = e.target.value.replace(/\D/g, "");
                             // Limit to 12 digits
                             value = value.slice(0, 12);
                             // Format with spaces: XXXX XXXX XXXX
                             if (value.length > 8) {
-                              value = value.slice(0, 4) + ' ' + value.slice(4, 8) + ' ' + value.slice(8);
+                              value =
+                                value.slice(0, 4) +
+                                " " +
+                                value.slice(4, 8) +
+                                " " +
+                                value.slice(8);
                             } else if (value.length > 4) {
-                              value = value.slice(0, 4) + ' ' + value.slice(4);
+                              value = value.slice(0, 4) + " " + value.slice(4);
                             }
+
+                            const nextDigits = normalizeAadhaarNumber(value);
+                            if (previousDigits !== nextDigits) {
+                              setAadhaarOtp(createInitialAadhaarOtpState());
+                            }
+
                             handleInputChange("starter.aadharNumber", value);
                           }}
                           onBlur={() => markFieldTouched("aadharNumber")}
-                          className={getInputProps("aadharNumber", formData.starter.aadharNumber).className}
+                          className={
+                            getInputProps(
+                              "aadharNumber",
+                              formData.starter.aadharNumber,
+                            ).className
+                          }
                           placeholder="e.g., 2345 6789 0123 (12 digits)"
                           maxLength={14}
                         />
                       </div>
                       <button
-                        disabled
-                        className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed whitespace-nowrap"
-                        title="OTP verification coming soon"
+                        type="button"
+                        onClick={handleSendAadhaarOtp}
+                        disabled={
+                          aadhaarOtp.sending ||
+                          !validateField(
+                            "aadharNumber",
+                            formData.starter.aadharNumber,
+                          ).isValid
+                        }
+                        className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                          (
+                            aadhaarOtp.sending ||
+                            !validateField(
+                              "aadharNumber",
+                              formData.starter.aadharNumber,
+                            ).isValid
+                          ) ?
+                            "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-[#2D3A8C] text-white hover:bg-[#1e2a6c]"
+                        }`}
                       >
-                        Send OTP
+                        {aadhaarOtp.sending ?
+                          "Sending..."
+                        : aadhaarOtp.otpSent ?
+                          "Resend OTP"
+                        : "Send OTP"}
                       </button>
                     </div>
-                    {getInputProps("aadharNumber", formData.starter.aadharNumber).showError && (
-                      <p className="text-red-500 text-sm mt-1">{getInputProps("aadharNumber", formData.starter.aadharNumber).error}</p>
+                    {getInputProps(
+                      "aadharNumber",
+                      formData.starter.aadharNumber,
+                    ).showError && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {
+                          getInputProps(
+                            "aadharNumber",
+                            formData.starter.aadharNumber,
+                          ).error
+                        }
+                      </p>
                     )}
                     {formData.starter.aadharNumber === "" && (
                       <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
@@ -1714,18 +2354,76 @@ export default function StartPetitionPage() {
                         12 digits, cannot start with 0 or 1
                       </p>
                     )}
+                    {aadhaarOtp.success && (
+                      <p className="text-green-600 text-sm mt-2 flex items-center gap-1">
+                        <FaCircleCheck className="text-xs" />
+                        {aadhaarOtp.success}
+                      </p>
+                    )}
+                    {aadhaarOtp.error && (
+                      <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                        <FaCircleExclamation className="text-xs" />
+                        {aadhaarOtp.error}
+                      </p>
+                    )}
+                    {aadhaarOtp.verified && (
+                      <p className="text-green-700 text-sm mt-2 flex items-center gap-1 font-medium">
+                        <FaCircleCheck className="text-xs" />
+                        Aadhaar verified successfully
+                        {aadhaarOtp.maskedAadhaar ?
+                          ` (${aadhaarOtp.maskedAadhaar})`
+                        : ""}
+                      </p>
+                    )}
                     <div className="flex space-x-2 mt-2">
                       <input
                         type="text"
-                        disabled
-                        className="w-full border p-3 rounded-lg shadow-sm bg-gray-100"
-                        placeholder="Enter OTP (feature coming soon)"
+                        value={aadhaarOtp.otp}
+                        onChange={(e) => {
+                          const otpValue = e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 8);
+                          setAadhaarOtp((prev) => ({
+                            ...prev,
+                            otp: otpValue,
+                            error: "",
+                          }));
+                        }}
+                        disabled={!aadhaarOtp.otpSent || aadhaarOtp.verified}
+                        className={`w-full border p-3 rounded-lg shadow-sm ${
+                          !aadhaarOtp.otpSent || aadhaarOtp.verified ?
+                            "bg-gray-100"
+                          : "bg-white"
+                        }`}
+                        placeholder={
+                          aadhaarOtp.otpSent ? "Enter OTP" : "Send OTP first"
+                        }
                       />
                       <button
-                        disabled
-                        className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed whitespace-nowrap"
+                        type="button"
+                        onClick={handleVerifyAadhaarOtp}
+                        disabled={
+                          !aadhaarOtp.otpSent ||
+                          aadhaarOtp.verifying ||
+                          aadhaarOtp.verified ||
+                          aadhaarOtp.otp.trim().length < 4
+                        }
+                        className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                          (
+                            !aadhaarOtp.otpSent ||
+                            aadhaarOtp.verifying ||
+                            aadhaarOtp.verified ||
+                            aadhaarOtp.otp.trim().length < 4
+                          ) ?
+                            "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-[#F43676] text-white hover:bg-[#d62860]"
+                        }`}
                       >
-                        Verify OTP
+                        {aadhaarOtp.verified ?
+                          "Verified"
+                        : aadhaarOtp.verifying ?
+                          "Verifying..."
+                        : "Verify OTP"}
                       </button>
                     </div>
                   </div>
@@ -1733,16 +2431,27 @@ export default function StartPetitionPage() {
                   {/* PAN Card */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      PAN Number <span className="text-gray-400">(optional)</span>
+                      PAN Number{" "}
+                      <span className="text-gray-400">(optional)</span>
                     </label>
                     <div className="flex space-x-2">
                       <div className="flex-1">
                         <input
                           type="text"
                           value={formData.starter.panNumber}
-                          onChange={(e) => handleInputChange("starter.panNumber", e.target.value.toUpperCase())}
+                          onChange={(e) =>
+                            handleInputChange(
+                              "starter.panNumber",
+                              e.target.value.toUpperCase(),
+                            )
+                          }
                           onBlur={() => markFieldTouched("panNumber")}
-                          className={getInputProps("panNumber", formData.starter.panNumber).className}
+                          className={
+                            getInputProps(
+                              "panNumber",
+                              formData.starter.panNumber,
+                            ).className
+                          }
                           placeholder="e.g., ABCDE1234F (5 letters, 4 digits, 1 letter)"
                         />
                       </div>
@@ -1754,8 +2463,14 @@ export default function StartPetitionPage() {
                         Send OTP
                       </button>
                     </div>
-                    {getInputProps("panNumber", formData.starter.panNumber).showError && (
-                      <p className="text-red-500 text-sm mt-1">{getInputProps("panNumber", formData.starter.panNumber).error}</p>
+                    {getInputProps("panNumber", formData.starter.panNumber)
+                      .showError && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {
+                          getInputProps("panNumber", formData.starter.panNumber)
+                            .error
+                        }
+                      </p>
                     )}
                     {formData.starter.panNumber === "" && (
                       <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
@@ -1787,13 +2502,31 @@ export default function StartPetitionPage() {
                     <input
                       type="text"
                       value={formData.starter.voterNumber}
-                      onChange={(e) => handleInputChange("starter.voterNumber", e.target.value.toUpperCase())}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "starter.voterNumber",
+                          e.target.value.toUpperCase(),
+                        )
+                      }
                       onBlur={() => markFieldTouched("voterNumber")}
-                      className={getInputProps("voterNumber", formData.starter.voterNumber).className}
+                      className={
+                        getInputProps(
+                          "voterNumber",
+                          formData.starter.voterNumber,
+                        ).className
+                      }
                       placeholder="e.g., ABC1234567"
                     />
-                    {getInputProps("voterNumber", formData.starter.voterNumber).showError && (
-                      <p className="text-red-500 text-sm mt-1">{getInputProps("voterNumber", formData.starter.voterNumber).error}</p>
+                    {getInputProps("voterNumber", formData.starter.voterNumber)
+                      .showError && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {
+                          getInputProps(
+                            "voterNumber",
+                            formData.starter.voterNumber,
+                          ).error
+                        }
+                      </p>
                     )}
                     {formData.starter.voterNumber === "" && (
                       <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
@@ -1811,13 +2544,24 @@ export default function StartPetitionPage() {
                     <input
                       type="text"
                       value={formData.starter.pincode}
-                      onChange={(e) => handleInputChange("starter.pincode", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("starter.pincode", e.target.value)
+                      }
                       onBlur={() => markFieldTouched("pincode")}
-                      className={getInputProps("pincode", formData.starter.pincode).className}
+                      className={
+                        getInputProps("pincode", formData.starter.pincode)
+                          .className
+                      }
                       placeholder="e.g., 400001"
                     />
-                    {getInputProps("pincode", formData.starter.pincode).showError && (
-                      <p className="text-red-500 text-sm mt-1">{getInputProps("pincode", formData.starter.pincode).error}</p>
+                    {getInputProps("pincode", formData.starter.pincode)
+                      .showError && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {
+                          getInputProps("pincode", formData.starter.pincode)
+                            .error
+                        }
+                      </p>
                     )}
                     {formData.starter.pincode === "" && (
                       <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
@@ -1830,14 +2574,25 @@ export default function StartPetitionPage() {
                   {/* MP Constituency */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      MP Constituency Number <span className="text-gray-400">(optional)</span>
+                      MP Constituency Number{" "}
+                      <span className="text-gray-400">(optional)</span>
                     </label>
                     <input
                       type="text"
                       value={formData.starter.mpConstituencyNumber}
-                      onChange={(e) => handleInputChange("starter.mpConstituencyNumber", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "starter.mpConstituencyNumber",
+                          e.target.value,
+                        )
+                      }
                       onBlur={() => markFieldTouched("mpConstituencyNumber")}
-                      className={getInputProps("mpConstituencyNumber", formData.starter.mpConstituencyNumber).className}
+                      className={
+                        getInputProps(
+                          "mpConstituencyNumber",
+                          formData.starter.mpConstituencyNumber,
+                        ).className
+                      }
                       placeholder="e.g., 1 to 543"
                     />
                     {formData.starter.mpConstituencyNumber === "" && (
@@ -1851,14 +2606,25 @@ export default function StartPetitionPage() {
                   {/* MLA Constituency */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      MLA Constituency Number <span className="text-gray-400">(optional)</span>
+                      MLA Constituency Number{" "}
+                      <span className="text-gray-400">(optional)</span>
                     </label>
                     <input
                       type="text"
                       value={formData.starter.mlaConstituencyNumber}
-                      onChange={(e) => handleInputChange("starter.mlaConstituencyNumber", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "starter.mlaConstituencyNumber",
+                          e.target.value,
+                        )
+                      }
                       onBlur={() => markFieldTouched("mlaConstituencyNumber")}
-                      className={getInputProps("mlaConstituencyNumber", formData.starter.mlaConstituencyNumber).className}
+                      className={
+                        getInputProps(
+                          "mlaConstituencyNumber",
+                          formData.starter.mlaConstituencyNumber,
+                        ).className
+                      }
                       placeholder="e.g., 1 to 403 (varies by state)"
                     />
                     {formData.starter.mlaConstituencyNumber === "" && (
@@ -1876,7 +2642,8 @@ export default function StartPetitionPage() {
                 <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
                   <p className="text-orange-700 text-sm flex items-center gap-2">
                     <FaCircleExclamation />
-                    Please complete all required fields (*) with valid information and verify the captcha before submitting.
+                    Please complete all required fields (*), verify Aadhaar OTP,
+                    and verify the captcha before submitting.
                   </p>
                 </div>
               )}
@@ -1893,25 +2660,42 @@ export default function StartPetitionPage() {
                 whileHover={
                   isStep4Valid() && !isSubmitting ? { scale: 1.02 } : {}
                 }
-                whileTap={isStep4Valid() && !isSubmitting ? { scale: 0.98 } : {}}
+                whileTap={
+                  isStep4Valid() && !isSubmitting ? { scale: 0.98 } : {}
+                }
                 onClick={handleSubmit}
                 disabled={isSubmitting || !isStep4Valid()}
-                className={`mt-6 px-6 py-4 font-bold rounded-lg w-full shadow-lg transition-all duration-200 text-lg ${isSubmitting || !isStep4Valid()
-                  ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                className={`mt-6 px-6 py-4 font-bold rounded-lg w-full shadow-lg transition-all duration-200 text-lg ${
+                  isSubmitting || !isStep4Valid() ?
+                    "bg-gray-400 text-gray-600 cursor-not-allowed"
                   : "bg-gradient-to-r from-[#2D3A8C] to-[#F43676] text-white hover:from-[#1e2a6c] hover:to-[#d62860]"
-                  }`}
+                }`}
               >
-                {isSubmitting ? (
+                {isSubmitting ?
                   <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Submitting Your Petition...
                   </span>
-                ) : (
-                  "🚀 Submit Petition"
-                )}
+                : "🚀 Submit Petition"}
               </motion.button>
             </motion.div>
           )}
@@ -1934,16 +2718,17 @@ export default function StartPetitionPage() {
               whileTap={isCurrentStepValid() ? { scale: 0.95 } : {}}
               onClick={nextStep}
               disabled={!isCurrentStepValid()}
-              className={`px-6 py-2 rounded-lg shadow-md transition-all duration-200 ${isCurrentStepValid()
-                ? "bg-gradient-to-r from-[#2D3A8C] to-[#F43676] text-white hover:from-[#1e2a6c] hover:to-[#d62860] cursor-pointer"
+              className={`px-6 py-2 rounded-lg shadow-md transition-all duration-200 ${
+                isCurrentStepValid() ?
+                  "bg-gradient-to-r from-[#2D3A8C] to-[#F43676] text-white hover:from-[#1e2a6c] hover:to-[#d62860] cursor-pointer"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
+              }`}
             >
               Next
             </motion.button>
           )}
         </div>
       </div>
-    </section >
+    </section>
   );
 }
