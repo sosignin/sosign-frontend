@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { FaTimes, FaCamera, FaSpinner, FaPhone, FaFacebookF, FaInstagram, FaYoutube, FaLinkedinIn, FaCheck } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { useAuth } from "@/context/AuthContext";
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "@/utils/Firebase";
+import axios from "axios";
 
 export default function ProfileEditModal({ isOpen, onClose }) {
     const { user, updateProfile } = useAuth();
@@ -22,12 +22,11 @@ export default function ProfileEditModal({ isOpen, onClose }) {
     // OTP verification states
     const [otpSent, setOtpSent] = useState(false);
     const [otp, setOtp] = useState("");
-    const [confirmationResult, setConfirmationResult] = useState(null);
+    const [sessionId, setSessionId] = useState("");
     const [phoneVerified, setPhoneVerified] = useState(false);
     const [sendingOtp, setSendingOtp] = useState(false);
     const [verifyingOtp, setVerifyingOtp] = useState(false);
     const [otpError, setOtpError] = useState("");
-    const recaptchaRef = useRef(null);
 
     // Check if mobile is already verified (signed up with mobile or mobileVerified flag)
     const isMobileVerified = (user?.mobileNumber && user?.mobileVerified) || (user?.mobileNumber && !user?.googleId);
@@ -43,20 +42,7 @@ export default function ProfileEditModal({ isOpen, onClose }) {
 
     if (!isOpen) return null;
 
-    // Setup reCAPTCHA
-    const setupRecaptcha = () => {
-        if (!recaptchaRef.current) {
-            recaptchaRef.current = new RecaptchaVerifier(auth, 'modal-recaptcha-container', {
-                'size': 'invisible',
-                'callback': () => { },
-                'expired-callback': () => {
-                    setOtpError("reCAPTCHA expired. Please try again.");
-                    recaptchaRef.current = null;
-                }
-            });
-        }
-        return recaptchaRef.current;
-    };
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
     // Send OTP
     const handleSendOtp = async () => {
@@ -70,16 +56,15 @@ export default function ProfileEditModal({ isOpen, onClose }) {
         setOtpError("");
 
         try {
-            const appVerifier = setupRecaptcha();
-            const phoneNumber = `+91${cleanMobile}`;
-            const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-            setConfirmationResult(result);
+            const response = await axios.post(`${backendUrl}/api/otp/send`, {
+                phoneNumber: cleanMobile
+            });
+            setSessionId(response.data.sessionId);
             setOtpSent(true);
             setOtpError("");
         } catch (error) {
             console.error("Error sending OTP:", error);
-            setOtpError(error.message || "Failed to send OTP. Please try again.");
-            recaptchaRef.current = null;
+            setOtpError(error.response?.data?.message || "Failed to send OTP. Please try again.");
         } finally {
             setSendingOtp(false);
         }
@@ -96,12 +81,15 @@ export default function ProfileEditModal({ isOpen, onClose }) {
         setOtpError("");
 
         try {
-            await confirmationResult.confirm(otp);
+            await axios.post(`${backendUrl}/api/otp/verify`, {
+                sessionId,
+                otp
+            });
             setPhoneVerified(true);
             setOtpError("");
         } catch (error) {
             console.error("Error verifying OTP:", error);
-            setOtpError("Invalid OTP. Please try again.");
+            setOtpError(error.response?.data?.message || "Invalid OTP. Please try again.");
         } finally {
             setVerifyingOtp(false);
         }
@@ -343,8 +331,7 @@ export default function ProfileEditModal({ isOpen, onClose }) {
                                     onClick={() => {
                                         setOtpSent(false);
                                         setOtp("");
-                                        setConfirmationResult(null);
-                                        recaptchaRef.current = null;
+                                        setSessionId("");
                                     }}
                                     className="text-sm text-[#F43676] hover:underline"
                                 >
@@ -356,8 +343,6 @@ export default function ProfileEditModal({ isOpen, onClose }) {
                             </div>
                         )}
 
-                        {/* Invisible reCAPTCHA container */}
-                        <div id="modal-recaptcha-container"></div>
                     </div>
 
                     {/* Bio */}

@@ -178,6 +178,12 @@ export default function Navbar() {
                         Start a Petition
                       </Link>
                       <Link
+                        href="/start-crowdfunding"
+                        className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
+                      >
+                        Start Crowdfunding
+                      </Link>
+                      <Link
                         href="/my-petition"
                         className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
                       >
@@ -188,6 +194,12 @@ export default function Navbar() {
                         className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
                       >
                         Current Petitions
+                      </Link>
+                      <Link
+                        href="/crowdfunding"
+                        className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
+                      >
+                        Crowdfunding
                       </Link>
                     </motion.div>
                   )}
@@ -538,6 +550,13 @@ export default function Navbar() {
                   Start a Petition
                 </Link>
                 <Link
+                  href="/start-crowdfunding"
+                  className="text-[#302d55] font-medium text-sm py-2 hover:text-[#F43676]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Start Crowdfunding
+                </Link>
+                <Link
                   href="/my-petition"
                   className="text-[#302d55] font-medium text-sm py-2 hover:text-[#F43676]"
                   onClick={() => setMobileMenuOpen(false)}
@@ -550,6 +569,13 @@ export default function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Current Petitions
+                </Link>
+                <Link
+                  href="/crowdfunding"
+                  className="text-[#302d55] font-medium text-sm py-2 hover:text-[#F43676]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Crowdfunding
                 </Link>
                 <Link
                   href="/successfulpetitions"

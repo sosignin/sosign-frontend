@@ -6,8 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
 import Image from "next/image";
-import { auth, provider, RecaptchaVerifier, signInWithPhoneNumber } from "../../utils/Firebase";
+import { auth, provider } from "../../utils/Firebase";
 import { signInWithPopup } from "firebase/auth";
+import axios from "axios";
 
 function LoginContent() {
   const [isLogin, setIsLogin] = useState(true);
@@ -33,12 +34,11 @@ function LoginContent() {
   // Phone OTP verification states
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
-  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [sessionId, setSessionId] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [otpError, setOtpError] = useState("");
-  const recaptchaContainerRef = useRef(null);
 
   // Forgot password states
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -60,22 +60,7 @@ function LoginContent() {
     }
   }, [searchParams]);
 
-  // Initialize reCAPTCHA verifier
-  const setupRecaptcha = () => {
-    if (!recaptchaVerifierRef.current) {
-      recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => {
-          // reCAPTCHA solved
-        },
-        'expired-callback': () => {
-          setOtpError("reCAPTCHA expired. Please try again.");
-          recaptchaVerifierRef.current = null;
-        }
-      });
-    }
-    return recaptchaVerifierRef.current;
-  };
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   // Send OTP to phone number
   const handleSendOtp = async () => {
@@ -95,17 +80,15 @@ function LoginContent() {
     setOtpError("");
 
     try {
-      const appVerifier = setupRecaptcha();
-      const phoneNumber = `+91${cleanMobile}`;
-      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-      setConfirmationResult(result);
+      const response = await axios.post(`${backendUrl}/api/otp/send`, {
+        phoneNumber: cleanMobile
+      });
+      setSessionId(response.data.sessionId);
       setOtpSent(true);
       setOtpError("");
     } catch (error) {
       console.error("Error sending OTP:", error);
-      setOtpError(error.message || "Failed to send OTP. Please try again.");
-      // Reset reCAPTCHA on error
-      recaptchaVerifierRef.current = null;
+      setOtpError(error.response?.data?.message || "Failed to send OTP. Please try again.");
     } finally {
       setSendingOtp(false);
     }
@@ -127,12 +110,15 @@ function LoginContent() {
     setOtpError("");
 
     try {
-      await confirmationResult.confirm(otp);
+      await axios.post(`${backendUrl}/api/otp/verify`, {
+        sessionId,
+        otp
+      });
       setPhoneVerified(true);
       setOtpError("");
     } catch (error) {
       console.error("Error verifying OTP:", error);
-      setOtpError("Invalid OTP. Please try again.");
+      setOtpError(error.response?.data?.message || "Invalid OTP. Please try again.");
     } finally {
       setVerifyingOtp(false);
     }
@@ -142,8 +128,7 @@ function LoginContent() {
   const handleResendOtp = () => {
     setOtpSent(false);
     setOtp("");
-    setConfirmationResult(null);
-    recaptchaVerifierRef.current = null;
+    setSessionId("");
     handleSendOtp();
   };
 
@@ -553,8 +538,6 @@ function LoginContent() {
                 <p className="text-red-500 text-sm mt-2">{otpError}</p>
               )}
 
-              {/* Invisible reCAPTCHA container */}
-              <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
             </div>
 
             <div>

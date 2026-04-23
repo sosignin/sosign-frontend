@@ -459,8 +459,13 @@ export default function StartPetitionPage() {
         };
         setCategories((prev) => [...prev, newCategory]);
 
-        // Auto-select the new category
-        setSelectedCategories((prev) => [...prev, data.category.slug]);
+        // Auto-select the new category ONLY if selection limit (2) is not reached
+        setSelectedCategories((prev) => {
+          if (prev.length < 2) {
+            return [...prev, data.category.slug];
+          }
+          return prev;
+        });
 
         // Close modal and reset
         setShowCategoryModal(false);
@@ -616,13 +621,17 @@ export default function StartPetitionPage() {
     return titleValidation.isValid && hasCategories;
   };
 
-  // Toggle category selection
+  // Toggle category selection (limit to 2)
   const toggleCategory = (categoryId) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryId) ?
-        prev.filter((id) => id !== categoryId)
-      : [...prev, categoryId],
-    );
+    setSelectedCategories((prev) => {
+      if (prev.includes(categoryId)) {
+        return prev.filter((id) => id !== categoryId);
+      }
+      if (prev.length >= 2) {
+        return prev;
+      }
+      return [...prev, categoryId];
+    });
   };
 
   const isStep2Valid = () => {
@@ -1173,7 +1182,7 @@ export default function StartPetitionPage() {
                 <label className="block mb-3 font-medium">
                   Select Categories <span className="text-red-500">*</span>
                   <span className="text-gray-400 text-sm ml-2">
-                    (at least one required)
+                    (min 1, max 2)
                   </span>
                 </label>
                 <p className="text-sm text-gray-500 mb-4 flex items-center gap-1">
@@ -1240,17 +1249,21 @@ export default function StartPetitionPage() {
                 {selectedCategories.length === 0 && (
                   <p className="text-orange-500 text-sm mt-3 flex items-center gap-1">
                     <FaCircleExclamation className="text-xs" />
-                    Please select at least one category for your petition
+                    Please select at least one category for your petition (max 2)
                   </p>
                 )}
                 {selectedCategories.length > 0 && (
-                  <p className="text-green-600 text-sm mt-3 flex items-center gap-1">
-                    <FaCircleCheck className="text-xs" />
+                  <p className={`${selectedCategories.length === 2 ? "text-orange-600" : "text-green-600"} text-sm mt-3 flex items-center gap-1`}>
+                    {selectedCategories.length === 2 ? (
+                      <FaCircleExclamation className="text-xs" />
+                    ) : (
+                      <FaCircleCheck className="text-xs" />
+                    )}
                     {selectedCategories.length}{" "}
                     {selectedCategories.length === 1 ?
                       "category"
                     : "categories"}{" "}
-                    selected
+                    selected {selectedCategories.length === 2 && "(Maximum reached)"}
                   </p>
                 )}
               </div>
