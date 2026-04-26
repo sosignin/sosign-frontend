@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -11,55 +11,9 @@ import {
   FaIndianRupeeSign,
   FaLocationDot,
   FaPlus,
+  FaSpinner,
 } from "react-icons/fa6";
-
-const STORAGE_KEY = "sosign_crowdfunding_campaigns";
-
-const sampleCampaigns = [
-  {
-    id: "sample-medical-relief",
-    title: "Support urgent treatment for a child recovering from surgery",
-    category: "Medical",
-    goalAmount: 250000,
-    raisedAmount: 87500,
-    deadline: "2026-08-30",
-    location: "Pune, Maharashtra",
-    beneficiaryName: "Aarav Sharma",
-    organizerName: "Community Volunteers",
-    imageUrl: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=900&q=80",
-    story:
-      "A local family needs help covering post-surgery care, medicines, and follow-up treatment after a difficult medical emergency.",
-    fundUse:
-      "Funds will support hospital bills, medicines, therapy sessions, and travel for medical appointments.",
-    createdAt: "2026-04-01T10:00:00.000Z",
-  },
-  {
-    id: "sample-school-supplies",
-    title: "Help students get school kits before the new academic year",
-    category: "Education",
-    goalAmount: 120000,
-    raisedAmount: 42000,
-    deadline: "2026-06-15",
-    location: "Jaipur, Rajasthan",
-    beneficiaryName: "Government School Students",
-    organizerName: "Youth Education Circle",
-    imageUrl: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=900&q=80",
-    story:
-      "Students in a low-income neighborhood need notebooks, bags, uniforms, and basic learning materials to start school with confidence.",
-    fundUse:
-      "Funds will purchase school bags, notebooks, stationery, uniforms, and classroom learning supplies.",
-    createdAt: "2026-03-20T10:00:00.000Z",
-  },
-];
-
-const readCampaigns = () => {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch (error) {
-    console.error("Unable to read crowdfunding campaigns:", error);
-    return [];
-  }
-};
+import axios from "axios";
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("en-IN", {
@@ -77,25 +31,38 @@ const formatDate = (dateString) =>
 
 export default function CrowdfundingPage() {
   const [campaigns, setCampaigns] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setCampaigns(readCampaigns());
+    const fetchCampaigns = async () => {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const response = await axios.get(`${backendUrl}/api/crowdfunding`);
+        setCampaigns(response.data);
+      } catch (err) {
+        console.error("Failed to fetch campaigns:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCampaigns();
   }, []);
 
-  const visibleCampaigns = useMemo(
-    () => (campaigns.length > 0 ? campaigns : sampleCampaigns),
-    [campaigns],
+  const totals = campaigns.reduce(
+    (summary, campaign) => ({
+      raised: summary.raised + (Number(campaign.raisedAmount) || 0),
+      goal: summary.goal + (Number(campaign.goalAmount) || 0),
+    }),
+    { raised: 0, goal: 0 }
   );
 
-  const totals = useMemo(() => {
-    return visibleCampaigns.reduce(
-      (summary, campaign) => ({
-        raised: summary.raised + (Number(campaign.raisedAmount) || 0),
-        goal: summary.goal + (Number(campaign.goalAmount) || 0),
-      }),
-      { raised: 0, goal: 0 },
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f0f2f5]">
+        <FaSpinner className="animate-spin text-4xl text-[#F43676]" />
+      </div>
     );
-  }, [visibleCampaigns]);
+  }
 
   return (
     <>
@@ -136,7 +103,7 @@ export default function CrowdfundingPage() {
           <div className="grid gap-4 md:grid-cols-3 mb-8">
             <div className="rounded-2xl bg-white p-5 border border-gray-100 shadow-sm">
               <p className="text-sm text-gray-500">Campaigns</p>
-              <p className="text-3xl font-bold text-[#1a1a2e]">{visibleCampaigns.length}</p>
+              <p className="text-3xl font-bold text-[#1a1a2e]">{campaigns.length}</p>
             </div>
             <div className="rounded-2xl bg-white p-5 border border-gray-100 shadow-sm">
               <p className="text-sm text-gray-500">Raised</p>
@@ -148,101 +115,101 @@ export default function CrowdfundingPage() {
             </div>
           </div>
 
-          {campaigns.length === 0 && (
-            <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
-              Sample campaigns are shown until the first crowdfunding campaign is created on this browser.
+          {campaigns.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
+              <FaHandHoldingHeart className="text-5xl text-gray-200 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-800">No active campaigns yet</h3>
+              <p className="text-gray-500 mt-2">Be the first to start a crowdfunding campaign.</p>
+              <Link href="/start-crowdfunding" className="text-[#F43676] font-bold mt-4 inline-block">
+                Start a campaign now &rarr;
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {campaigns.map((campaign, index) => {
+                const goalAmount = Number(campaign.goalAmount) || 0;
+                const raisedAmount = Number(campaign.raisedAmount) || 0;
+                const progress = goalAmount > 0 ? Math.min((raisedAmount / goalAmount) * 100, 100) : 0;
+
+                return (
+                  <motion.article
+                    key={campaign._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="relative h-48 bg-gray-100">
+                      {campaign.image ? (
+                        <img
+                          src={campaign.image}
+                          alt={campaign.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-pink-100 to-blue-100">
+                          <FaHandHoldingHeart className="text-5xl text-[#F43676]" />
+                        </div>
+                      )}
+                      <span className="absolute left-4 top-4 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#302d55] shadow-sm">
+                        {campaign.category}
+                      </span>
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-[#1a1a2e] line-clamp-2 mb-3 h-14">
+                        {campaign.title}
+                      </h3>
+
+                      <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-4">
+                        <span className="inline-flex items-center gap-1">
+                          <FaLocationDot className="text-[#F43676]" />
+                          {campaign.location || "India"}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <FaCalendar className="text-[#F43676]" />
+                          Ends {formatDate(campaign.deadline)}
+                        </span>
+                      </div>
+
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-sm mb-2">
+                          <span className="font-semibold text-[#1a1a2e]">
+                            {formatCurrency(raisedAmount)}
+                          </span>
+                          <span className="text-gray-500">
+                            of {formatCurrency(goalAmount)}
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-[#F43676] to-[#2D3A8C]"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg bg-gray-50 p-3 mb-4">
+                        <p className="text-xs text-gray-500">Beneficiary</p>
+                        <p className="text-sm font-semibold text-[#302d55] truncate">{campaign.beneficiaryName}</p>
+                      </div>
+
+                      <Link
+                        href={`/crowdfunding/${campaign.slug}`}
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#302d55] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#201d3f]"
+                      >
+                        <FaIndianRupeeSign />
+                        Support Campaign
+                      </Link>
+                    </div>
+                  </motion.article>
+                );
+              })}
             </div>
           )}
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {visibleCampaigns.map((campaign, index) => {
-              const goalAmount = Number(campaign.goalAmount) || 0;
-              const raisedAmount = Number(campaign.raisedAmount) || 0;
-              const progress = goalAmount > 0 ? Math.min((raisedAmount / goalAmount) * 100, 100) : 0;
-
-              return (
-                <motion.article
-                  key={campaign.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm"
-                >
-                  <div className="relative h-48 bg-gray-100">
-                    {campaign.imageUrl ? (
-                      <Image
-                        src={campaign.imageUrl}
-                        alt={campaign.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-pink-100 to-blue-100">
-                        <FaHandHoldingHeart className="text-5xl text-[#F43676]" />
-                      </div>
-                    )}
-                    <span className="absolute left-4 top-4 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#302d55] shadow-sm">
-                      {campaign.category}
-                    </span>
-                  </div>
-
-                  <div className="p-5">
-                    <h3 className="text-lg font-bold text-[#1a1a2e] line-clamp-2 mb-3">
-                      {campaign.title}
-                    </h3>
-
-                    <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-4">
-                      <span className="inline-flex items-center gap-1">
-                        <FaLocationDot className="text-[#F43676]" />
-                        {campaign.location || "India"}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <FaCalendar className="text-[#F43676]" />
-                        Ends {formatDate(campaign.deadline)}
-                      </span>
-                    </div>
-
-                    <p className="text-sm text-gray-600 line-clamp-3 mb-4">
-                      {campaign.story}
-                    </p>
-
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="font-semibold text-[#1a1a2e]">
-                          {formatCurrency(raisedAmount)}
-                        </span>
-                        <span className="text-gray-500">
-                          of {formatCurrency(goalAmount)}
-                        </span>
-                      </div>
-                      <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#F43676] to-[#2D3A8C]"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg bg-gray-50 p-3 mb-4">
-                      <p className="text-xs text-gray-500">Beneficiary</p>
-                      <p className="text-sm font-semibold text-[#302d55]">{campaign.beneficiaryName}</p>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#302d55] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#201d3f]"
-                    >
-                      <FaIndianRupeeSign />
-                      Support Campaign
-                    </button>
-                  </div>
-                </motion.article>
-              );
-            })}
-          </div>
         </div>
       </main>
     </>
   );
 }
+

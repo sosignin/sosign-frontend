@@ -46,9 +46,11 @@ function LoginContent() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
   const [forgotError, setForgotError] = useState("");
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
+  const [completingProfile, setCompletingProfile] = useState(false);
   const recaptchaVerifierRef = useRef(null);
 
-  const { login, signup, loading, googleLogin } = useAuth();
+  const { login, signup, loading, googleLogin, updateProfile } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -210,11 +212,57 @@ function LoginContent() {
       const user = result.user;
 
       // Call the simulated backend login from AuthContext
-      await googleLogin(user);
-      router.push(redirectUrl);
+      const userData = await googleLogin(user);
+      
+      // Check if profile is complete (designation and mobileNumber are required)
+      if (!userData.designation || !userData.mobileNumber) {
+        setShowAdditionalInfo(true);
+        // Pre-fill fields if they happen to have partial data
+        if (userData.designation) setDesignation(userData.designation);
+        if (userData.mobileNumber) {
+          // If mobile exists, it should be verified, but for safety let's just set it
+          setMobile(userData.mobileNumber);
+          // If it's already in the DB, it might be verified, but we'll ask for OTP again to be sure if phoneVerified is false
+        }
+      } else {
+        router.push(redirectUrl);
+      }
     } catch (error) {
       console.error("Google Sign-In Error:", error);
-      setLoginError("Failed to sign in with Google.");
+      setLoginError(error?.message || "Failed to sign in with Google.");
+    }
+  };
+
+  const handleAdditionalInfoSubmit = async (e) => {
+    e.preventDefault();
+    setSignupError("");
+
+    if (!designation.trim()) {
+      setSignupError("Designation is required");
+      return;
+    }
+    if (!mobile.trim()) {
+      setSignupError("Mobile number is required");
+      return;
+    }
+    if (!phoneVerified) {
+      setSignupError("Please verify your mobile number with OTP");
+      return;
+    }
+
+    setCompletingProfile(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("designation", designation);
+      formData.append("mobileNumber", mobile);
+
+      await updateProfile(formData);
+      router.push(redirectUrl);
+    } catch (error) {
+      setSignupError(error?.message || "Failed to complete profile");
+    } finally {
+      setCompletingProfile(false);
     }
   };
 
@@ -276,29 +324,203 @@ function LoginContent() {
           {isLogin ? "Login to continue your journey" : "Create your account to get started"}
         </p>
 
-        {/* Continue with Google */}
-        <button
-          onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center border-2 border-gray-200 rounded-xl py-3 mb-4 hover:border-[#F43676] hover:bg-pink-50 transition-all duration-200 font-medium"
-        >
-          <Image
-            src="https://www.svgrepo.com/show/355037/google.svg"
-            alt="Google"
-            className="w-5 h-5 mr-3"
-            width={20}
-            height={20}
-          />
-          Continue with Google
-        </button>
+        {!showAdditionalInfo && (
+          <>
+            {/* Continue with Google */}
+            <button
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center border-2 border-gray-200 rounded-xl py-3 mb-4 hover:border-[#F43676] hover:bg-pink-50 transition-all duration-200 font-medium"
+            >
+              <Image
+                src="https://www.svgrepo.com/show/355037/google.svg"
+                alt="Google"
+                className="w-5 h-5 mr-3"
+                width={20}
+                height={20}
+              />
+              Continue with Google
+            </button>
 
-        {/* Divider */}
-        <div className="flex items-center my-6">
-          <hr className="flex-grow border-gray-200" />
-          <span className="px-3 text-gray-400 text-sm font-medium">or</span>
-          <hr className="flex-grow border-gray-200" />
-        </div>
+            {/* Divider */}
+            <div className="flex items-center my-6">
+              <hr className="flex-grow border-gray-200" />
+              <span className="px-3 text-gray-400 text-sm font-medium">or</span>
+              <hr className="flex-grow border-gray-200" />
+            </div>
+          </>
+        )}
 
-        {isLogin ? (
+        {showAdditionalInfo ? (
+          // ------------------- ADDITIONAL INFO FORM -------------------
+          <form className="space-y-4" onSubmit={handleAdditionalInfoSubmit}>
+            <div className="text-center mb-4">
+              <h3 className="text-xl font-bold text-[#1a1a2e]">Complete Your Profile</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Just a few more details to get you started
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Designation
+              </label>
+              <select
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-[#F43676] focus:outline-none transition-colors bg-white"
+                value={designation}
+                onChange={(e) => setDesignation(e.target.value)}
+                required
+              >
+                <option value="">Select your designation</option>
+                <option value="Individual">Individual</option>
+                <option value="Personal">Personal</option>
+                <option value="Politician">Politician</option>
+                <option value="NGO">NGO</option>
+                <option value="Political Party">Political Party</option>
+                <option value="Social Worker">Social Worker</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Mobile Number
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-1">
+                  <div className="flex items-center px-3 border-2 border-gray-200 border-r-0 rounded-l-xl bg-gray-50 text-gray-600 font-medium">
+                    +91
+                  </div>
+                  <input
+                    type="tel"
+                    placeholder="Enter 10-digit number"
+                    className={`flex-1 border-2 border-gray-200 rounded-r-xl px-4 py-3 focus:border-[#F43676] focus:outline-none transition-colors min-w-0 ${phoneVerified ? 'bg-green-50 border-green-300' : ''} ${otpSent && !phoneVerified ? 'bg-gray-50' : ''}`}
+                    value={mobile}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setMobile(value);
+                    }}
+                    disabled={otpSent || phoneVerified}
+                    required
+                  />
+                </div>
+                {!otpSent && !phoneVerified && (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={sendingOtp || mobile.length !== 10}
+                    className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 whitespace-nowrap text-sm sm:text-base"
+                  >
+                    {sendingOtp ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="hidden sm:inline">Sending...</span>
+                        <span className="sm:hidden">Sending</span>
+                      </>
+                    ) : (
+                      'Send OTP'
+                    )}
+                  </button>
+                )}
+                {phoneVerified && (
+                  <div className="flex items-center justify-center sm:justify-start px-4 text-green-600">
+                    <Check className="w-6 h-6" />
+                    <span className="ml-2 sm:hidden text-sm font-medium">Verified</span>
+                  </div>
+                )}
+              </div>
+
+              {/* OTP Input Section */}
+              {otpSent && !phoneVerified && (
+                <div className="mt-3 p-4 bg-pink-50 rounded-xl border border-pink-100">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Enter OTP
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter 6-digit OTP"
+                      className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-[#F43676] focus:outline-none transition-colors text-center tracking-widest font-mono text-lg"
+                      value={otp}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setOtp(value);
+                      }}
+                      maxLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVerifyOtp}
+                      disabled={verifyingOtp || otp.length !== 6}
+                      className="px-6 py-3 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
+                    >
+                      {verifyingOtp ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        'Verify'
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Didn&apos;t receive OTP?{' '}
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      className="text-[#F43676] font-semibold hover:underline"
+                    >
+                      Resend OTP
+                    </button>
+                  </p>
+                </div>
+              )}
+
+              {/* Phone Verified Success Message */}
+              {phoneVerified && (
+                <p className="text-green-600 text-sm mt-2 flex items-center gap-1">
+                  <Check className="w-4 h-4" /> Mobile number verified successfully!
+                </p>
+              )}
+
+              {/* OTP Error */}
+              {otpError && (
+                <p className="text-red-500 text-sm mt-2">{otpError}</p>
+              )}
+            </div>
+
+            {signupError && (
+              <p className="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">{signupError}</p>
+            )}
+
+            <button 
+              type="submit"
+              disabled={completingProfile || !phoneVerified || !designation}
+              className="w-full bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:scale-100"
+            >
+              {completingProfile ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Complete Profile"
+              )}
+            </button>
+
+            <p className="text-sm text-center text-gray-600 pt-2">
+              Want to use a different account?{" "}
+              <span
+                className="text-[#F43676] font-semibold cursor-pointer hover:underline"
+                onClick={() => {
+                  setShowAdditionalInfo(false);
+                  // Optional: call logout() if we want to clear the partial session
+                }}
+              >
+                Go back
+              </span>
+            </p>
+          </form>
+        ) : isLogin ? (
           // ------------------- LOGIN FORM -------------------
           <form className="space-y-5" onSubmit={handleLoginSubmit}>
             <div>

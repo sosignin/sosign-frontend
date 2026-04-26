@@ -190,6 +190,12 @@ export default function Navbar() {
                         My Petitions
                       </Link>
                       <Link
+                        href="/my-campaigns"
+                        className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
+                      >
+                        My Campaigns
+                      </Link>
+                      <Link
                         href="/currentpetitions"
                         className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
                       >

@@ -13,7 +13,7 @@ import {
     FaHistory,
     FaSpinner,
     FaCamera,
-    FaCheckCircle,
+    FaCircleCheck,
     FaClock,
     FaTimesCircle,
 } from "react-icons/fa";
