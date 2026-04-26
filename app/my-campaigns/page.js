@@ -35,6 +35,7 @@ const MyCampaignsPage = () => {
     } else if (user) {
       fetchData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, router]);
 
   const fetchData = async () => {
@@ -128,7 +129,7 @@ const MyCampaignsPage = () => {
             
             {campaigns.length === 0 ? (
               <div className="bg-white rounded-2xl p-12 text-center border border-slate-100">
-                <p className="text-slate-500">You haven't created any campaigns yet.</p>
+                <p className="text-slate-500">You haven&apos;t created any campaigns yet.</p>
               </div>
             ) : (
               campaigns.map(c => (

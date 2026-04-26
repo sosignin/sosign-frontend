@@ -191,6 +191,7 @@ export default function Banner({ initialPetitions = [] }) {
     };
 
     fetchPetitions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-slide functionality - DISABLED

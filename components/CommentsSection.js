@@ -62,6 +62,7 @@ const CommentsSection = ({ petitionId }) => {
     if (petitionId) {
       fetchComments();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [petitionId]);
 
   // Scroll to specific comment if hash is present in URL

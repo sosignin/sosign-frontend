@@ -27,6 +27,7 @@ function SearchResultsContent() {
   const [error, setError] = useState(null);
 
   // Debounced search function
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSearch = useCallback(
     debounce(async (query) => {
       if (!query.trim()) {
