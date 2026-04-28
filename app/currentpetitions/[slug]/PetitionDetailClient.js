@@ -31,11 +31,14 @@ import {
     Calendar,
     RefreshCw,
     ImageIcon,
-    MapPin
+    MapPin,
+    ChevronDown,
+    Languages
 } from "lucide-react";
 
 export default function PetitionDetailClient({ initialPetition }) {
     const { slug } = useParams();
+    const langRef = React.useRef(null);
     const router = useRouter();
     const pathname = usePathname();
     const [petition, setPetition] = useState(initialPetition || null);
@@ -79,6 +82,148 @@ export default function PetitionDetailClient({ initialPetition }) {
 
     const { user, loading: authLoading } = useAuth();
     const searchParams = useSearchParams();
+    const [currentLanguage, setCurrentLanguage] = useState("en");
+    const [isLangOpen, setIsLangOpen] = useState(false);
+
+    useEffect(() => {
+        // Define callback before script loads
+        window.googleTranslateElementInit = () => {
+            if (window.google?.translate) {
+                new window.google.translate.TranslateElement(
+                    {
+                        pageLanguage: "en",
+                        includedLanguages: "hi,bn,en,mr,ta,te,gu,kn,ml,pa,or,as",
+                        layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+                        autoDisplay: false,
+                    },
+                    "google_translate_element"
+                );
+            }
+        };
+
+        // Only inject script once
+        if (!window.google?.translate && !document.getElementById("google-translate-script")) {
+            const script = document.createElement("script");
+            script.id = "google-translate-script";
+            script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+            script.async = true;
+            document.body.appendChild(script);
+        } else if (window.google?.translate && !document.querySelector(".goog-te-combo")) {
+            // Only re-init if the widget internal controls are missing
+            window.googleTranslateElementInit();
+        }
+
+        // Detect current language from cookie on mount
+        const getCookie = (name) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        };
+        const langCookie = getCookie("googtrans");
+        if (langCookie) {
+            const lang = langCookie.split("/").pop();
+            if (lang && lang !== currentLanguage) {
+                setCurrentLanguage(lang);
+            }
+        }
+
+        // Add CSS to hide Google Translate toolbar
+        const style = document.createElement("style");
+        style.innerHTML = `
+            .goog-te-banner-frame.skiptranslate, .goog-te-gadget-icon { display: none !important; }
+            body { top: 0px !important; }
+            .goog-te-menu-value span:nth-child(5) { display: none !important; }
+            .goog-te-menu-value img { display: none !important; }
+            #google_translate_element { 
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+                height: 0;
+                width: 0;
+                overflow: hidden;
+            }
+            .VIpgJd-ZviZp-ORrt-ORrt-nU67Y { display: none !important; }
+            .goog-tooltip { display: none !important; }
+            .goog-tooltip:hover { display: none !important; }
+            .goog-text-highlight { background-color: transparent !important; border: none !important; box-shadow: none !important; }
+        `;
+        document.head.appendChild(style);
+
+        return () => {
+            if (document.head.contains(style)) {
+                document.head.removeChild(style);
+            }
+        };
+    }, []);
+
+    const changeLanguage = (langCode) => {
+        // 1. Set the Google Translate cookie (most reliable way)
+        const domain = window.location.hostname;
+        const cookieValue = `/en/${langCode}`;
+        document.cookie = `googtrans=${cookieValue}; path=/;`;
+        document.cookie = `googtrans=${cookieValue}; path=/; domain=${domain};`;
+        
+        // 2. Try to trigger the hidden select element
+        const findSelect = () => document.querySelector(".goog-te-combo") || 
+                                 document.querySelector("#google_translate_element select") ||
+                                 document.querySelector("select.goog-te-combo");
+
+        const select = findSelect();
+        if (select) {
+            select.value = langCode;
+            select.dispatchEvent(new Event("change"));
+            setCurrentLanguage(langCode);
+        } else {
+            // If not ready, wait a bit and try multiple times
+            let retries = 0;
+            const interval = setInterval(() => {
+                const retrySelect = findSelect();
+                if (retrySelect) {
+                    retrySelect.value = langCode;
+                    retrySelect.dispatchEvent(new Event("change"));
+                    setCurrentLanguage(langCode);
+                    clearInterval(interval);
+                }
+                if (++retries > 5) {
+                    // Fallback: If still not found after retries, reload the page 
+                    // The cookie we set above will trigger translation on reload
+                    if (langCode !== "en") {
+                        window.location.reload();
+                    }
+                    clearInterval(interval);
+                }
+            }, 300);
+        }
+        setIsLangOpen(false);
+    };
+
+    const languages = [
+        { name: "English", code: "en" },
+        { name: "Hindi (हिन्दी)", code: "hi" },
+        { name: "Bengali (বাংলা)", code: "bn" },
+        { name: "Marathi (मराठी)", code: "mr" },
+        { name: "Tamil (தமிழ்)", code: "ta" },
+        { name: "Telugu (తెలుగు)", code: "te" },
+        { name: "Gujarati (ગુજરાતી)", code: "gu" },
+        { name: "Kannada (ਕನ್ನಡ)", code: "kn" },
+        { name: "Malayalam (മലയാളം)", code: "ml" },
+        { name: "Punjabi (ਪੰਜਾਬੀ)", code: "pa" },
+    ];
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (langRef.current && !langRef.current.contains(event.target)) {
+                setIsLangOpen(false);
+            }
+        };
+
+        if (isLangOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isLangOpen]);
 
     useEffect(() => {
         // Only fetch if we don't have initial petition data
@@ -431,9 +576,36 @@ export default function PetitionDetailClient({ initialPetition }) {
                     transition={{ duration: 0.5 }}
                     className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8"
                 >
-                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-center text-[#1a1a2e] leading-tight">
-                        {petition.title}
-                    </h1>
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#1a1a2e] leading-tight text-center md:text-left flex-1">
+                            {petition.title}
+                        </h1>
+                        
+                        {/* Language Switcher */}
+                        <div className="relative flex-shrink-0" ref={langRef}>
+                            <div id="google_translate_element"></div>
+                            <button 
+                                onClick={() => setIsLangOpen(!isLangOpen)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 font-medium text-sm ${isLangOpen ? "bg-pink-50 text-[#F43676] border-[#F43676]" : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-pink-50 hover:text-[#F43676]"}`}
+                            >
+                                <Languages className="w-4 h-4" />
+                                <span>{languages.find(l => l.code === currentLanguage)?.name || "Language"}</span>
+                                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isLangOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            
+                            <div className={`absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 transition-all duration-200 z-[100] ${isLangOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}>
+                                {languages.map((lang) => (
+                                    <button
+                                        key={lang.code}
+                                        onClick={() => changeLanguage(lang.code)}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${currentLanguage === lang.code ? "text-[#F43676] font-semibold bg-pink-50/50" : "text-gray-600"}`}
+                                    >
+                                        {lang.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </motion.div>
 
                 <div className="flex flex-col lg:flex-row gap-8">
@@ -853,9 +1025,17 @@ export default function PetitionDetailClient({ initialPetition }) {
                             const path = `/currentpetitions/${slug}`;
 
                             // For copy/display, use current origin; for Facebook, use production
-                            const currentUrl = typeof window !== "undefined" ? window.location.origin : "";
-                            const localShareUrl = new URL(currentUrl + path);
-                            const productionShareUrl = new URL(productionDomain + path);
+                            const currentUrl = typeof window !== "undefined" ? window.location.origin : productionDomain;
+                            
+                            let localShareUrl, productionShareUrl;
+                            try {
+                                localShareUrl = new URL(path, currentUrl);
+                                productionShareUrl = new URL(path, productionDomain);
+                            } catch (e) {
+                                // Fallback if URL construction fails
+                                localShareUrl = { searchParams: new URLSearchParams(), toString: () => currentUrl + path };
+                                productionShareUrl = { searchParams: new URLSearchParams(), toString: () => productionDomain + path };
+                            }
 
                             if (user?.uniqueCode) {
                                 localShareUrl.searchParams.set("code", user.uniqueCode);
