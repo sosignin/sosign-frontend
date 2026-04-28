@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useAuth } from "../../../context/AuthContext";
@@ -35,6 +36,8 @@ import {
 
 export default function PetitionDetailClient({ initialPetition }) {
     const { slug } = useParams();
+    const router = useRouter();
+    const pathname = usePathname();
     const [petition, setPetition] = useState(initialPetition || null);
     const [loading, setLoading] = useState(!initialPetition);
     const [error, setError] = useState(null);
@@ -220,7 +223,7 @@ export default function PetitionDetailClient({ initialPetition }) {
     // Handle download request
     const handleRequestDownload = async () => {
         if (!user) {
-            setShowLoginModal(true);
+            router.push(`/login?redirect=${pathname}`);
             return;
         }
 
@@ -318,7 +321,7 @@ export default function PetitionDetailClient({ initialPetition }) {
 
     const handleSignPetition = async () => {
         if (!user) {
-            setShowLoginModal(true);
+            router.push(`/login?redirect=${pathname}`);
             return;
         }
 
@@ -501,12 +504,12 @@ export default function PetitionDetailClient({ initialPetition }) {
                                     <p className="text-gray-600">
                                         You need to be logged in to sign this petition.
                                     </p>
-                                    <button
-                                        onClick={() => setShowLoginModal(true)}
-                                        className="bg-[#3650AD] text-white w-full py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 transform hover:-translate-y-0.5"
+                                    <Link
+                                        href={`/login?redirect=${pathname}`}
+                                        className="bg-[#3650AD] text-white w-full py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 transform hover:-translate-y-0.5 text-center block"
                                     >
                                         Login to Sign Petition
-                                    </button>
+                                    </Link>
                                 </div>
                             ) : signatureStatus.loading ? (
                                 <div className="text-center">
@@ -1135,7 +1138,7 @@ export default function PetitionDetailClient({ initialPetition }) {
 
             {/* Login Modal */}
             {showLoginModal && (
-                <LoginModal onClose={handleLoginModalClose} />
+                <LoginModal isOpen={showLoginModal} onClose={handleLoginModalClose} />
             )}
         </div>
     );

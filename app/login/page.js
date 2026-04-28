@@ -30,6 +30,7 @@ function LoginContent() {
   const [createPassword, setCreatePassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [signupError, setSignupError] = useState("");
+  const [isValidatingEmail, setIsValidatingEmail] = useState(false);
 
   // Phone OTP verification states
   const [otpSent, setOtpSent] = useState(false);
@@ -197,11 +198,14 @@ function LoginContent() {
     }
 
     try {
+      setIsValidatingEmail(true);
       const name = `${firstName} ${lastName}`;
       await signup(name, designation, signupEmail, mobile, createPassword);
       router.push(redirectUrl);
     } catch (error) {
       setSignupError(error?.message || String(error) || "Signup failed");
+    } finally {
+      setIsValidatingEmail(false);
     }
   };
 
@@ -825,8 +829,19 @@ function LoginContent() {
               <p className="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">{signupError}</p>
             )}
 
-            <button className="w-full bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 mt-2">
-              Sign Up
+            <button 
+              type="submit"
+              disabled={isValidatingEmail || loading}
+              className="w-full bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:scale-100"
+            >
+              {isValidatingEmail ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Validating Email...
+                </>
+              ) : (
+                "Sign Up"
+              )}
             </button>
 
             <p className="text-sm text-center text-gray-600 pt-2">
