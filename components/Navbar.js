@@ -31,9 +31,23 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { user, logout, walletBalance } = useAuth();
   const router = useRouter();
   const searchRef = useRef(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
@@ -123,10 +137,10 @@ export default function Navbar() {
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="w-full bg-white border-b border-gray-200 sticky top-0 z-50"
+      className={`w-full bg-white border-b sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg border-transparent' : 'border-gray-200'}`}
     >
       <div className="max-w-[95%] xl:max-w-[90%] mx-auto pl-0 pr-2 sm:pl-0 sm:pr-3 lg:pl-0 lg:pr-4">
-        <div className="flex justify-between h-[105px] items-center">
+        <div className={`flex justify-between items-center transition-all duration-300 ${isScrolled ? 'h-[75px]' : 'h-[105px]'}`}>
           {/* Left side: Logo Only */}
           <div className="flex items-center">
             <motion.div whileHover={{ scale: 1.05 }}>
@@ -136,7 +150,7 @@ export default function Navbar() {
                   alt="SOSIGN Logo"
                   width={140}
                   height={45}
-                  className="h-12 w-auto"
+                  className={`w-auto transition-all duration-300 ${isScrolled ? 'h-10' : 'h-12'}`}
                 />
               </Link>
             </motion.div>
@@ -340,11 +354,6 @@ export default function Navbar() {
                 </div>
               </a>
             </div>
-
-            {/* Dark Mode Toggle */}
-            {/* <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors">
-              <FaMoon className="text-sm" />
-            </button> */}
 
             {/* Search Button and Overlay */}
             <div className="relative" ref={searchRef}>
