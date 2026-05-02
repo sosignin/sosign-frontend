@@ -33,7 +33,8 @@ import {
     ImageIcon,
     MapPin,
     ChevronDown,
-    Languages
+    Languages,
+    Star
 } from "lucide-react";
 
 export default function PetitionDetailClient({ initialPetition }) {
@@ -1020,6 +1021,40 @@ export default function PetitionDetailClient({ initialPetition }) {
                             <p className="text-gray-600 leading-relaxed">
                                 {petition.decisionMakers.map((dm) => dm.name || dm).join(", ")}
                             </p>
+                        </div>
+                    )}
+
+                    {/* Notable Supporters Card */}
+                    {petition.notableSigners && petition.notableSigners.length > 0 && (
+                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 md:col-span-2">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-400/10 to-yellow-400/20 flex items-center justify-center">
+                                    <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-xl text-[#1a1a2e]">Notable Supporters</h3>
+                                    <p className="text-sm text-gray-500">Influential people and organizations supporting this cause</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {petition.notableSigners.map((signer) => (
+                                    <div key={signer._id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-yellow-50/50 hover:border-yellow-100 transition-colors">
+                                        {signer.profilePicture ? (
+                                            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
+                                                <Image src={signer.profilePicture} alt={signer.name} width={48} height={48} className="w-full h-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#3650AD] to-[#F43676] flex items-center justify-center text-white font-bold flex-shrink-0 shadow-sm">
+                                                {signer.name.charAt(0)}
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-gray-900 truncate">{signer.name}</p>
+                                            <p className="text-[10px] text-[#F43676] font-bold truncate uppercase tracking-widest bg-pink-50 px-2 py-0.5 rounded-full inline-block mt-0.5">{signer.designation}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
