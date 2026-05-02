@@ -566,6 +566,16 @@ export default function PetitionDetailClient({ initialPetition }) {
         );
     }
 
+    // Helper to extract YouTube video ID
+    const getYoutubeId = (url) => {
+        if (!url) return null;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    };
+
+    const videoId = getYoutubeId(petition?.petitionDetails?.videoUrl);
+
     return (
         <div className="min-h-screen bg-[#f0f2f5] py-8 px-4 md:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
@@ -961,24 +971,50 @@ export default function PetitionDetailClient({ initialPetition }) {
                         )}
                     </div>
 
-                    {/* Video URL */}
+                    {/* Video URL & Preview */}
                     {petition.petitionDetails?.videoUrl && (
-                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500/10 to-red-500/20 flex items-center justify-center">
-                                    <Video className="w-5 h-5 text-red-500" />
+                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 md:col-span-2">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500/10 to-red-500/20 flex items-center justify-center">
+                                        <Video className="w-5 h-5 text-red-500" />
+                                    </div>
+                                    <p className="font-bold text-[#1a1a2e]">Video Preview</p>
                                 </div>
-                                <p className="font-bold text-[#1a1a2e]">Video</p>
+                                <a
+                                    href={petition.petitionDetails.videoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-[#3650AD] hover:text-[#F43676] font-medium flex items-center gap-1 transition-colors"
+                                >
+                                    <span>Watch on YouTube</span>
+                                    <Share2 className="w-3 h-3" />
+                                </a>
                             </div>
-                            <a
-                                href={petition.petitionDetails.videoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 text-[#3650AD] hover:text-[#F43676] font-medium transition-colors"
-                            >
-                                <span>Watch Video</span>
-                                <Video className="w-4 h-4" />
-                            </a>
+                            {videoId ? (
+                                <div className="w-full aspect-video rounded-xl overflow-hidden shadow-inner bg-black">
+                                    <iframe
+                                        width="100%"
+                                        height="100%"
+                                        src={`https://www.youtube.com/embed/${videoId}`}
+                                        title="YouTube video player"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        className="w-full h-full"
+                                    ></iframe>
+                                </div>
+                            ) : (
+                                <a
+                                    href={petition.petitionDetails.videoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 text-[#3650AD] hover:text-[#F43676] font-medium transition-colors"
+                                >
+                                    <span>Watch Video</span>
+                                    <Video className="w-4 h-4" />
+                                </a>
+                            )}
                         </div>
                     )}
 
