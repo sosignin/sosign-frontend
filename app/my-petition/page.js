@@ -851,11 +851,11 @@ const MyPetitionsPage = () => {
 
                                   {/* Signing Requirements */}
                                   <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                                      Signing Requirements
-                                    </label>
-                                    <p className="text-xs text-gray-500 mb-3">
-                                      You can require signers to provide their constituency number. This helps ensure local relevance for constituency-specific issues.
+                                    <h4 className="text-sm font-semibold text-[#1a1a2e] mb-3">Signing Requirements</h4>
+                                    <p className="text-xs text-gray-500 mb-4">
+                                      You can require signers to provide their constituency number
+                                      and/or Aadhar number. Select any or both to enhance identity
+                                      verification for your petition.
                                     </p>
 
                                     {/* Toggle for constituency requirement */}
@@ -866,25 +866,33 @@ const MyPetitionsPage = () => {
                                       </div>
                                       <button
                                         type="button"
-                                        onClick={() => setEditFormData({
-                                          ...editFormData,
-                                          constituencySettings: {
-                                            ...editFormData.constituencySettings,
-                                            required: !editFormData.constituencySettings.required
-                                          }
-                                        })}
-                                        className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${editFormData.constituencySettings.required ? 'bg-[#3650AD]' : 'bg-gray-300'
-                                          }`}
+                                        onClick={() => {
+                                          const newValue = !editFormData.signingRequirements.constituency.required;
+                                          setEditFormData({
+                                            ...editFormData,
+                                            constituencySettings: {
+                                              ...editFormData.constituencySettings,
+                                              required: newValue
+                                            },
+                                            signingRequirements: {
+                                              ...editFormData.signingRequirements,
+                                              constituency: {
+                                                ...editFormData.signingRequirements.constituency,
+                                                required: newValue
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${editFormData.signingRequirements.constituency.required ? 'bg-[#3650AD]' : 'bg-gray-300'}`}
                                       >
                                         <span
-                                          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${editFormData.constituencySettings.required ? 'translate-x-6' : 'translate-x-0'
-                                            }`}
+                                          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${editFormData.signingRequirements.constituency.required ? 'translate-x-6' : 'translate-x-0'}`}
                                         />
                                       </button>
                                     </div>
 
                                     {/* Allowed Constituency Input */}
-                                    {editFormData.constituencySettings.required && (
+                                    {editFormData.signingRequirements.constituency.required && (
                                       <div className="p-3 bg-white rounded-lg border border-gray-200 mb-3">
                                         <label className="block text-xs font-medium text-gray-700 mb-1">
                                           Restrict to Specific Constituency (Optional)
@@ -894,115 +902,60 @@ const MyPetitionsPage = () => {
                                         </p>
                                         <input
                                           type="text"
-                                          value={editFormData.constituencySettings.allowedConstituency}
-                                          onChange={(e) => setEditFormData({
-                                            ...editFormData,
-                                            constituencySettings: {
-                                              ...editFormData.constituencySettings,
-                                              allowedConstituency: e.target.value
-                                            }
-                                          })}
+                                          value={editFormData.signingRequirements.constituency.allowedConstituency}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setEditFormData({
+                                              ...editFormData,
+                                              constituencySettings: {
+                                                ...editFormData.constituencySettings,
+                                                allowedConstituency: val
+                                              },
+                                              signingRequirements: {
+                                                ...editFormData.signingRequirements,
+                                                constituency: {
+                                                  ...editFormData.signingRequirements.constituency,
+                                                  allowedConstituency: val
+                                                }
+                                              }
+                                            });
+                                          }}
                                           placeholder="e.g., 123 or leave empty"
                                           className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3650AD] focus:border-transparent outline-none"
                                           maxLength={10}
                                         />
-                                        {editFormData.constituencySettings.allowedConstituency && (
+                                        {editFormData.signingRequirements.constituency.allowedConstituency && (
                                           <p className="text-blue-600 text-xs mt-2">
-                                            Only users with constituency number &ldquo;{editFormData.constituencySettings.allowedConstituency}&rdquo; can sign this petition.
+                                            Only users with constituency number &ldquo;{editFormData.signingRequirements.constituency.allowedConstituency}&rdquo; can sign this petition.
                                           </p>
                                         )}
                                       </div>
                                     )}
 
-                                    {/* New Signing Requirements Section */}
-                                    <div className="mt-4 pt-4 border-t border-gray-200">
-                                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Signing Requirements (New)</h4>
-
-                                      {/* Toggle for constituency requirement (new) */}
-                                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 mb-3">
-                                        <div>
-                                          <p className="text-sm font-medium text-gray-700">Require Constituency Number to Sign</p>
-                                          <p className="text-xs text-gray-500">Signers must enter their constituency number</p>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => setEditFormData({
-                                            ...editFormData,
-                                            signingRequirements: {
-                                              ...editFormData.signingRequirements,
-                                              constituency: {
-                                                ...editFormData.signingRequirements.constituency,
-                                                required: !editFormData.signingRequirements.constituency.required
-                                              }
-                                            }
-                                          })}
-                                          className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${editFormData.signingRequirements.constituency.required ? 'bg-[#3650AD]' : 'bg-gray-300'}`}
-                                        >
-                                          <span
-                                            className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${editFormData.signingRequirements.constituency.required ? 'translate-x-6' : 'translate-x-0'}`}
-                                          />
-                                        </button>
+                                    {/* Toggle for Aadhar requirement */}
+                                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                                      <div>
+                                        <p className="text-sm font-medium text-gray-700">Require Aadhar Number to Sign</p>
+                                        <p className="text-xs text-gray-500">Signers must enter their Aadhar number for verification</p>
                                       </div>
-
-                                      {/* Allowed Constituency Input (new) */}
-                                      {editFormData.signingRequirements.constituency.required && (
-                                        <div className="p-3 bg-white rounded-lg border border-gray-200 mb-3">
-                                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                                            Restrict to Specific Constituency (Optional)
-                                          </label>
-                                          <p className="text-xs text-gray-500 mb-2">
-                                            Leave blank to allow any constituency, or enter a specific number to restrict signing.
-                                          </p>
-                                          <input
-                                            type="text"
-                                            value={editFormData.signingRequirements.constituency.allowedConstituency}
-                                            onChange={(e) => setEditFormData({
-                                              ...editFormData,
-                                              signingRequirements: {
-                                                ...editFormData.signingRequirements,
-                                                constituency: {
-                                                  ...editFormData.signingRequirements.constituency,
-                                                  allowedConstituency: e.target.value
-                                                }
-                                              }
-                                            })}
-                                            placeholder="e.g., 123 or leave empty"
-                                            className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3650AD] focus:border-transparent outline-none"
-                                            maxLength={10}
-                                          />
-                                          {editFormData.signingRequirements.constituency.allowedConstituency && (
-                                            <p className="text-blue-600 text-xs mt-2">
-                                              Only users with constituency number &ldquo;{editFormData.signingRequirements.constituency.allowedConstituency}&rdquo; can sign this petition.
-                                            </p>
-                                          )}
-                                        </div>
-                                      )}
-
-                                      {/* Toggle for Aadhar requirement */}
-                                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                                        <div>
-                                          <p className="text-sm font-medium text-gray-700">Require Aadhar Number to Sign</p>
-                                          <p className="text-xs text-gray-500">Signers must enter their Aadhar number for verification</p>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => setEditFormData({
-                                            ...editFormData,
-                                            signingRequirements: {
-                                              ...editFormData.signingRequirements,
-                                              aadhar: {
-                                                ...editFormData.signingRequirements.aadhar,
-                                                required: !editFormData.signingRequirements.aadhar.required
-                                              }
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditFormData({
+                                          ...editFormData,
+                                          signingRequirements: {
+                                            ...editFormData.signingRequirements,
+                                            aadhar: {
+                                              ...editFormData.signingRequirements.aadhar,
+                                              required: !editFormData.signingRequirements.aadhar.required
                                             }
-                                          })}
-                                          className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${editFormData.signingRequirements.aadhar.required ? 'bg-[#3650AD]' : 'bg-gray-300'}`}
-                                        >
-                                          <span
-                                            className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${editFormData.signingRequirements.aadhar.required ? 'translate-x-6' : 'translate-x-0'}`}
-                                          />
-                                        </button>
-                                      </div>
+                                          }
+                                        })}
+                                        className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${editFormData.signingRequirements.aadhar.required ? 'bg-[#3650AD]' : 'bg-gray-300'}`}
+                                      >
+                                        <span
+                                          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${editFormData.signingRequirements.aadhar.required ? 'translate-x-6' : 'translate-x-0'}`}
+                                        />
+                                      </button>
                                     </div>
                                   </div>
 
