@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "../context/AuthContext";
 import QueryProvider from "@/components/providers/QueryProvider";
+import ProfileGuard from "@/components/ProfileGuard";
 
 // Google Fonts
 const beVietnamPro = Be_Vietnam_Pro({
@@ -23,8 +24,10 @@ export default function RootLayout({ children }) {
       <body className={`${beVietnamPro.variable} antialiased`}>
         <AuthProvider>
           <QueryProvider>
-            <Navbar />
-            <main>{children}</main>
+            <ProfileGuard>
+              <Navbar />
+              <main>{children}</main>
+            </ProfileGuard>
           </QueryProvider>
         </AuthProvider>
       </body>

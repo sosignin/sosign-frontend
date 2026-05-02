@@ -51,7 +51,7 @@ function LoginContent() {
   const [completingProfile, setCompletingProfile] = useState(false);
   const recaptchaVerifierRef = useRef(null);
 
-  const { login, signup, loading, googleLogin, updateProfile } = useAuth();
+  const { login, signup, loading, googleLogin, updateProfile, user, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -62,6 +62,18 @@ function LoginContent() {
       setRedirectUrl(redirect);
     }
   }, [searchParams]);
+
+  // Check if existing user needs to complete profile
+  useEffect(() => {
+    if (!loading && user) {
+      const isIncomplete = !user.designation || !user.mobileNumber;
+      if (isIncomplete) {
+        setShowAdditionalInfo(true);
+        if (user.designation) setDesignation(user.designation);
+        if (user.mobileNumber) setMobile(user.mobileNumber);
+      }
+    }
+  }, [user, loading]);
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -517,7 +529,7 @@ function LoginContent() {
                 className="text-[#F43676] font-semibold cursor-pointer hover:underline"
                 onClick={() => {
                   setShowAdditionalInfo(false);
-                  // Optional: call logout() if we want to clear the partial session
+                  logout(); // Call logout to clear the partial session
                 }}
               >
                 Go back
