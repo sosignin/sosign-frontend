@@ -51,6 +51,18 @@ export default function PetitionDetailClient({ initialPetition }) {
     const [referralCode, setReferralCode] = useState("");
     const [constituencyNumber, setConstituencyNumber] = useState("");
     const [aadharNumber, setAadharNumber] = useState("");
+    const [aadhaarOtp, setAadhaarOtp] = useState({
+        otp: "",
+        otpSent: false,
+        sending: false,
+        verifying: false,
+        verified: false,
+        otpSessionToken: "",
+        verificationToken: "",
+        error: "",
+        success: "",
+        maskedAadhaar: "",
+    });
 
     // CAPTCHA state
     const [captchaVerified, setCaptchaVerified] = useState(false);
@@ -464,6 +476,79 @@ export default function PetitionDetailClient({ initialPetition }) {
         }
     };
 
+    const handleSendAadhaarOtp = async () => {
+        const cleanAadhar = aadharNumber.replace(/\s/g, "");
+        if (!cleanAadhar || !/^[2-9]\d{11}$/.test(cleanAadhar)) {
+            setAadhaarOtp(prev => ({ ...prev, error: "Please enter a valid 12-digit Aadhaar number" }));
+            return;
+        }
+
+        try {
+            setAadhaarOtp(prev => ({ ...prev, sending: true, error: "", success: "" }));
+            const userInfo = JSON.parse(localStorage.getItem("user"));
+            const response = await fetch("/api/aadhaar/send-otp", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${userInfo.token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ aadhaarNumber: cleanAadhar }),
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || "Failed to send OTP");
+
+            setAadhaarOtp(prev => ({
+                ...prev,
+                sending: false,
+                otpSent: true,
+                otpSessionToken: result.otpSessionToken,
+                maskedAadhaar: result.maskedAadhaar,
+                success: result.message || "OTP sent successfully to your linked mobile number",
+            }));
+        } catch (error) {
+            setAadhaarOtp(prev => ({ ...prev, sending: false, error: error.message }));
+        }
+    };
+
+    const handleVerifyAadhaarOtp = async () => {
+        const cleanAadhar = aadharNumber.replace(/\s/g, "");
+        if (!aadhaarOtp.otp || aadhaarOtp.otp.length < 4) {
+            setAadhaarOtp(prev => ({ ...prev, error: "Please enter a valid OTP" }));
+            return;
+        }
+
+        try {
+            setAadhaarOtp(prev => ({ ...prev, verifying: true, error: "", success: "" }));
+            const userInfo = JSON.parse(localStorage.getItem("user"));
+            const response = await fetch("/api/aadhaar/verify-otp", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${userInfo.token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    aadhaarNumber: cleanAadhar,
+                    otp: aadhaarOtp.otp.trim(),
+                    otpSessionToken: aadhaarOtp.otpSessionToken,
+                }),
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || "Failed to verify OTP");
+
+            setAadhaarOtp(prev => ({
+                ...prev,
+                verifying: false,
+                verified: true,
+                verificationToken: result.aadhaarVerificationToken || result.aadharVerificationToken,
+                success: "Aadhaar verified successfully",
+            }));
+        } catch (error) {
+            setAadhaarOtp(prev => ({ ...prev, verifying: false, error: error.message }));
+        }
+    };
+
     const handleSignPetition = async () => {
         if (!user) {
             router.push(`/login?redirect=${pathname}`);
@@ -507,6 +592,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                     referralCode: referralCode?.trim() || undefined,
                     constituencyNumber: constituencyNumber?.trim() || undefined,
                     aadharNumber: aadharNumber?.trim() || undefined,
+                    aadhaarVerificationToken: aadhaarOtp.verificationToken,
                 }),
             });
 
@@ -808,27 +894,94 @@ export default function PetitionDetailClient({ initialPetition }) {
                                         </div>
                                     )}
 
-                                    {/* Aadhar Number (if required) */}
+                                    {/* Aadhaar Number with OTP Verification (if required) */}
                                     {petition.signingRequirements?.aadhar?.required && (
-                                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                            <label className="block text-left text-sm font-medium text-gray-700 mb-1">
-                                                Aadhar Number <span className="text-red-500">*</span>
+                                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-left">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Aadhaar Number <span className="text-red-500">*</span>
                                             </label>
-                                            <input
-                                                type="text"
-                                                value={aadharNumber}
-                                                onChange={(e) => {
-                                                    // Allow only numbers and spaces
-                                                    const value = e.target.value.replace(/[^\d\s]/g, '');
-                                                    setAadharNumber(value);
-                                                }}
-                                                placeholder="Enter your 12-digit Aadhar number"
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                maxLength={16}
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                This petition requires your Aadhar number to sign. (12 digits)
-                                            </p>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={aadharNumber}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value.replace(/[^\d\s]/g, '');
+                                                        setAadharNumber(value);
+                                                        // Reset verification if number changes
+                                                        if (aadhaarOtp.verified || aadhaarOtp.otpSent) {
+                                                            setAadhaarOtp(prev => ({ 
+                                                                ...prev, 
+                                                                verified: false, 
+                                                                otpSent: false, 
+                                                                verificationToken: "",
+                                                                otp: "",
+                                                                error: "",
+                                                                success: ""
+                                                            }));
+                                                        }
+                                                    }}
+                                                    placeholder="12-digit Aadhaar number"
+                                                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    maxLength={14}
+                                                    disabled={aadhaarOtp.otpSent || aadhaarOtp.verified}
+                                                />
+                                                {!aadhaarOtp.otpSent && !aadhaarOtp.verified && (
+                                                    <button
+                                                        onClick={handleSendAadhaarOtp}
+                                                        disabled={aadhaarOtp.sending || aadharNumber.replace(/\s/g, "").length !== 12}
+                                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+                                                    >
+                                                        {aadhaarOtp.sending ? "Sending..." : "Send OTP"}
+                                                    </button>
+                                                )}
+                                                {(aadhaarOtp.otpSent || aadhaarOtp.verified) && !aadhaarOtp.verified && (
+                                                    <button
+                                                        onClick={() => setAadhaarOtp(prev => ({ ...prev, otpSent: false, otp: "", error: "", success: "" }))}
+                                                        className="px-3 py-2 text-[#3650AD] hover:text-[#F43676] text-xs font-semibold"
+                                                    >
+                                                        Change
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {aadhaarOtp.otpSent && !aadhaarOtp.verified && (
+                                                <div className="mt-4 space-y-3">
+                                                    <p className="text-xs text-blue-600 font-medium">
+                                                        OTP sent to mobile linked with {aadhaarOtp.maskedAadhaar || "Aadhaar"}
+                                                    </p>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={aadhaarOtp.otp}
+                                                            onChange={(e) => setAadhaarOtp(prev => ({ ...prev, otp: e.target.value.replace(/\D/g, '') }))}
+                                                            placeholder="Enter OTP"
+                                                            className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            maxLength={8}
+                                                        />
+                                                        <button
+                                                            onClick={handleVerifyAadhaarOtp}
+                                                            disabled={aadhaarOtp.verifying || aadhaarOtp.otp.length < 4}
+                                                            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50"
+                                                        >
+                                                            {aadhaarOtp.verifying ? "Verifying..." : "Verify OTP"}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {aadhaarOtp.verified && (
+                                                <div className="mt-3 flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded-lg">
+                                                    <CheckCircle className="w-4 h-4" />
+                                                    <span className="text-sm font-semibold">Aadhaar Verified Successfully</span>
+                                                </div>
+                                            )}
+
+                                            {aadhaarOtp.error && (
+                                                <p className="text-xs text-red-500 mt-2 font-medium">{aadhaarOtp.error}</p>
+                                            )}
+                                            {aadhaarOtp.success && !aadhaarOtp.verified && (
+                                                <p className="text-xs text-green-600 mt-2 font-medium">{aadhaarOtp.success}</p>
+                                            )}
                                         </div>
                                     )}
                                     {/* CAPTCHA Section */}
@@ -841,7 +994,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                                         disabled={signing || !signatureStatus.canSign || !captchaVerified ||
                                             (petition.constituencySettings?.required && !constituencyNumber.trim()) ||
                                             (petition.signingRequirements?.constituency?.required && !constituencyNumber.trim()) ||
-                                            (petition.signingRequirements?.aadhar?.required && !aadharNumber.trim())
+                                            (petition.signingRequirements?.aadhar?.required && (!aadharNumber.trim() || !aadhaarOtp.verified))
                                         }
                                         className="bg-[#3650AD] text-white w-full py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
