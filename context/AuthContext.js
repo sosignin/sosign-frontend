@@ -31,6 +31,23 @@ export const AuthProvider = ({ children }) => {
               setUser(null);
             } else {
               setUser(userData);
+              
+              // Fetch fresh profile data to keep state in sync (hasPassword flag, etc.)
+              const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+              axios.get(`${backendUrl}/api/users/profile`, {
+                headers: {
+                  'Authorization': `Bearer ${userData.token}`,
+                },
+              }).then(response => {
+                const freshData = { ...userData, ...response.data };
+                setUser(freshData);
+                localStorage.setItem('user', JSON.stringify(freshData));
+              }).catch(err => {
+                console.error('Failed to fetch fresh profile:', err);
+                if (err.response?.status === 401) {
+                  logout();
+                }
+              });
             }
           } catch (tokenError) {
             // Token is malformed, clear it
@@ -166,6 +183,39 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      if (!storedUser?.token) {
+        throw new Error('Not authenticated');
+      }
+
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await axios.put(`${backendUrl}/api/users/change-password`, {
+        currentPassword,
+        newPassword
+      }, {
+        headers: {
+          'Authorization': `Bearer ${storedUser.token}`,
+        },
+      });
+
+      const updatedData = response.data;
+      
+      // Update local state if successful
+      if (updatedData.hasPassword) {
+        const newUserData = { ...storedUser, hasPassword: true };
+        setUser(newUserData);
+        localStorage.setItem('user', JSON.stringify(newUserData));
+      }
+
+      return updatedData;
+    } catch (error) {
+      console.error('Password change failed:', error.response?.data?.message || error.message);
+      throw new Error(error.response?.data?.message || 'Password update failed');
+    }
+  };
+
   const googleLogin = async (googleUser) => {
     try {
       const response = await axios.post('/api/users/google-auth', {
@@ -199,7 +249,7 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, signup, loading, googleLogin, clearUser, updateProfile, walletBalance, fetchWalletBalance }}>
+    <AuthContext.Provider value={{ user, setUser, login, logout, signup, loading, googleLogin, clearUser, updateProfile, changePassword, walletBalance, fetchWalletBalance }}>
       {children}
     </AuthContext.Provider>
   );

@@ -32,8 +32,15 @@ const CommentsSection = ({ petitionId }) => {
       );
       console.log("API URL:", config.API_BASE_URL);
 
+      const stored = localStorage.getItem("user");
+      const userInfo = stored ? JSON.parse(stored) : null;
+      const token = userInfo?.token;
+
       const response = await fetch(
-        `${config.API_BASE_URL}/api/comments/petition/${petitionId}?page=${pageNum}&limit=10`
+        `${config.API_BASE_URL}/api/comments/petition/${petitionId}?page=${pageNum}&limit=10`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
       );
 
       console.log("Response status:", response.status);
@@ -604,27 +611,34 @@ const CommentsSection = ({ petitionId }) => {
                         {comment.replies.map((reply) => (
                           <div
                             key={reply._id}
-                            className="bg-gray-50 rounded-lg p-3"
+                            className={`rounded-lg p-3 ${!reply.isApproved ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}
                           >
-                            <div className="flex items-center space-x-2 mb-2">
-                              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                                {reply?.user?.name
-                                  ? reply.user.name.charAt(0).toUpperCase()
-                                  : "?"}
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                                  {reply?.user?.name
+                                    ? reply.user.name.charAt(0).toUpperCase()
+                                    : "?"}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-sm text-gray-900">
+                                    {reply?.user?.name || "Unknown User"}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {formatDate(reply.createdAt)}
+                                    {reply.isEdited && (
+                                      <span className="text-gray-400 ml-1">
+                                        (edited)
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium text-sm text-gray-900">
-                                  {reply?.user?.name || "Unknown User"}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {formatDate(reply.createdAt)}
-                                  {reply.isEdited && (
-                                    <span className="text-gray-400 ml-1">
-                                      (edited)
-                                    </span>
-                                  )}
-                                </p>
-                              </div>
+                              {!reply.isApproved && (
+                                <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-[10px] font-bold rounded-full flex items-center gap-1">
+                                  <Clock className="w-2 h-2" /> PENDING
+                                </span>
+                              )}
                             </div>
                             <p className="text-sm text-gray-800">
                               {reply?.content || ""}

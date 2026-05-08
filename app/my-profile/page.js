@@ -8,6 +8,8 @@ import { FaChevronRight, FaUser, FaEnvelope, FaBriefcase, FaPhone, FaCopy, FaEdi
 import { petitions as currentPetitions } from "../../components/CurrentPetitions";
 import { successfulPetitions } from "../../components/SuccessfulPetitionsData";
 import ProfileEditModal from "../../components/ProfileEditModal";
+import PasswordModal from "../../components/PasswordModal";
+import { FaShieldAlt, FaKey } from "react-icons/fa";
 
 const MyProfilePage = () => {
   const { user, loading } = useAuth();
@@ -15,6 +17,7 @@ const MyProfilePage = () => {
   const [userPetitions, setUserPetitions] = useState([]);
   const [copied, setCopied] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Get the best available profile image
   const getProfileImageUrl = () => {
@@ -193,6 +196,46 @@ const MyProfilePage = () => {
                     </p>
                   </div>
                 )}
+
+                {/* Account Security Section */}
+                <div className="mt-8 p-6 bg-white rounded-2xl border-2 border-gray-100 shadow-sm overflow-hidden relative">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-pink-50 rounded-bl-full -z-0 opacity-50"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-gradient-to-r from-[#1a1a2e] to-[#333] rounded-xl flex items-center justify-center">
+                        <FaShieldAlt className="text-white text-lg" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-[#1a1a2e]">Account Security</h3>
+                        <p className="text-xs text-gray-500">Manage your login credentials</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${user.hasPassword ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                          <FaKey />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800">
+                            {user.hasPassword ? "Password Protected" : "No Password Set"}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {user.hasPassword 
+                              ? "You can login with your email and password." 
+                              : "Logged in via Google. Create a password to login directly."}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setIsPasswordModalOpen(true)}
+                        className="w-full sm:w-auto px-6 py-2.5 bg-white border-2 border-gray-200 text-gray-700 font-bold rounded-lg hover:border-[#F43676] hover:text-[#F43676] transition-all duration-200 flex items-center justify-center gap-2"
+                      >
+                        {user.hasPassword ? "Change Password" : "Create Password"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Action Buttons */}
@@ -215,10 +258,14 @@ const MyProfilePage = () => {
         </div>
       </div>
 
-      {/* Profile Edit Modal */}
       <ProfileEditModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
+      />
+
+      <PasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
       />
     </>
   );
