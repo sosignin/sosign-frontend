@@ -39,9 +39,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 20) {
+      // Hysteresis logic to prevent shaking
+      if (window.scrollY > 80) {
         setIsScrolled(true);
-      } else {
+      } else if (window.scrollY < 20) {
         setIsScrolled(false);
       }
     };
@@ -142,8 +143,7 @@ export default function Navbar() {
     >
       <div className="max-w-[95%] xl:max-w-[90%] mx-auto pl-0 pr-2 sm:pl-0 sm:pr-3 lg:pl-0 lg:pr-4">
         <div className={`flex justify-between items-center transition-all duration-300 ${isScrolled ? 'h-[75px]' : 'h-[105px]'}`}>
-          {/* Left side: Logo Only */}
-          <div className="flex items-center">
+          <div className="flex-shrink-0 flex items-center">
             <motion.div whileHover={{ scale: 1.05 }}>
               <Link href="/">
                 <Image
@@ -151,7 +151,11 @@ export default function Navbar() {
                   alt="SOSIGN Logo"
                   width={140}
                   height={45}
-                  className={`w-auto transition-all duration-300 ${isScrolled ? 'h-10' : 'h-12'}`}
+                  className={`w-auto transition-all duration-300 ${
+                    isScrolled 
+                      ? (user?.name?.length > 15 ? 'h-7' : 'h-10') 
+                      : (user?.name?.length > 15 ? 'h-9' : 'h-12')
+                  }`}
                 />
               </Link>
             </motion.div>
@@ -489,7 +493,7 @@ export default function Navbar() {
                       {(user.name || "U").charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className="hidden sm:inline">{user.name || "Profile"}</span>
+                  <span className="hidden sm:inline truncate max-w-[100px] lg:max-w-[150px]">{user.name || "Profile"}</span>
                 </motion.button>
                 <AnimatePresence>
                   {dropdownOpen && (

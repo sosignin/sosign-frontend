@@ -284,6 +284,32 @@ export default function StartCrowdfundingPage() {
                         placeholder="e.g., Support Rajesh's Cancer Treatment"
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Goal Amount (₹)</label>
+                      <div className="relative">
+                        <FaIndianRupeeSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="number"
+                          required
+                          value={formData.goalAmount}
+                          onChange={(e) => updateField("goalAmount", e.target.value)}
+                          className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:border-[#F43676] outline-none"
+                          placeholder="e.g., 500000"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Campaign Deadline</label>
+                      <input
+                        type="date"
+                        required
+                        value={formData.deadline}
+                        onChange={(e) => updateField("deadline", e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#F43676] outline-none"
+                      />
+                    </div>
                     
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-2">Category</label>
@@ -521,35 +547,6 @@ export default function StartCrowdfundingPage() {
 
               {step === 5 && (
                 <div className="space-y-8">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Goal Amount (INR)</label>
-                      <div className="flex rounded-xl border border-slate-200 focus-within:border-[#F43676] outline-none transition-all">
-                        <span className="flex items-center px-4 text-slate-400 bg-slate-50 border-r border-slate-200 rounded-l-xl">
-                          <FaIndianRupeeSign />
-                        </span>
-                        <input
-                          type="number"
-                          required
-                          value={formData.goalAmount}
-                          onChange={(e) => updateField("goalAmount", e.target.value)}
-                          className="w-full p-3 outline-none rounded-r-xl"
-                          placeholder="e.g. 500000"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Campaign Deadline</label>
-                      <input
-                        type="date"
-                        required
-                        value={formData.deadline}
-                        onChange={(e) => updateField("deadline", e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#F43676] outline-none"
-                      />
-                    </div>
-                  </div>
-
                   <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
                     <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                       <FaShieldHalved /> Legal Agreements

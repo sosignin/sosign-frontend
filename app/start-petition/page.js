@@ -28,6 +28,7 @@ import { useAuth } from "../../context/AuthContext";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Captcha from "../../components/Captcha";
+import ImageCropper from "../../components/ImageCropper";
 
 // Icon mapping for dynamic category icons
 const iconMap = {
@@ -70,7 +71,10 @@ export default function StartPetitionPage() {
   const [recipients, setRecipients] = useState([
     { name: "", organization: "", email: "", phone: "" },
   ]);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]); // Array of up to 4 images
+  const [tempImage, setTempImage] = useState(null); // Currently being cropped
+  const [showCropper, setShowCropper] = useState(false);
+  const [croppingIndex, setCroppingIndex] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [touchedFields, setTouchedFields] = useState({});
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -953,8 +957,10 @@ export default function StartPetitionPage() {
         aadhaarOtp.verificationToken,
       );
 
-      if (selectedImage) {
-        submitData.append("image", selectedImage);
+      if (selectedImages.length > 0) {
+        selectedImages.forEach((img) => {
+          submitData.append("images", img);
+        });
       }
 
       // Add signing requirements settings
@@ -1938,45 +1944,101 @@ export default function StartPetitionPage() {
                 })()}
               </div>
 
-              {/* Image Upload */}
+              {/* Multi-Image Upload Section */}
               <div className="mb-6">
-                <label className="block font-medium mb-2">
-                  Upload a Supporting Image{" "}
-                  <span className="text-gray-400">(optional)</span>
+                <label className="block font-medium mb-3 text-gray-700">
+                  Supporting Images (Up to 4)
+                  <span className="text-gray-400 text-sm font-normal ml-2">(16:9 ratio recommended)</span>
                 </label>
-                <div
-                  className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer mb-2 relative hover:border-[#F43676] transition-colors"
-                  onClick={() => document.getElementById("imageUpload").click()}
-                >
-                  {selectedImage ?
-                    <Image
-                      src={URL.createObjectURL(selectedImage)}
-                      alt="Selected"
-                      className="w-full h-full object-cover rounded-lg"
-                      width={500}
-                      height={300}
-                    />
-                  : <>
-                      <FaPlus className="text-gray-400 text-4xl mb-2" />
-                      <p className="text-gray-500 text-sm">
-                        Click to upload an image
-                      </p>
-                    </>
-                  }
-                  <input
-                    id="imageUpload"
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={(e) => setSelectedImage(e.target.files[0])}
-                  />
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3">
+                  {selectedImages.map((img, idx) => (
+                    <div key={idx} className="relative group aspect-video">
+                      <Image
+                        src={URL.createObjectURL(img)}
+                        alt={`Selected ${idx + 1}`}
+                        className="w-full h-full object-cover rounded-xl border border-gray-200"
+                        width={200}
+                        height={112}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempImage(img);
+                          setCroppingIndex(idx);
+                          setShowCropper(true);
+                        }}
+                        className="absolute bottom-2 right-2 bg-white/90 text-[#F43676] p-1.5 rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] font-bold"
+                      >
+                        <FaPlus className="rotate-45" /> CROP
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedImages(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <FaXmark className="text-xs" />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {selectedImages.length < 4 && (
+                    <div
+                      className="aspect-video border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#F43676] hover:bg-pink-50 transition-all duration-200"
+                      onClick={() => document.getElementById("imageUpload").click()}
+                    >
+                      <FaPlus className="text-gray-400 text-2xl mb-1" />
+                      <span className="text-xs text-gray-500 font-medium">Add Photo</span>
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-gray-500 flex items-center gap-1">
-                  <FaCircleInfo className="text-blue-400" />
-                  Add a powerful image that represents your cause (JPG, PNG, or
-                  GIF, max 2MB, Dimensions: 855x350px)
+
+                <input
+                  id="imageUpload"
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      const file = e.target.files[0];
+                      setSelectedImages(prev => [...prev, file]);
+                      e.target.value = ""; // Reset for same file selection
+                    }
+                  }}
+                />
+
+                <p className="text-xs text-gray-500 flex items-center gap-1.5 bg-blue-50 p-2.5 rounded-lg border border-blue-100">
+                  <FaCircleInfo className="text-blue-500" />
+                  Add powerful images to represent your cause. Our tool will help you crop and optimize them.
                 </p>
               </div>
+
+              {showCropper && tempImage && (
+                <ImageCropper
+                  imageFile={tempImage}
+                  onCrop={(croppedFile) => {
+                    if (croppingIndex !== null) {
+                      // Replace existing image
+                      setSelectedImages(prev => {
+                        const newImages = [...prev];
+                        newImages[croppingIndex] = croppedFile;
+                        return newImages;
+                      });
+                    } else {
+                      // Should not happen with new logic but safe to keep
+                      setSelectedImages(prev => [...prev, croppedFile]);
+                    }
+                    setShowCropper(false);
+                    setTempImage(null);
+                    setCroppingIndex(null);
+                  }}
+                  onCancel={() => {
+                    setShowCropper(false);
+                    setTempImage(null);
+                    setCroppingIndex(null);
+                  }}
+                />
+              )}
 
               {/* YouTube Video URL */}
               <div className="mb-4">

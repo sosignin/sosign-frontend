@@ -44,6 +44,9 @@ const MyPetitionsPage = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showHideModal, setShowHideModal] = useState(null);
   const [hideReason, setHideReason] = useState("");
+  const [showSignersModal, setShowSignersModal] = useState(false);
+  const [allSigners, setAllSigners] = useState([]);
+  const [signersLoading, setSignersLoading] = useState(false);
 
   // Edit petition state
   const [showEditModal, setShowEditModal] = useState(null);
@@ -292,6 +295,27 @@ const MyPetitionsPage = () => {
     }
   };
 
+  const fetchSigners = async () => {
+    try {
+      setSignersLoading(true);
+      setShowSignersModal(true);
+      const userInfo = JSON.parse(localStorage.getItem("user"));
+      const response = await fetch("/api/petitions/my-petitions/signers", {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAllSigners(data);
+      }
+    } catch (error) {
+      console.error("Error fetching signers:", error);
+    } finally {
+      setSignersLoading(false);
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
@@ -512,7 +536,10 @@ const MyPetitionsPage = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-gradient-to-br from-green-50 to-white rounded-xl p-4 border border-green-100">
+            <div 
+              onClick={fetchSigners}
+              className="bg-gradient-to-br from-green-50 to-white rounded-xl p-4 border border-green-100 cursor-pointer hover:shadow-md transition-all active:scale-95"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
                   <FaUsers className="text-green-500" />
@@ -1089,6 +1116,142 @@ const MyPetitionsPage = () => {
       </div >
 
       <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+
+      {/* Signers Modal */}
+      <AnimatePresence>
+        {showSignersModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSignersModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+            >
+              <div className="p-6 border-b flex items-center justify-between sticky top-0 bg-white z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center">
+                    <FaUsers className="text-green-600 text-xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Recent Signers</h3>
+                    <p className="text-sm text-gray-500">Signatures across all your petitions</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSignersModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  <FaTimes className="text-gray-400 text-xl" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                {signersLoading ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <FaSpinner className="animate-spin text-4xl text-[#F43676]" />
+                    <p className="text-gray-500 font-medium">Loading signers list...</p>
+                  </div>
+                ) : allSigners.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-separate border-spacing-y-3">
+                      <thead>
+                        <tr className="text-gray-400 text-xs uppercase tracking-wider">
+                          <th className="px-4 py-2 font-bold">Signer</th>
+                          <th className="px-4 py-2 font-bold">Petition</th>
+                          <th className="px-4 py-2 font-bold">Date</th>
+                          <th className="px-4 py-2 font-bold">Referral</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allSigners.map((signer, idx) => (
+                          <motion.tr
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.03 }}
+                            key={idx}
+                            className="bg-gray-50 hover:bg-gray-100 transition-colors"
+                          >
+                            <td className="px-4 py-4 rounded-l-2xl">
+                              <div className="flex items-center gap-3">
+                                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-sm flex-shrink-0">
+                                  {signer.user?.profilePicture ? (
+                                    <Image
+                                      src={signer.user.profilePicture}
+                                      alt={signer.user.name}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100 uppercase font-bold text-xs">
+                                      {signer.user?.name?.substring(0, 2) || "AN"}
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold text-gray-900">{signer.user?.name || "Anonymous"}</p>
+                                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-tighter">
+                                    {signer.user?.designation || "Citizen"}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 max-w-[200px]">
+                              <p className="text-sm font-medium text-gray-700 truncate">{signer.petitionTitle}</p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <p className="text-sm text-gray-500">{formatDate(signer.signedAt)}</p>
+                            </td>
+                            <td className="px-4 py-4 rounded-r-2xl">
+                              {signer.referral?.code ? (
+                                <div className="flex flex-col">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 w-fit">
+                                    {signer.referral.code}
+                                  </span>
+                                  {signer.referral.owner && (
+                                    <span className="text-[10px] text-gray-400 mt-1">
+                                      via {signer.referral.owner.name}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic">Direct</span>
+                              )}
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-20">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FaUsers className="text-gray-400 text-3xl" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-700 mb-2">No Signatures Yet</h3>
+                    <p className="text-gray-500">Your petitions are waiting for support!</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 bg-gray-50 border-t flex justify-end">
+                <button
+                  onClick={() => setShowSignersModal(false)}
+                  className="px-8 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

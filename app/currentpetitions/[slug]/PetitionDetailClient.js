@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useAuth } from "../../../context/AuthContext";
 import LoginModal from "../../../components/LoginModal";
@@ -33,6 +33,8 @@ import {
     ImageIcon,
     MapPin,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Languages,
     Star
 } from "lucide-react";
@@ -97,6 +99,7 @@ export default function PetitionDetailClient({ initialPetition }) {
     const searchParams = useSearchParams();
     const [currentLanguage, setCurrentLanguage] = useState("en");
     const [isLangOpen, setIsLangOpen] = useState(false);
+    const [activeImageIndex, setActiveImageIndex] = useState(0);
 
     useEffect(() => {
         // Define callback before script loads
@@ -713,21 +716,87 @@ export default function PetitionDetailClient({ initialPetition }) {
                         transition={{ duration: 0.6 }}
                         className="lg:w-3/5 flex-shrink-0"
                     >
-                        <div className="bg-white rounded-2xl shadow-lg p-4 h-full">
-                            {petition.petitionDetails?.image ? (
-                                <Image
-                                    src={petition.petitionDetails.image}
-                                    alt={petition.title}
-                                    width={1200}
-                                    height={675}
-                                    className="w-full h-auto object-contain rounded-xl"
-                                />
-                            ) : (
-                                <div className="w-full aspect-video bg-gradient-to-br from-[#3650AD]/10 to-[#F43676]/10 rounded-xl flex items-center justify-center">
+                        <div className="bg-white rounded-2xl shadow-lg p-4 h-full flex flex-col">
+                            <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-gray-50 flex items-center justify-center group">
+                                {petition.petitionDetails?.images && petition.petitionDetails.images.length > 0 ? (
+                                    <>
+                                        <AnimatePresence mode="wait">
+                                            <motion.div
+                                                key={activeImageIndex}
+                                                initial={{ opacity: 0, x: 20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: -20 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="w-full h-full"
+                                            >
+                                                <Image
+                                                    src={petition.petitionDetails.images[activeImageIndex]}
+                                                    alt={`${petition.title} - Image ${activeImageIndex + 1}`}
+                                                    fill
+                                                    className="object-contain"
+                                                />
+                                            </motion.div>
+                                        </AnimatePresence>
+
+                                        {petition.petitionDetails.images.length > 1 && (
+                                            <>
+                                                <button
+                                                    onClick={() => setActiveImageIndex((prev) => (prev === 0 ? petition.petitionDetails.images.length - 1 : prev - 1))}
+                                                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 text-[#F43676] opacity-0 group-hover:opacity-100 transition-opacity shadow-md z-10"
+                                                >
+                                                    <ChevronLeft className="w-6 h-6" />
+                                                </button>
+                                                <button
+                                                    onClick={() => setActiveImageIndex((prev) => (prev === petition.petitionDetails.images.length - 1 ? 0 : prev + 1))}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 text-[#F43676] opacity-0 group-hover:opacity-100 transition-opacity shadow-md z-10"
+                                                >
+                                                    <ChevronRight className="w-6 h-6" />
+                                                </button>
+                                                
+                                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                                                    {petition.petitionDetails.images.map((_, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            onClick={() => setActiveImageIndex(idx)}
+                                                            className={`w-2 h-2 rounded-full transition-all ${activeImageIndex === idx ? "bg-[#F43676] w-4" : "bg-gray-300"}`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                ) : petition.petitionDetails?.image ? (
+                                    <Image
+                                        src={petition.petitionDetails.image}
+                                        alt={petition.title}
+                                        fill
+                                        className="object-contain"
+                                    />
+                                ) : (
                                     <div className="text-[#1a1a2e] text-center">
                                         <ImageIcon className="w-12 h-12 mx-auto mb-3 text-[#3650AD]/50" strokeWidth={1.5} />
                                         <p className="text-lg font-medium text-gray-500">No Image Available</p>
                                     </div>
+                                )}
+                            </div>
+
+                            {/* Thumbnail selector for multiple images */}
+                            {petition.petitionDetails?.images?.length > 1 && (
+                                <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                                    {petition.petitionDetails.images.map((img, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setActiveImageIndex(idx)}
+                                            className={`relative flex-shrink-0 w-20 aspect-video rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === idx ? "border-[#F43676] scale-105 shadow-sm" : "border-transparent opacity-60"}`}
+                                        >
+                                            <Image
+                                                src={img}
+                                                alt={`Thumbnail ${idx + 1}`}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </button>
+                                    ))}
                                 </div>
                             )}
                         </div>
