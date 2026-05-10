@@ -21,6 +21,7 @@ import {
   FaWallet
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import NotificationCenter from "./NotificationCenter";
 
 export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -355,17 +356,22 @@ export default function Navbar() {
               </a>
             </div>
 
-            {/* Search Button and Overlay */}
-            <div className="relative" ref={searchRef}>
-              <button
-                onClick={toggleSearch}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${searchOpen
-                  ? "bg-[#e02a60] text-white"
-                  : "bg-[#F43676] text-white hover:bg-[#e02a60]"
-                  }`}
-              >
-                {searchOpen ? <FaTimes className="text-xs" /> : <FaSearch className="text-xs" />}
-              </button>
+            <div className="flex items-center gap-3">
+              <NotificationCenter />
+
+              {/* Search Button and Overlay */}
+              <div className="relative" ref={searchRef}>
+                <button
+                  onClick={toggleSearch}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${searchOpen
+                    ? "bg-[#e02a60] text-white"
+                    : "bg-[#F43676] text-white hover:bg-[#e02a60]"
+                    }`}
+                >
+                  {searchOpen ? <FaTimes className="text-xs" /> : <FaSearch className="text-xs" />}
+                </button>
+              </div>
+            </div>
 
               {/* Search Overlay */}
               <AnimatePresence>
@@ -450,7 +456,6 @@ export default function Navbar() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
 
             {/* Wallet Button - Hidden on mobile, shown on lg+ (it's in the hamburger for mobile) */}
             {user && (

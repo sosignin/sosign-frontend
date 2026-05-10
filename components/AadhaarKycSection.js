@@ -76,10 +76,10 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
     setError("");
     setSuccessData(null);
 
-    // After 5 seconds of uploading, switch to "pending" to show it's processing
+    // After 2 seconds of uploading, switch to "pending" to show it's processing
     const pendingTimer = setTimeout(() => {
       setStatus((prev) => (prev === "uploading" ? "pending" : prev));
-    }, 5000);
+    }, 2000);
 
     try {
       const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -99,7 +99,9 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Verification failed");
+        setError(data.message || "Verification failed. Please check your images.");
+        setStatus("error");
+        return;
       }
 
       setSuccessData(data.aadhaarKyc);
@@ -110,7 +112,8 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
       localStorage.setItem("user", JSON.stringify(updatedUser));
       if (onKycSuccess) onKycSuccess(data.aadhaarKyc);
     } catch (err) {
-      setError(err.message || "Verification failed. Please try again.");
+      console.error("KYC Error:", err);
+      setError(err.message || "An unexpected error occurred during verification.");
       setStatus("error");
     } finally {
       clearTimeout(pendingTimer);
@@ -192,7 +195,7 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
           <div>
             <h3 className="text-xl font-bold text-[#1a1a2e]">Aadhaar KYC Verification</h3>
             <p className="text-xs text-gray-500">
-              {status === "pending" ? "Processing your documents..." : status === "error" ? "Verification failed — please try again" : "Upload front & back images of your Aadhaar card"}
+              {status === "pending" ? "Awaiting result from identity service..." : status === "error" ? "Verification failed — please check images" : "Upload front & back images of your Aadhaar card"}
             </p>
           </div>
           <span className={`ml-auto px-3 py-1 text-xs font-bold rounded-full ${status === "error" ? "bg-red-100 text-red-700" : status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-orange-100 text-orange-700"}`}>
@@ -206,6 +209,7 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
             <div>
               <p className="font-semibold">Verification Failed</p>
               <p className="mt-1">{error}</p>
+              <p className="mt-2 text-xs opacity-80 font-medium">Tip: Ensure your Aadhaar card is placed horizontally and the photo is clear and well-lit.</p>
             </div>
           </div>
         )}

@@ -628,12 +628,23 @@ const MyPetitionsPage = () => {
                                 <h3 className="text-xl font-bold text-[#1a1a2e] mb-2 line-clamp-2">
                                   {petition.title}
                                 </h3>
-                                {petition.approved ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                {petition.status === "approved" || petition.approved ? (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 shadow-sm border border-green-200">
                                     <FaCheck className="mr-1" /> Approved
                                   </span>
+                                ) : petition.status === "rejected" ? (
+                                  <div className="flex flex-col gap-2">
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 shadow-sm border border-red-200 w-fit">
+                                      <FaTimes className="mr-1" /> Rejected
+                                    </span>
+                                    {petition.rejectionReason && (
+                                      <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg border border-red-100">
+                                        <span className="font-bold">Reason:</span> {petition.rejectionReason}
+                                      </p>
+                                    )}
+                                  </div>
                                 ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 shadow-sm border border-yellow-200">
                                     <FaClock className="mr-1" /> Pending
                                   </span>
                                 )}
