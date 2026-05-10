@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { FaIdCard, FaCheckCircle, FaCloudUploadAlt, FaSpinner, FaTimesCircle, FaTimes } from "react-icons/fa";
+import { FaIdCard, FaCheckCircle, FaCloudUploadAlt, FaSpinner, FaTimesCircle, FaTimes, FaClock } from "react-icons/fa";
 
 const AadhaarKycSection = ({ user, onKycSuccess }) => {
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
   const [frontPreview, setFrontPreview] = useState(null);
   const [backPreview, setBackPreview] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // status: "idle" | "uploading" | "pending" | "success" | "error"
+  const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [successData, setSuccessData] = useState(null);
   const frontRef = useRef(null);
@@ -27,6 +28,7 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
       return;
     }
     setError("");
+    setStatus("idle");
     const reader = new FileReader();
     reader.onload = (e) => {
       if (side === "front") {
@@ -70,9 +72,14 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
       return;
     }
 
-    setIsLoading(true);
+    setStatus("uploading");
     setError("");
     setSuccessData(null);
+
+    // After 5 seconds of uploading, switch to "pending" to show it's processing
+    const pendingTimer = setTimeout(() => {
+      setStatus((prev) => (prev === "uploading" ? "pending" : prev));
+    }, 5000);
 
     try {
       const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -96,6 +103,7 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
       }
 
       setSuccessData(data.aadhaarKyc);
+      setStatus("success");
 
       // Update local storage and parent state
       const updatedUser = { ...storedUser, aadhaarKyc: data.aadhaarKyc };
@@ -103,8 +111,9 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
       if (onKycSuccess) onKycSuccess(data.aadhaarKyc);
     } catch (err) {
       setError(err.message || "Verification failed. Please try again.");
+      setStatus("error");
     } finally {
-      setIsLoading(false);
+      clearTimeout(pendingTimer);
     }
   };
 
@@ -169,26 +178,43 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
     );
   }
 
-  // ─── Upload State ───
+  // ─── Upload / Pending / Error State ───
+  const isProcessing = status === "uploading" || status === "pending";
+
   return (
     <div className="mt-8 p-6 bg-white rounded-2xl border-2 border-gray-100 shadow-sm overflow-hidden relative">
       <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -z-0 opacity-50"></div>
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center">
-            <FaIdCard className="text-white text-lg" />
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status === "error" ? "bg-gradient-to-r from-red-500 to-red-600" : status === "pending" ? "bg-gradient-to-r from-yellow-500 to-amber-500" : "bg-gradient-to-r from-orange-500 to-amber-500"}`}>
+            {status === "pending" ? <FaClock className="text-white text-lg" /> : <FaIdCard className="text-white text-lg" />}
           </div>
           <div>
             <h3 className="text-xl font-bold text-[#1a1a2e]">Aadhaar KYC Verification</h3>
-            <p className="text-xs text-gray-500">Upload front &amp; back images of your Aadhaar card</p>
+            <p className="text-xs text-gray-500">
+              {status === "pending" ? "Processing your documents..." : status === "error" ? "Verification failed — please try again" : "Upload front & back images of your Aadhaar card"}
+            </p>
           </div>
-          <span className="ml-auto px-3 py-1 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">NOT VERIFIED</span>
+          <span className={`ml-auto px-3 py-1 text-xs font-bold rounded-full ${status === "error" ? "bg-red-100 text-red-700" : status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-orange-100 text-orange-700"}`}>
+            {status === "error" ? "FAILED" : status === "pending" ? "PENDING" : "NOT VERIFIED"}
+          </span>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-sm text-red-700">
-            <FaTimesCircle className="flex-shrink-0" />
-            <span>{error}</span>
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-sm text-red-700">
+            <FaTimesCircle className="flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold">Verification Failed</p>
+              <p className="mt-1">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Pending banner */}
+        {status === "pending" && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-2 text-sm text-yellow-800">
+            <FaClock className="flex-shrink-0 animate-pulse" />
+            <span>Still processing — this may take a moment. Please wait...</span>
           </div>
         )}
 
@@ -199,15 +225,18 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
             <div
               onDrop={(e) => handleDrop(e, "front")}
               onDragOver={handleDragOver}
-              onClick={() => !frontPreview && frontRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-200 min-h-[160px] flex flex-col items-center justify-center ${frontPreview ? "border-green-300 bg-green-50" : "border-gray-300 bg-gray-50 hover:border-[#F43676] hover:bg-pink-50"}`}
+              onClick={() => !frontPreview && !isProcessing && frontRef.current?.click()}
+              className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all duration-200 min-h-[160px] flex flex-col items-center justify-center ${isProcessing ? "opacity-60 cursor-not-allowed" : "cursor-pointer"} ${frontPreview ? "border-green-300 bg-green-50" : "border-gray-300 bg-gray-50 hover:border-[#F43676] hover:bg-pink-50"}`}
             >
               {frontPreview ? (
                 <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={frontPreview} alt="Front" className="max-h-[120px] rounded-lg object-contain" />
-                  <button onClick={(e) => { e.stopPropagation(); clearImage("front"); }} className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
-                    <FaTimes className="text-xs" />
-                  </button>
+                  {!isProcessing && (
+                    <button onClick={(e) => { e.stopPropagation(); clearImage("front"); }} className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+                      <FaTimes className="text-xs" />
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
@@ -226,15 +255,18 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
             <div
               onDrop={(e) => handleDrop(e, "back")}
               onDragOver={handleDragOver}
-              onClick={() => !backPreview && backRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-200 min-h-[160px] flex flex-col items-center justify-center ${backPreview ? "border-green-300 bg-green-50" : "border-gray-300 bg-gray-50 hover:border-[#F43676] hover:bg-pink-50"}`}
+              onClick={() => !backPreview && !isProcessing && backRef.current?.click()}
+              className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all duration-200 min-h-[160px] flex flex-col items-center justify-center ${isProcessing ? "opacity-60 cursor-not-allowed" : "cursor-pointer"} ${backPreview ? "border-green-300 bg-green-50" : "border-gray-300 bg-gray-50 hover:border-[#F43676] hover:bg-pink-50"}`}
             >
               {backPreview ? (
                 <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={backPreview} alt="Back" className="max-h-[120px] rounded-lg object-contain" />
-                  <button onClick={(e) => { e.stopPropagation(); clearImage("back"); }} className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
-                    <FaTimes className="text-xs" />
-                  </button>
+                  {!isProcessing && (
+                    <button onClick={(e) => { e.stopPropagation(); clearImage("back"); }} className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+                      <FaTimes className="text-xs" />
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
@@ -250,13 +282,23 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
 
         <button
           onClick={handleVerify}
-          disabled={isLoading || !frontImage || !backImage}
-          className={`w-full py-3 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-2 ${isLoading || !frontImage || !backImage ? "bg-gray-300 cursor-not-allowed" : "bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:shadow-lg hover:scale-[1.01]"}`}
+          disabled={isProcessing || !frontImage || !backImage}
+          className={`w-full py-3 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-2 ${isProcessing || !frontImage || !backImage ? "bg-gray-300 cursor-not-allowed" : "bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:shadow-lg hover:scale-[1.01]"}`}
         >
-          {isLoading ? (
+          {status === "uploading" ? (
             <>
               <FaSpinner className="animate-spin" />
-              Verifying...
+              Uploading images...
+            </>
+          ) : status === "pending" ? (
+            <>
+              <FaSpinner className="animate-spin" />
+              Processing KYC...
+            </>
+          ) : status === "error" ? (
+            <>
+              <FaIdCard />
+              Retry Verification
             </>
           ) : (
             <>
