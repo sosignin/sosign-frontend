@@ -172,6 +172,7 @@ export const AuthProvider = ({ children }) => {
         designation: updatedData.designation,
         mobileNumber: updatedData.mobileNumber,
         socialLinks: updatedData.socialLinks,
+        aadhaarKyc: updatedData.aadhaarKyc || storedUser.aadhaarKyc,
       };
 
       setUser(newUserData);

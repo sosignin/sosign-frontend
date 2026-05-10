@@ -9,10 +9,11 @@ import { petitions as currentPetitions } from "../../components/CurrentPetitions
 import { successfulPetitions } from "../../components/SuccessfulPetitionsData";
 import ProfileEditModal from "../../components/ProfileEditModal";
 import PasswordModal from "../../components/PasswordModal";
+import AadhaarKycSection from "../../components/AadhaarKycSection";
 import { FaShieldAlt, FaKey } from "react-icons/fa";
 
 const MyProfilePage = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, setUser } = useAuth();
   const router = useRouter();
   const [userPetitions, setUserPetitions] = useState([]);
   const [copied, setCopied] = useState(false);
@@ -236,6 +237,16 @@ const MyProfilePage = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Aadhaar KYC Section */}
+                <AadhaarKycSection
+                  user={user}
+                  onKycSuccess={(kycData) => {
+                    const updated = { ...user, aadhaarKyc: kycData };
+                    setUser(updated);
+                    localStorage.setItem("user", JSON.stringify(updated));
+                  }}
+                />
               </div>
 
               {/* Action Buttons */}
