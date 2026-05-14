@@ -1,122 +1,144 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { FaIdCard, FaCheckCircle, FaCloudUploadAlt, FaSpinner, FaTimesCircle, FaTimes, FaClock } from "react-icons/fa";
+import React, { useState, useEffect, useRef } from "react";
+import { FaIdCard, FaCheckCircle, FaSpinner, FaTimesCircle, FaClock, FaExternalLinkAlt, FaLock } from "react-icons/fa";
 
 const AadhaarKycSection = ({ user, onKycSuccess }) => {
-  const [frontImage, setFrontImage] = useState(null);
-  const [backImage, setBackImage] = useState(null);
-  const [frontPreview, setFrontPreview] = useState(null);
-  const [backPreview, setBackPreview] = useState(null);
-  // status: "idle" | "uploading" | "pending" | "success" | "error"
+  // status: "idle" | "initializing" | "linking" | "polling" | "completing" | "success" | "error"
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [successData, setSuccessData] = useState(null);
-  const frontRef = useRef(null);
-  const backRef = useRef(null);
+  const [clientId, setClientId] = useState(null);
+  const [oauthUrl, setOauthUrl] = useState(null);
+  
+  const pollingTimerRef = useRef(null);
 
   const isVerified = user?.aadhaarKyc?.status === "verified";
 
-  const handleImageSelect = (file, side) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("Please select a valid image file");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image size must be less than 5MB");
-      return;
-    }
-    setError("");
-    setStatus("idle");
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (side === "front") {
-        setFrontImage(file);
-        setFrontPreview(e.target.result);
-      } else {
-        setBackImage(file);
-        setBackPreview(e.target.result);
-      }
+  // Stop polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
     };
-    reader.readAsDataURL(file);
-  };
+  }, []);
 
-  const handleDrop = (e, side) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const file = e.dataTransfer?.files?.[0];
-    if (file) handleImageSelect(file, side);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const clearImage = (side) => {
-    if (side === "front") {
-      setFrontImage(null);
-      setFrontPreview(null);
-      if (frontRef.current) frontRef.current.value = "";
-    } else {
-      setBackImage(null);
-      setBackPreview(null);
-      if (backRef.current) backRef.current.value = "";
-    }
-  };
-
-  const handleVerify = async () => {
-    if (!frontImage || !backImage) {
-      setError("Please upload both front and back images of your Aadhaar card");
-      return;
-    }
-
-    setStatus("uploading");
+  const handleInitialize = async () => {
+    setStatus("initializing");
     setError("");
-    setSuccessData(null);
-
-    // After 2 seconds of uploading, switch to "pending" to show it's processing
-    const pendingTimer = setTimeout(() => {
-      setStatus((prev) => (prev === "uploading" ? "pending" : prev));
-    }, 2000);
+    setClientId(null);
+    setOauthUrl(null);
 
     try {
       const storedUser = JSON.parse(localStorage.getItem("user"));
       if (!storedUser?.token) throw new Error("Not authenticated");
 
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const formData = new FormData();
-      formData.append("FrontImage", frontImage);
-      formData.append("BackImage", backImage);
-
-      const response = await fetch(`${backendUrl}/api/aadhaar/verify-kyc`, {
+      
+      const response = await fetch(`${backendUrl}/api/aadhaar/digilocker/initialize`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${storedUser.token}` },
-        body: formData,
+        headers: { 
+          Authorization: `Bearer ${storedUser.token}`,
+          "Content-Type": "application/json"
+        },
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Verification failed. Please check your images.");
-        setStatus("error");
-        return;
+        throw new Error(data.message || "Failed to initialize DigiLocker session");
+      }
+
+      setClientId(data.clientId);
+      setOauthUrl(data.url);
+      setStatus("linking");
+
+      // Open DigiLocker in a new window
+      window.open(data.url, "_blank", "width=600,height=700");
+
+      // Start polling for status
+      startPolling(data.clientId, storedUser.token);
+    } catch (err) {
+      console.error("Initialization Error:", err);
+      setError(err.message || "An unexpected error occurred.");
+      setStatus("error");
+    }
+  };
+
+  const startPolling = (cid, token) => {
+    if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
+    
+    setStatus("polling");
+    
+    pollingTimerRef.current = setInterval(async () => {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const response = await fetch(`${backendUrl}/api/aadhaar/digilocker/status`, {
+          method: "POST",
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ clientId: cid }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          // If status check fails, we might want to continue polling unless it's a fatal error
+          console.warn("Polling status failed:", data.message);
+          return;
+        }
+
+        if (data.isFailed) {
+          clearInterval(pollingTimerRef.current);
+          setError("DigiLocker authentication failed or was cancelled.");
+          setStatus("error");
+        } else if (data.isCompleted) {
+          clearInterval(pollingTimerRef.current);
+          if (data.aadhaarLinked) {
+            handleComplete(cid, token);
+          } else {
+            setError("Your Aadhaar is not linked to this DigiLocker account.");
+            setStatus("error");
+          }
+        }
+      } catch (err) {
+        console.error("Polling Error:", err);
+      }
+    }, 4000); // Poll every 4 seconds
+  };
+
+  const handleComplete = async (cid, token) => {
+    setStatus("completing");
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${backendUrl}/api/aadhaar/digilocker/complete`, {
+        method: "POST",
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ clientId: cid }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to complete KYC verification");
       }
 
       setSuccessData(data.aadhaarKyc);
       setStatus("success");
 
       // Update local storage and parent state
+      const storedUser = JSON.parse(localStorage.getItem("user"));
       const updatedUser = { ...storedUser, aadhaarKyc: data.aadhaarKyc };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       if (onKycSuccess) onKycSuccess(data.aadhaarKyc);
     } catch (err) {
-      console.error("KYC Error:", err);
-      setError(err.message || "An unexpected error occurred during verification.");
+      console.error("Completion Error:", err);
+      setError(err.message || "Failed to finalize verification.");
       setStatus("error");
-    } finally {
-      clearTimeout(pendingTimer);
     }
   };
 
@@ -133,7 +155,7 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
             </div>
             <div>
               <h3 className="text-xl font-bold text-[#1a1a2e]">Aadhaar KYC Verified</h3>
-              <p className="text-xs text-green-600 font-medium">Identity verification complete</p>
+              <p className="text-xs text-green-600 font-medium">Verified via DigiLocker</p>
             </div>
             <span className="ml-auto px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">VERIFIED</span>
           </div>
@@ -181,140 +203,114 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
     );
   }
 
-  // ─── Upload / Pending / Error State ───
-  const isProcessing = status === "uploading" || status === "pending";
+  // ─── Verification Flow UI ───
+  const isProcessing = ["initializing", "polling", "completing"].includes(status);
 
   return (
     <div className="mt-8 p-6 bg-white rounded-2xl border-2 border-gray-100 shadow-sm overflow-hidden relative">
-      <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -z-0 opacity-50"></div>
+      <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-0 opacity-50"></div>
       <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status === "error" ? "bg-gradient-to-r from-red-500 to-red-600" : status === "pending" ? "bg-gradient-to-r from-yellow-500 to-amber-500" : "bg-gradient-to-r from-orange-500 to-amber-500"}`}>
-            {status === "pending" ? <FaClock className="text-white text-lg" /> : <FaIdCard className="text-white text-lg" />}
+        <div className="flex items-center gap-3 mb-6">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status === "error" ? "bg-gradient-to-r from-red-500 to-red-600" : isProcessing ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-gradient-to-r from-blue-600 to-blue-700"}`}>
+            {isProcessing ? <FaSpinner className="text-white text-lg animate-spin" /> : <FaLock className="text-white text-lg" />}
           </div>
           <div>
-            <h3 className="text-xl font-bold text-[#1a1a2e]">Aadhaar KYC Verification</h3>
+            <h3 className="text-xl font-bold text-[#1a1a2e]">Identity Verification</h3>
             <p className="text-xs text-gray-500">
-              {status === "pending" ? "Awaiting result from identity service..." : status === "error" ? "Verification failed — please check images" : "Upload front & back images of your Aadhaar card"}
+              {status === "linking" ? "Waiting for DigiLocker authentication..." : status === "polling" ? "Verifying your documents..." : status === "error" ? "Verification failed" : "Secure KYC via DigiLocker OAuth"}
             </p>
           </div>
-          <span className={`ml-auto px-3 py-1 text-xs font-bold rounded-full ${status === "error" ? "bg-red-100 text-red-700" : status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-orange-100 text-orange-700"}`}>
-            {status === "error" ? "FAILED" : status === "pending" ? "PENDING" : "NOT VERIFIED"}
+          <span className={`ml-auto px-3 py-1 text-xs font-bold rounded-full ${status === "error" ? "bg-red-100 text-red-700" : isProcessing ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
+            {status === "error" ? "FAILED" : isProcessing ? "IN PROGRESS" : "NOT VERIFIED"}
           </span>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-sm text-red-700">
-            <FaTimesCircle className="flex-shrink-0 mt-0.5" />
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-sm text-red-700">
+            <FaTimesCircle className="flex-shrink-0 mt-0.5 text-lg" />
             <div>
-              <p className="font-semibold">Verification Failed</p>
+              <p className="font-bold">Verification Error</p>
               <p className="mt-1">{error}</p>
-              <p className="mt-2 text-xs opacity-80 font-medium">Tip: Ensure your Aadhaar card is placed horizontally and the photo is clear and well-lit.</p>
+              <button onClick={handleInitialize} className="mt-3 text-xs font-bold underline hover:no-underline">Try again</button>
             </div>
           </div>
         )}
 
-        {/* Pending banner */}
-        {status === "pending" && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-2 text-sm text-yellow-800">
-            <FaClock className="flex-shrink-0 animate-pulse" />
-            <span>Still processing — this may take a moment. Please wait...</span>
+        {/* Initial/Retry State */}
+        {(status === "idle" || status === "error") && (
+          <div className="space-y-4">
+            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                  <img src="https://upload.wikimedia.org/wikipedia/en/thumb/1/1e/DigiLocker_logo.svg/1200px-DigiLocker_logo.svg.png" alt="DigiLocker" className="w-6 h-auto" />
+                </div>
+                <h4 className="font-bold text-blue-900">Verify with DigiLocker</h4>
+              </div>
+              <p className="text-sm text-blue-700 leading-relaxed">
+                We use DigiLocker for a secure, paperless identity verification. No need to upload photos. Just login and authorize.
+              </p>
+            </div>
+            
+            <button
+              onClick={handleInitialize}
+              className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+            >
+              <FaExternalLinkAlt className="text-sm" />
+              Proceed to DigiLocker
+            </button>
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-          {/* Front Image */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Front Side</label>
-            <div
-              onDrop={(e) => handleDrop(e, "front")}
-              onDragOver={handleDragOver}
-              onClick={() => !frontPreview && !isProcessing && frontRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all duration-200 min-h-[160px] flex flex-col items-center justify-center ${isProcessing ? "opacity-60 cursor-not-allowed" : "cursor-pointer"} ${frontPreview ? "border-green-300 bg-green-50" : "border-gray-300 bg-gray-50 hover:border-[#F43676] hover:bg-pink-50"}`}
-            >
-              {frontPreview ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={frontPreview} alt="Front" className="max-h-[120px] rounded-lg object-contain" />
-                  {!isProcessing && (
-                    <button onClick={(e) => { e.stopPropagation(); clearImage("front"); }} className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
-                      <FaTimes className="text-xs" />
-                    </button>
-                  )}
-                </>
-              ) : (
-                <>
-                  <FaCloudUploadAlt className="text-3xl text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">Click or drag to upload</p>
-                  <p className="text-xs text-gray-400 mt-1">JPG, PNG up to 5MB</p>
-                </>
-              )}
+        {/* Linking State (Waiting for user to login in popup) */}
+        {status === "linking" && (
+          <div className="text-center py-8 px-4 border-2 border-dashed border-blue-200 rounded-3xl bg-blue-50/30">
+            <div className="relative w-20 h-20 mx-auto mb-6">
+              <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-25"></div>
+              <div className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md border-2 border-blue-500">
+                <FaLock className="text-blue-600 text-2xl" />
+              </div>
             </div>
-            <input ref={frontRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleImageSelect(e.target.files[0], "front")} />
+            <h4 className="text-lg font-bold text-gray-800 mb-2">Authentication in Progress</h4>
+            <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
+              Please complete the login in the popup window. If you closed it, click below to reopen.
+            </p>
+            <button 
+              onClick={() => window.open(oauthUrl, "_blank", "width=600,height=700")}
+              className="px-6 py-2 bg-white border-2 border-blue-600 text-blue-600 rounded-full text-sm font-bold hover:bg-blue-50 transition-colors inline-flex items-center gap-2"
+            >
+              <FaExternalLinkAlt className="text-xs" />
+              Reopen DigiLocker
+            </button>
           </div>
+        )}
 
-          {/* Back Image */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Back Side</label>
-            <div
-              onDrop={(e) => handleDrop(e, "back")}
-              onDragOver={handleDragOver}
-              onClick={() => !backPreview && !isProcessing && backRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all duration-200 min-h-[160px] flex flex-col items-center justify-center ${isProcessing ? "opacity-60 cursor-not-allowed" : "cursor-pointer"} ${backPreview ? "border-green-300 bg-green-50" : "border-gray-300 bg-gray-50 hover:border-[#F43676] hover:bg-pink-50"}`}
-            >
-              {backPreview ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={backPreview} alt="Back" className="max-h-[120px] rounded-lg object-contain" />
-                  {!isProcessing && (
-                    <button onClick={(e) => { e.stopPropagation(); clearImage("back"); }} className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
-                      <FaTimes className="text-xs" />
-                    </button>
-                  )}
-                </>
-              ) : (
-                <>
-                  <FaCloudUploadAlt className="text-3xl text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">Click or drag to upload</p>
-                  <p className="text-xs text-gray-400 mt-1">JPG, PNG up to 5MB</p>
-                </>
-              )}
-            </div>
-            <input ref={backRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleImageSelect(e.target.files[0], "back")} />
+        {/* Polling/Completing State */}
+        {(status === "polling" || status === "completing") && (
+          <div className="text-center py-10">
+            <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
+            <h4 className="text-lg font-bold text-gray-800 mb-2">
+              {status === "polling" ? "Verifying Login..." : "Fetching Aadhaar Details..."}
+            </h4>
+            <p className="text-sm text-gray-500 animate-pulse">
+              This usually takes less than 10 seconds. Please don't close this page.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-8 pt-6 border-t border-gray-100 grid grid-cols-3 gap-2">
+          <div className="text-center">
+            <div className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Secure</div>
+            <div className="text-[10px] text-gray-400">256-bit Encryption</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Private</div>
+            <div className="text-[10px] text-gray-400">Official Gateway</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Instant</div>
+            <div className="text-[10px] text-gray-400">Real-time Approval</div>
           </div>
         </div>
-
-        <button
-          onClick={handleVerify}
-          disabled={isProcessing || !frontImage || !backImage}
-          className={`w-full py-3 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-2 ${isProcessing || !frontImage || !backImage ? "bg-gray-300 cursor-not-allowed" : "bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:shadow-lg hover:scale-[1.01]"}`}
-        >
-          {status === "uploading" ? (
-            <>
-              <FaSpinner className="animate-spin" />
-              Uploading images...
-            </>
-          ) : status === "pending" ? (
-            <>
-              <FaSpinner className="animate-spin" />
-              Processing KYC...
-            </>
-          ) : status === "error" ? (
-            <>
-              <FaIdCard />
-              Retry Verification
-            </>
-          ) : (
-            <>
-              <FaIdCard />
-              Verify Aadhaar KYC
-            </>
-          )}
-        </button>
-
-        <p className="text-xs text-gray-400 mt-3 text-center">
-          Your Aadhaar images are securely processed and not stored. Only extracted details are saved for KYC.
-        </p>
       </div>
     </div>
   );
