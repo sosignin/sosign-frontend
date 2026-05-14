@@ -292,7 +292,7 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
               {status === "polling" ? "Verifying Login..." : "Fetching Aadhaar Details..."}
             </h4>
             <p className="text-sm text-gray-500 animate-pulse">
-              This usually takes less than 10 seconds. Please don't close this page.
+              This usually takes less than 10 seconds. Please don&apos;t close this page.
             </p>
           </div>
         )}
