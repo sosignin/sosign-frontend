@@ -585,7 +585,8 @@ export default function PetitionDetailClient({ initialPetition }) {
             setSignError(null);
             setSignSuccess(false);
 
-            const userInfo = JSON.parse(localStorage.getItem("user"));
+            const isUserVerified = user?.aadhaarKyc?.status === "verified";
+            
             const response = await fetch(`/api/petitions/${petition._id}/sign`, {
                 method: "PUT",
                 headers: {
@@ -595,8 +596,8 @@ export default function PetitionDetailClient({ initialPetition }) {
                 body: JSON.stringify({
                     referralCode: referralCode?.trim() || undefined,
                     constituencyNumber: constituencyNumber?.trim() || undefined,
-                    aadharNumber: aadharNumber?.trim() || undefined,
-                    aadhaarVerificationToken: aadhaarOtp.verificationToken,
+                    aadharNumber: isUserVerified ? (user.aadhaarKyc.maskedAadhaar || aadharNumber?.trim() || undefined) : (aadharNumber?.trim() || undefined),
+                    aadhaarVerificationToken: isUserVerified ? undefined : aadhaarOtp.verificationToken,
                 }),
             });
 
@@ -967,90 +968,105 @@ export default function PetitionDetailClient({ initialPetition }) {
                                     {/* Aadhaar Number with OTP Verification (if required) */}
                                     {petition.signingRequirements?.aadhar?.required && (
                                         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-left">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Aadhaar Number <span className="text-red-500">*</span>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Aadhaar Verification <span className="text-red-500">*</span>
                                             </label>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={aadharNumber}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value.replace(/[^\d\s]/g, '');
-                                                        setAadharNumber(value);
-                                                        // Reset verification if number changes
-                                                        if (aadhaarOtp.verified || aadhaarOtp.otpSent) {
-                                                            setAadhaarOtp(prev => ({ 
-                                                                ...prev, 
-                                                                verified: false, 
-                                                                otpSent: false, 
-                                                                verificationToken: "",
-                                                                otp: "",
-                                                                error: "",
-                                                                success: ""
-                                                            }));
-                                                        }
-                                                    }}
-                                                    placeholder="12-digit Aadhaar number"
-                                                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                    maxLength={14}
-                                                    disabled={aadhaarOtp.otpSent || aadhaarOtp.verified}
-                                                />
-                                                {!aadhaarOtp.otpSent && !aadhaarOtp.verified && (
-                                                    <button
-                                                        onClick={handleSendAadhaarOtp}
-                                                        disabled={aadhaarOtp.sending || aadharNumber.replace(/\s/g, "").length !== 12}
-                                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
-                                                    >
-                                                        {aadhaarOtp.sending ? "Sending..." : "Send OTP"}
-                                                    </button>
-                                                )}
-                                                {(aadhaarOtp.otpSent || aadhaarOtp.verified) && !aadhaarOtp.verified && (
-                                                    <button
-                                                        onClick={() => setAadhaarOtp(prev => ({ ...prev, otpSent: false, otp: "", error: "", success: "" }))}
-                                                        className="px-3 py-2 text-[#3650AD] hover:text-[#F43676] text-xs font-semibold"
-                                                    >
-                                                        Change
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {aadhaarOtp.otpSent && !aadhaarOtp.verified && (
-                                                <div className="mt-4 space-y-3">
-                                                    <p className="text-xs text-blue-600 font-medium">
-                                                        OTP sent to mobile linked with {aadhaarOtp.maskedAadhaar || "Aadhaar"}
-                                                    </p>
+                                            
+                                            {user?.aadhaarKyc?.status === "verified" ? (
+                                                <div className="flex items-center gap-3 text-green-700 bg-green-100/50 border border-green-200 p-3 rounded-xl">
+                                                    <div className="bg-green-200 p-1.5 rounded-full">
+                                                        <CheckCircle className="w-5 h-5 text-green-700" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold">Aadhaar Already Verified</p>
+                                                        <p className="text-[11px] opacity-80">Your identity is verified via DigiLocker {user.aadhaarKyc.maskedAadhaar ? `(${user.aadhaarKyc.maskedAadhaar})` : ""}</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
                                                     <div className="flex gap-2">
                                                         <input
                                                             type="text"
-                                                            value={aadhaarOtp.otp}
-                                                            onChange={(e) => setAadhaarOtp(prev => ({ ...prev, otp: e.target.value.replace(/\D/g, '') }))}
-                                                            placeholder="Enter OTP"
+                                                            value={aadharNumber}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value.replace(/[^\d\s]/g, '');
+                                                                setAadharNumber(value);
+                                                                // Reset verification if number changes
+                                                                if (aadhaarOtp.verified || aadhaarOtp.otpSent) {
+                                                                    setAadhaarOtp(prev => ({ 
+                                                                        ...prev, 
+                                                                        verified: false, 
+                                                                        otpSent: false, 
+                                                                        verificationToken: "",
+                                                                        otp: "",
+                                                                        error: "",
+                                                                        success: ""
+                                                                    }));
+                                                                }
+                                                            }}
+                                                            placeholder="12-digit Aadhaar number"
                                                             className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                            maxLength={8}
+                                                            maxLength={14}
+                                                            disabled={aadhaarOtp.otpSent || aadhaarOtp.verified}
                                                         />
-                                                        <button
-                                                            onClick={handleVerifyAadhaarOtp}
-                                                            disabled={aadhaarOtp.verifying || aadhaarOtp.otp.length < 4}
-                                                            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50"
-                                                        >
-                                                            {aadhaarOtp.verifying ? "Verifying..." : "Verify OTP"}
-                                                        </button>
+                                                        {!aadhaarOtp.otpSent && !aadhaarOtp.verified && (
+                                                            <button
+                                                                onClick={handleSendAadhaarOtp}
+                                                                disabled={aadhaarOtp.sending || aadharNumber.replace(/\s/g, "").length !== 12}
+                                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+                                                            >
+                                                                {aadhaarOtp.sending ? "Sending..." : "Send OTP"}
+                                                            </button>
+                                                        )}
+                                                        {(aadhaarOtp.otpSent || aadhaarOtp.verified) && !aadhaarOtp.verified && (
+                                                            <button
+                                                                onClick={() => setAadhaarOtp(prev => ({ ...prev, otpSent: false, otp: "", error: "", success: "" }))}
+                                                                className="px-3 py-2 text-[#3650AD] hover:text-[#F43676] text-xs font-semibold"
+                                                            >
+                                                                Change
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                </div>
-                                            )}
 
-                                            {aadhaarOtp.verified && (
-                                                <div className="mt-3 flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded-lg">
-                                                    <CheckCircle className="w-4 h-4" />
-                                                    <span className="text-sm font-semibold">Aadhaar Verified Successfully</span>
-                                                </div>
-                                            )}
+                                                    {aadhaarOtp.otpSent && !aadhaarOtp.verified && (
+                                                        <div className="mt-4 space-y-3">
+                                                            <p className="text-xs text-blue-600 font-medium">
+                                                                OTP sent to mobile linked with {aadhaarOtp.maskedAadhaar || "Aadhaar"}
+                                                            </p>
+                                                            <div className="flex gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={aadhaarOtp.otp}
+                                                                    onChange={(e) => setAadhaarOtp(prev => ({ ...prev, otp: e.target.value.replace(/\D/g, '') }))}
+                                                                    placeholder="Enter OTP"
+                                                                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                                    maxLength={8}
+                                                                />
+                                                                <button
+                                                                    onClick={handleVerifyAadhaarOtp}
+                                                                    disabled={aadhaarOtp.verifying || aadhaarOtp.otp.length < 4}
+                                                                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50"
+                                                                >
+                                                                    {aadhaarOtp.verifying ? "Verifying..." : "Verify OTP"}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
 
-                                            {aadhaarOtp.error && (
-                                                <p className="text-xs text-red-500 mt-2 font-medium">{aadhaarOtp.error}</p>
-                                            )}
-                                            {aadhaarOtp.success && !aadhaarOtp.verified && (
-                                                <p className="text-xs text-green-600 mt-2 font-medium">{aadhaarOtp.success}</p>
+                                                    {aadhaarOtp.verified && (
+                                                        <div className="mt-3 flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded-lg">
+                                                            <CheckCircle className="w-4 h-4" />
+                                                            <span className="text-sm font-semibold">Aadhaar Verified Successfully</span>
+                                                        </div>
+                                                    )}
+
+                                                    {aadhaarOtp.error && (
+                                                        <p className="text-xs text-red-500 mt-2 font-medium">{aadhaarOtp.error}</p>
+                                                    )}
+                                                    {aadhaarOtp.success && !aadhaarOtp.verified && (
+                                                        <p className="text-xs text-green-600 mt-2 font-medium">{aadhaarOtp.success}</p>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     )}
@@ -1064,7 +1080,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                                         disabled={signing || !signatureStatus.canSign || !captchaVerified ||
                                             (petition.constituencySettings?.required && !constituencyNumber.trim()) ||
                                             (petition.signingRequirements?.constituency?.required && !constituencyNumber.trim()) ||
-                                            (petition.signingRequirements?.aadhar?.required && (!aadharNumber.trim() || !aadhaarOtp.verified))
+                                            (petition.signingRequirements?.aadhar?.required && 
+                                                user?.aadhaarKyc?.status !== "verified" && 
+                                                (!aadharNumber.trim() || !aadhaarOtp.verified))
                                         }
                                         className="bg-[#3650AD] text-white w-full py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
