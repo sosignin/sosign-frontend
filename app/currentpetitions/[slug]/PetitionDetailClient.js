@@ -1277,7 +1277,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 </a>
                             </div>
                             {videoId ? (
-                                <div className="w-full aspect-video rounded-xl overflow-hidden shadow-inner bg-black">
+                                <div className="w-full max-w-2xl mx-auto aspect-video rounded-xl overflow-hidden shadow-inner bg-black">
                                     <iframe
                                         width="100%"
                                         height="100%"
