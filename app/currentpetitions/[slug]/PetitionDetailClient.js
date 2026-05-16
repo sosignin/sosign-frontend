@@ -668,66 +668,57 @@ export default function PetitionDetailClient({ initialPetition }) {
     const videoId = getYoutubeId(petition?.petitionDetails?.videoUrl);
 
     return (
-        <div className="min-h-screen bg-[#f0f2f5] py-8 px-4 md:px-6 lg:px-8">
-            <div className="max-w-6xl mx-auto">
-                {/* Heading Card */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8"
-                >
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#1a1a2e] leading-tight text-center md:text-left flex-1">
-                            {petition.title}
-                        </h1>
+        <div className="min-h-screen bg-[#f0f2f5] pb-12">
+            {/* Top Navigation / Language Bar */}
+            <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-[100] px-4 md:px-6 py-3">
+                <div className="max-w-[1400px] mx-auto flex justify-between items-center">
+                    <Link href="/currentpetitions" className="text-gray-600 hover:text-[#F43676] transition-colors flex items-center gap-2 text-sm font-medium">
+                        <ChevronLeft className="w-4 h-4" />
+                        Back to Petitions
+                    </Link>
+                    
+                    <div className="relative flex-shrink-0" ref={langRef}>
+                        <div id="google_translate_element"></div>
+                        <button 
+                            onClick={() => setIsLangOpen(!isLangOpen)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 font-medium text-sm ${isLangOpen ? "bg-pink-50 text-[#F43676] border-[#F43676]" : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-pink-50 hover:text-[#F43676]"}`}
+                        >
+                            <Languages className="w-4 h-4" />
+                            <span>{languages.find(l => l.code === currentLanguage)?.name || "Language"}</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isLangOpen ? "rotate-180" : ""}`} />
+                        </button>
                         
-                        {/* Language Switcher */}
-                        <div className="relative flex-shrink-0" ref={langRef}>
-                            <div id="google_translate_element"></div>
-                            <button 
-                                onClick={() => setIsLangOpen(!isLangOpen)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 font-medium text-sm ${isLangOpen ? "bg-pink-50 text-[#F43676] border-[#F43676]" : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-pink-50 hover:text-[#F43676]"}`}
-                            >
-                                <Languages className="w-4 h-4" />
-                                <span>{languages.find(l => l.code === currentLanguage)?.name || "Language"}</span>
-                                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isLangOpen ? "rotate-180" : ""}`} />
-                            </button>
-                            
-                            <div className={`absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 transition-all duration-200 z-[100] ${isLangOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}>
-                                {languages.map((lang) => (
-                                    <button
-                                        key={lang.code}
-                                        onClick={() => changeLanguage(lang.code)}
-                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${currentLanguage === lang.code ? "text-[#F43676] font-semibold bg-pink-50/50" : "text-gray-600"}`}
-                                    >
-                                        {lang.name}
-                                    </button>
-                                ))}
-                            </div>
+                        <div className={`absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 transition-all duration-200 ${isLangOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}>
+                            {languages.map((lang) => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => changeLanguage(lang.code)}
+                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${currentLanguage === lang.code ? "text-[#F43676] font-semibold bg-pink-50/50" : "text-gray-600"}`}
+                                >
+                                    {lang.name}
+                                </button>
+                            ))}
                         </div>
                     </div>
-                </motion.div>
+                </div>
+            </div>
 
-                <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Left Side - Image */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="lg:w-3/5 flex-shrink-0"
-                    >
-                        <div className="bg-white rounded-2xl shadow-lg p-4 h-full flex flex-col">
-                            <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-gray-50 flex items-center justify-center group">
+            {/* Cinematic Header Section */}
+            <div className="w-full bg-[#111111] mt-6 overflow-hidden">
+                <div className="max-w-[1500px] mx-auto">
+                    <div className="flex flex-col lg:flex-row min-h-[500px]">
+                        {/* Left Side - Hero Image & Title */}
+                        <div className="lg:w-[65%] w-full relative">
+                            <div className="relative h-[350px] lg:h-full w-full">
                                 {petition.petitionDetails?.images && petition.petitionDetails.images.length > 0 ? (
                                     <>
                                         <AnimatePresence mode="wait">
                                             <motion.div
                                                 key={activeImageIndex}
-                                                initial={{ opacity: 0, x: 20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -20 }}
-                                                transition={{ duration: 0.3 }}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.4 }}
                                                 className="w-full h-full"
                                             >
                                                 <Image
@@ -735,6 +726,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                                                     alt={`${petition.title} - Image ${activeImageIndex + 1}`}
                                                     fill
                                                     className="object-contain"
+                                                    priority
                                                 />
                                             </motion.div>
                                         </AnimatePresence>
@@ -743,26 +735,16 @@ export default function PetitionDetailClient({ initialPetition }) {
                                             <>
                                                 <button
                                                     onClick={() => setActiveImageIndex((prev) => (prev === 0 ? petition.petitionDetails.images.length - 1 : prev - 1))}
-                                                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 text-[#F43676] opacity-0 group-hover:opacity-100 transition-opacity shadow-md z-10"
+                                                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all z-20"
                                                 >
                                                     <ChevronLeft className="w-6 h-6" />
                                                 </button>
                                                 <button
                                                     onClick={() => setActiveImageIndex((prev) => (prev === petition.petitionDetails.images.length - 1 ? 0 : prev + 1))}
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 text-[#F43676] opacity-0 group-hover:opacity-100 transition-opacity shadow-md z-10"
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all z-20"
                                                 >
                                                     <ChevronRight className="w-6 h-6" />
                                                 </button>
-                                                
-                                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                                                    {petition.petitionDetails.images.map((_, idx) => (
-                                                        <button
-                                                            key={idx}
-                                                            onClick={() => setActiveImageIndex(idx)}
-                                                            className={`w-2 h-2 rounded-full transition-all ${activeImageIndex === idx ? "bg-[#F43676] w-4" : "bg-gray-300"}`}
-                                                        />
-                                                    ))}
-                                                </div>
                                             </>
                                         )}
                                     </>
@@ -772,55 +754,78 @@ export default function PetitionDetailClient({ initialPetition }) {
                                         alt={petition.title}
                                         fill
                                         className="object-contain"
+                                        priority
                                     />
                                 ) : (
-                                    <div className="text-[#1a1a2e] text-center">
-                                        <ImageIcon className="w-12 h-12 mx-auto mb-3 text-[#3650AD]/50" strokeWidth={1.5} />
-                                        <p className="text-lg font-medium text-gray-500">No Image Available</p>
+                                    <div className="w-full h-full flex flex-col items-center justify-center text-white/50 bg-gray-800">
+                                        <ImageIcon className="w-16 h-16 mb-4 opacity-20" />
+                                        <p>No Image Available</p>
+                                    </div>
+                                )}
+
+                                {/* Cinematic Gradients */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/40 z-10" />
+
+                                {/* Title Overlay */}
+                                <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 z-20">
+                                    <div className="max-w-4xl">
+                                        <div className="w-16 h-1.5 bg-[#F43676] mb-6 rounded-full" />
+                                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-[1.1] drop-shadow-2xl">
+                                            {petition.title}
+                                        </h1>
+                                    </div>
+                                </div>
+
+                                {/* Thumbnail selector integrated into image area */}
+                                {petition.petitionDetails?.images?.length > 1 && (
+                                    <div className="absolute bottom-6 right-6 flex gap-2 z-30 max-w-[200px] overflow-x-auto pb-1 scrollbar-hide">
+                                        {petition.petitionDetails.images.map((img, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setActiveImageIndex(idx)}
+                                                className={`relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === idx ? "border-[#F43676] scale-110 shadow-lg" : "border-white/20 opacity-50 hover:opacity-100"}`}
+                                            >
+                                                <Image
+                                                    src={img}
+                                                    alt={`Thumbnail ${idx + 1}`}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            </button>
+                                        ))}
                                     </div>
                                 )}
                             </div>
-
-                            {/* Thumbnail selector for multiple images */}
-                            {petition.petitionDetails?.images?.length > 1 && (
-                                <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
-                                    {petition.petitionDetails.images.map((img, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => setActiveImageIndex(idx)}
-                                            className={`relative flex-shrink-0 w-20 aspect-video rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === idx ? "border-[#F43676] scale-105 shadow-sm" : "border-transparent opacity-60"}`}
-                                        >
-                                            <Image
-                                                src={img}
-                                                alt={`Thumbnail ${idx + 1}`}
-                                                fill
-                                                className="object-cover"
-                                            />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-
-                    {/* Right Side - Cards */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="lg:w-2/5 flex flex-col gap-6"
-                    >
-                        {/* Total Signatures */}
-                        <div className="bg-gradient-to-r from-[#3650AD] to-[#F43676] text-white rounded-2xl p-6 text-center shadow-lg transform hover:scale-[1.02] transition-transform duration-300">
-                            <p className="text-lg font-medium opacity-90">Total Signatures</p>
-                            <p className="text-4xl font-bold mt-1">
-                                {petition.numberOfSignatures || 0}
-                            </p>
                         </div>
 
-                        {/* Sign This Petition Form */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-6">
-                            <h2 className="text-xl font-bold text-[#1a1a2e]">Sign this Petition</h2>
+                        {/* Right Side - Signing Sidebar */}
+                        <div className="lg:w-[35%] w-full bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] flex items-center justify-center p-6 lg:p-8 border-l border-white/5">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, delay: 0.2 }}
+                                className="w-full max-w-md"
+                            >
+                                {/* The White Card */}
+                                <div className="bg-white rounded-[2rem] shadow-2xl p-6 md:p-7 space-y-5 relative overflow-hidden">
+                                    {/* Stats Banner inside Card */}
+                                    <div className="text-center pb-5 border-b border-gray-100">
+                                        <div className="flex items-center justify-center gap-2 mb-1">
+                                            <span className="text-4xl font-black text-[#1a1a2e]">
+                                                {(petition.numberOfSignatures || 0).toLocaleString()}
+                                            </span>
+                                            <div className="bg-blue-500 rounded-full p-1 shadow-md shadow-blue-200">
+                                                <CheckCircle className="w-4 h-4 text-white" />
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                                            <span>Verified signatures</span>
+                                            <ChevronDown className="w-3 h-3" />
+                                        </div>
+                                    </div>
+
+                            <h2 className="text-2xl font-black text-[#1a1a2e] tracking-tight">Sign this petition</h2>
 
                             {signSuccess && (
                                 <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-start gap-3">
@@ -1084,8 +1089,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                                                 user?.aadhaarKyc?.status !== "verified" && 
                                                 (!aadharNumber.trim() || !aadhaarOtp.verified))
                                         }
-                                        className="bg-[#3650AD] text-white w-full py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="bg-[#3650AD] text-white w-full py-4 rounded-xl font-bold hover:bg-blue-700 transition-all duration-300 transform hover:-translate-y-1 shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                                     >
+                                        <Edit3 className="w-5 h-5" />
                                         {signing ? "Signing..." : "Sign Petition"}
                                     </button>
                                 </div>
@@ -1093,7 +1099,11 @@ export default function PetitionDetailClient({ initialPetition }) {
                         </div>
                     </motion.div>
                 </div>
+            </div>
+        </div>
+    </div>
 
+            <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
                 {/* Additional Petition Details */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Decision Makers */}
