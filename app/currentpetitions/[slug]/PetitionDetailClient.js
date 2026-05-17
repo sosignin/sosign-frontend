@@ -587,11 +587,12 @@ export default function PetitionDetailClient({ initialPetition }) {
             setSignSuccess(false);
 
             const isUserVerified = user?.aadhaarKyc?.status === "verified";
+            const userInfo = JSON.parse(localStorage.getItem("user"));
             
             const response = await fetch(`/api/petitions/${petition._id}/sign`, {
                 method: "PUT",
                 headers: {
-                    Authorization: `Bearer ${userInfo.token}`,
+                    Authorization: `Bearer ${userInfo?.token}`,
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
