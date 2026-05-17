@@ -98,6 +98,14 @@ export default function StartPetitionPage() {
     success: "",
     registeredName: "",
   });
+  const [voterState, setVoterState] = useState({
+    verified: false,
+    verificationToken: "",
+    verifying: false,
+    error: "",
+    success: "",
+    registeredName: "",
+  });
   // Signing requirements settings
   const [signingRequirements, setSigningRequirements] = useState({
     constituency: {
@@ -304,11 +312,11 @@ export default function StartPetitionPage() {
     voterNumber: {
       required: false,
       minLength: 10,
-      maxLength: 10,
-      pattern: /^[A-Z]{3}[0-9]{7}$/,
-      message: "Please enter a valid Voter ID (3 letters + 7 digits)",
+      maxLength: 18,
+      pattern: /^[A-Z0-9\/\-]{10,18}$/i,
+      message: "Please enter a valid Voter ID (10-18 alphanumeric characters)",
       example:
-        "e.g., 'ABC1234567' (Format: XXX0000000 - 3 uppercase letters + 7 digits)",
+        "e.g., 'ABC1234567' or '07AAECR2971C1Z'",
     },
     pincode: {
       required: false,
@@ -671,6 +679,7 @@ export default function StartPetitionPage() {
   const isStep4Valid = () => {
     const isAadhaarAlreadyVerified = user?.aadhaarKyc?.status === "verified";
     const isPanAlreadyVerified = user?.panKyc?.status === "verified";
+    const isVoterAlreadyVerified = user?.voterKyc?.status === "verified";
 
     const validations = [
       validateField("starterName", formData.starter.name),
@@ -703,18 +712,30 @@ export default function StartPetitionPage() {
       }
     }
 
-    if (formData.starter.voterNumber) {
+    // Voter ID requirement
+    if (!isVoterAlreadyVerified) {
       validations.push(
-        validateField("voterNumber", formData.starter.voterNumber),
+        validateField("voterNumber", formData.starter.voterNumber, {
+          ...validationRules.voterNumber,
+          required: true,
+        }),
       );
+    } else {
+      if (formData.starter.voterNumber) {
+        validations.push(
+          validateField("voterNumber", formData.starter.voterNumber),
+        );
+      }
     }
+
     if (formData.starter.pincode) {
       validations.push(validateField("pincode", formData.starter.pincode));
     }
 
     const verificationOk =
       (isAadhaarAlreadyVerified || aadhaarOtp.verified) &&
-      (isPanAlreadyVerified || panState.verified);
+      (isPanAlreadyVerified || panState.verified) &&
+      (isVoterAlreadyVerified || voterState.verified);
 
     return (
       validations.every((v) => v.isValid) &&
@@ -816,6 +837,64 @@ export default function StartPetitionPage() {
       }));
     } catch (error) {
       setPanState((prev) => ({
+        ...prev,
+        error: error.message || "Verification failed. Please try again.",
+        verifying: false,
+      }));
+    }
+  };
+
+  const handleVerifyVoter = async () => {
+    const voterNumber = String(formData.starter.voterNumber || "").trim().toUpperCase();
+    if (!voterNumber) {
+      setVoterState((prev) => ({
+        ...prev,
+        error: "Voter ID number is required",
+      }));
+      return;
+    }
+
+    if (!user?.token) {
+      setVoterState((prev) => ({
+        ...prev,
+        error: "Please login again to continue verification",
+      }));
+      return;
+    }
+
+    try {
+      setVoterState((prev) => ({
+        ...prev,
+        verifying: true,
+        error: "",
+        success: "",
+      }));
+
+      const response = await fetch("/api/voter/verify", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ voterNumber }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to verify Voter ID");
+      }
+
+      setVoterState((prev) => ({
+        ...prev,
+        verified: true,
+        verificationToken: data.voterVerificationToken,
+        success: `Voter ID verified successfully for ${data.registeredName}!`,
+        registeredName: data.registeredName,
+        verifying: false,
+      }));
+    } catch (error) {
+      setVoterState((prev) => ({
         ...prev,
         error: error.message || "Verification failed. Please try again.",
         verifying: false,
@@ -1021,6 +1100,7 @@ export default function StartPetitionPage() {
     try {
       const isAadhaarAlreadyVerified = user?.aadhaarKyc?.status === "verified";
       const isPanAlreadyVerified = user?.panKyc?.status === "verified";
+      const isVoterAlreadyVerified = user?.voterKyc?.status === "verified";
 
       if (!isAadhaarAlreadyVerified && (!aadhaarOtp.verified || !aadhaarOtp.verificationToken)) {
         setIsSubmitting(false);
@@ -1030,6 +1110,11 @@ export default function StartPetitionPage() {
       if (!isPanAlreadyVerified && (!panState.verified || !panState.verificationToken)) {
         setIsSubmitting(false);
         alert("Please complete PAN Card verification before submitting.");
+        return;
+      }
+      if (!isVoterAlreadyVerified && (!voterState.verified || !voterState.verificationToken)) {
+        setIsSubmitting(false);
+        alert("Please complete Voter ID verification before submitting.");
         return;
       }
 
@@ -1066,6 +1151,14 @@ export default function StartPetitionPage() {
         submitData.append(
           "panVerificationToken",
           panState.verificationToken,
+        );
+      }
+
+      // Append Voter ID token if verified this session
+      if (!isVoterAlreadyVerified && voterState.verificationToken) {
+        submitData.append(
+          "voterVerificationToken",
+          voterState.verificationToken,
         );
       }
 
@@ -2440,7 +2533,7 @@ export default function StartPetitionPage() {
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(user?.aadhaarKyc?.status === "verified" && user?.panKyc?.status === "verified") ? (
+                  {(user?.aadhaarKyc?.status === "verified" && user?.panKyc?.status === "verified" && user?.voterKyc?.status === "verified") ? (
                     <div className="md:col-span-2 bg-green-50 border border-green-200 rounded-xl p-5 mb-6 flex items-center gap-4">
                       <div className="bg-green-100 p-3 rounded-full">
                         <FaCircleCheck className="text-green-600 text-2xl" />
@@ -2448,7 +2541,7 @@ export default function StartPetitionPage() {
                       <div>
                         <p className="font-bold text-green-800 text-lg">Identity Fully Verified</p>
                         <p className="text-sm text-green-700">
-                          Your identity is fully verified via DigiLocker Aadhaar {user.aadhaarKyc.maskedAadhaar ? `(${user.aadhaarKyc.maskedAadhaar})` : ""} and PAN Card {user.panKyc.panNumber ? `(${user.panKyc.panNumber})` : ""}.
+                          Your identity is fully verified via DigiLocker Aadhaar {user.aadhaarKyc.maskedAadhaar ? `(${user.aadhaarKyc.maskedAadhaar})` : ""}, PAN Card {user.panKyc.panNumber ? `(${user.panKyc.panNumber})` : ""}, and Voter ID {user.voterKyc.voterId ? `(${user.voterKyc.voterId})` : ""}.
                         </p>
                       </div>
                     </div>
@@ -2461,15 +2554,17 @@ export default function StartPetitionPage() {
                           Aadhaar Card Verification
                         </h4>
                         
-                        {user?.aadhaarKyc?.status === "verified" ? (
+                        {user?.aadhaarKyc?.status === "verified" || aadhaarOtp.verified ? (
                           <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
                             <div className="bg-green-100 p-2 rounded-full">
                               <FaCircleCheck className="text-green-600 text-xl" />
                             </div>
                             <div>
-                              <p className="font-bold text-green-800 text-sm">Aadhaar Already Verified</p>
+                              <p className="font-bold text-green-800 text-sm">Aadhaar Card Verified</p>
                               <p className="text-xs text-green-700">
-                                Verified via DigiLocker Aadhaar {user.aadhaarKyc.maskedAadhaar ? `(${user.aadhaarKyc.maskedAadhaar})` : ""}
+                                {aadhaarOtp.verified ?
+                                  `Verified successfully: ${aadhaarOtp.maskedAadhaar || formData.starter.aadharNumber}`
+                                : `Verified via DigiLocker Aadhaar ${user.aadhaarKyc.maskedAadhaar ? `(${user.aadhaarKyc.maskedAadhaar})` : ""}`}
                               </p>
                             </div>
                           </div>
@@ -2649,15 +2744,17 @@ export default function StartPetitionPage() {
                           PAN Card Verification
                         </h4>
                         
-                        {user?.panKyc?.status === "verified" ? (
+                        {user?.panKyc?.status === "verified" || panState.verified ? (
                           <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
                             <div className="bg-green-100 p-2 rounded-full">
                               <FaCircleCheck className="text-green-600 text-xl" />
                             </div>
                             <div>
-                              <p className="font-bold text-green-800 text-sm">PAN Card Already Verified</p>
+                              <p className="font-bold text-green-800 text-sm">PAN Card Verified</p>
                               <p className="text-xs text-green-700">
-                                Verified via PAN Card {user.panKyc.panNumber ? `(${user.panKyc.panNumber})` : ""}
+                                {panState.verified ?
+                                  `Verified successfully: ${formData.starter.panNumber}`
+                                : `Verified via PAN Card ${user.panKyc.panNumber ? `(${user.panKyc.panNumber})` : ""}`}
                               </p>
                             </div>
                           </div>
@@ -2759,50 +2856,128 @@ export default function StartPetitionPage() {
                           </div>
                         )}
                       </div>
+
+                      {/* Voter ID Card Verification Flow */}
+                      <div className="md:col-span-2 border border-gray-200 rounded-xl p-5 mb-4 bg-white shadow-sm">
+                        <h4 className="font-bold text-gray-800 text-base mb-3 flex items-center gap-2">
+                          <span className="bg-[#2D3A8C] text-white text-xs px-2.5 py-1 rounded-full font-bold">3</span>
+                          Voter ID Verification
+                        </h4>
+                        
+                        {user?.voterKyc?.status === "verified" || voterState.verified ? (
+                          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+                            <div className="bg-green-100 p-2 rounded-full">
+                              <FaCircleCheck className="text-green-600 text-xl" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-green-800 text-sm">Voter ID Verified</p>
+                              <p className="text-xs text-green-700">
+                                {voterState.verified ?
+                                  `Verified successfully: ${formData.starter.voterNumber}`
+                                : `Verified via Voter ID ${user.voterKyc.voterId ? `(${user.voterKyc.voterId})` : ""}`}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Voter ID Number <span className="text-red-500">*</span>
+                              </label>
+                              <div className="flex space-x-2">
+                                <div className="flex-1">
+                                  <input
+                                    type="text"
+                                    value={formData.starter.voterNumber}
+                                    onChange={(e) => {
+                                      const value = e.target.value.toUpperCase().trim();
+                                      if (voterState.verified) {
+                                        setVoterState({
+                                          verified: false,
+                                          verificationToken: "",
+                                          verifying: false,
+                                          error: "",
+                                          success: "",
+                                          registeredName: "",
+                                        });
+                                      }
+                                      handleInputChange("starter.voterNumber", value);
+                                    }}
+                                    onBlur={() => markFieldTouched("voterNumber")}
+                                    className={
+                                      getInputProps(
+                                        "voterNumber",
+                                        formData.starter.voterNumber,
+                                      ).className
+                                    }
+                                    placeholder="e.g., ABC1234567 or 07AAECR2971C1Z"
+                                    maxLength={18}
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleVerifyVoter}
+                                  disabled={
+                                    voterState.verifying ||
+                                    voterState.verified ||
+                                    !validateField(
+                                      "voterNumber",
+                                      formData.starter.voterNumber,
+                                    ).isValid
+                                  }
+                                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                                    (
+                                      voterState.verifying ||
+                                      voterState.verified ||
+                                      !validateField(
+                                        "voterNumber",
+                                        formData.starter.voterNumber,
+                                      ).isValid
+                                    ) ?
+                                      "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                    : "bg-[#2D3A8C] text-white hover:bg-[#1e2a6c]"
+                                  }`}
+                                >
+                                  {voterState.verifying ? "Verifying..." : voterState.verified ? "Verified" : "Verify Voter ID"}
+                                </button>
+                              </div>
+                              {getInputProps(
+                                "voterNumber",
+                                formData.starter.voterNumber,
+                              ).showError && (
+                                <p className="text-red-500 text-sm mt-1">
+                                  {
+                                    getInputProps(
+                                      "voterNumber",
+                                      formData.starter.voterNumber,
+                                    ).error
+                                  }
+                                </p>
+                              )}
+                              {formData.starter.voterNumber === "" && (
+                                <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                                  <FaCircleInfo className="text-xs text-blue-400" />
+                                  10-18 alphanumeric characters (cannot contain spaces)
+                                </p>
+                              )}
+                              {voterState.success && (
+                                <p className="text-green-700 text-sm mt-2 flex items-center gap-1 font-medium">
+                                  <FaCircleCheck className="text-xs text-green-600" />
+                                  {voterState.success}
+                                </p>
+                              )}
+                              {voterState.error && (
+                                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                                  <FaCircleExclamation className="text-xs" />
+                                  {voterState.error}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </>
                   )}
-
-                  {/* Voter ID */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Voter ID <span className="text-gray-400">(optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.starter.voterNumber}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "starter.voterNumber",
-                          e.target.value.toUpperCase(),
-                        )
-                      }
-                      onBlur={() => markFieldTouched("voterNumber")}
-                      className={
-                        getInputProps(
-                          "voterNumber",
-                          formData.starter.voterNumber,
-                        ).className
-                      }
-                      placeholder="e.g., ABC1234567"
-                    />
-                    {getInputProps("voterNumber", formData.starter.voterNumber)
-                      .showError && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {
-                          getInputProps(
-                            "voterNumber",
-                            formData.starter.voterNumber,
-                          ).error
-                        }
-                      </p>
-                    )}
-                    {formData.starter.voterNumber === "" && (
-                      <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                        <FaCircleInfo className="text-xs text-blue-400" />
-                        Format: XXX0000000 (3 letters + 7 digits)
-                      </p>
-                    )}
-                  </div>
 
                   {/* Pincode */}
                   <div>
