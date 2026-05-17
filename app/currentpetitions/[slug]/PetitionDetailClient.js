@@ -9,6 +9,7 @@ import { useAuth } from "../../../context/AuthContext";
 import LoginModal from "../../../components/LoginModal";
 import CommentsSection from "../../../components/CommentsSection";
 import Captcha from "../../../components/Captcha";
+import CampaignProgress from "../../../components/CampaignProgress";
 import {
     FileText,
     Users,
@@ -670,7 +671,7 @@ export default function PetitionDetailClient({ initialPetition }) {
     return (
         <div className="min-h-screen bg-[#f0f2f5] pb-12">
             {/* Top Navigation / Language Bar */}
-            <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-[100] px-4 md:px-6 py-3">
+            <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40 px-4 md:px-6 py-3">
                 <div className="max-w-[1400px] mx-auto flex justify-between items-center">
                     <Link href="/currentpetitions" className="text-gray-600 hover:text-[#F43676] transition-colors flex items-center gap-2 text-sm font-medium">
                         <ChevronLeft className="w-4 h-4" />
@@ -1330,6 +1331,13 @@ export default function PetitionDetailClient({ initialPetition }) {
                         </div>
                     </div>
                 </div>
+
+                {/* Campaign Progress Timeline */}
+                <CampaignProgress 
+                    petitionId={petition._id} 
+                    isCreator={signatureStatus.isCreator} 
+                    petition={petition} 
+                />
 
                 {/* Share This Petition */}
                 <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg">
