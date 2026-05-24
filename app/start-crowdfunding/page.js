@@ -14,6 +14,7 @@ import {
   FaUpload,
   FaFilePdf,
   FaCircleCheck,
+  FaCircleExclamation,
   FaLock,
   FaHospital,
   FaUserDoctor,
@@ -34,6 +35,37 @@ const categories = [
   "Other",
 ];
 
+const normalizeAadhaarNumber = (value = "") =>
+  value.toString().replace(/\D/g, "");
+
+const createInitialAadhaarOtpState = () => ({
+  otp: "",
+  otpSent: false,
+  otpSessionToken: "",
+  verified: false,
+  verificationToken: "",
+  sending: false,
+  verifying: false,
+  error: "",
+  success: "",
+  maskedAadhaar: "",
+});
+
+const createInitialPanState = () => ({
+  verified: false,
+  verificationToken: "",
+  verifying: false,
+  error: "",
+  success: "",
+  registeredName: "",
+});
+
+const isValidAadhaarNumber = (value = "") =>
+  /^[2-9]\d{11}$/.test(normalizeAadhaarNumber(value));
+
+const isValidPanNumber = (value = "") =>
+  /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value.trim().toUpperCase());
+
 const initialFormData = {
   title: "",
   category: "Medical",
@@ -41,6 +73,8 @@ const initialFormData = {
   deadline: "",
   location: "",
   beneficiaryName: "",
+  aadharNumber: "",
+  panNumber: "",
   organizerPhone: "",
   story: "",
   hospitalName: "",
@@ -55,14 +89,11 @@ const initialFormData = {
 };
 
 export default function StartCrowdfundingPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, setUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const [formData, setFormData] = useState(initialFormData);
   const [files, setFiles] = useState({
     image: null,
-    beneficiaryAadhaar: null,
-    beneficiaryPan: null,
-    organizerAadhaarPan: null,
     reports: [],
     cancelledCheque: null,
   });
@@ -74,12 +105,49 @@ export default function StartCrowdfundingPage() {
   const [isPhoneVerified, setIsPhoneVerified] = useState(true); // Disabled for now
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [otp, setOtp] = useState("");
+  const [aadhaarOtp, setAadhaarOtp] = useState(createInitialAadhaarOtpState);
+  const [panState, setPanState] = useState(createInitialPanState);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [kycProfile, setKycProfile] = useState(null);
+
+  const verifiedUser = kycProfile || user;
+  const authToken = user?.token;
+  const isAadhaarAlreadyVerified = verifiedUser?.aadhaarKyc?.status === "verified";
+  const isPanAlreadyVerified = verifiedUser?.panKyc?.status === "verified";
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login?redirect=/start-crowdfunding");
     }
   }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (!authToken) return;
+
+    const fetchFreshProfile = async () => {
+      setProfileLoading(true);
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const response = await axios.get(`${backendUrl}/api/users/profile`, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+
+        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+        const freshUser = { ...storedUser, ...response.data, token: authToken };
+        setKycProfile(freshUser);
+        setUser?.(freshUser);
+        localStorage.setItem("user", JSON.stringify(freshUser));
+      } catch (err) {
+        console.error("Failed to fetch identity profile:", err);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    fetchFreshProfile();
+  }, [authToken, setUser]);
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -123,6 +191,261 @@ export default function StartCrowdfundingPage() {
     }
   };
 
+  const handleAadhaarChange = (value) => {
+    const previousDigits = normalizeAadhaarNumber(formData.aadharNumber);
+    const digits = normalizeAadhaarNumber(value).slice(0, 12);
+    let formattedValue = digits;
+
+    if (digits.length > 8) {
+      formattedValue = `${digits.slice(0, 4)} ${digits.slice(4, 8)} ${digits.slice(8)}`;
+    } else if (digits.length > 4) {
+      formattedValue = `${digits.slice(0, 4)} ${digits.slice(4)}`;
+    }
+
+    if (previousDigits !== digits) {
+      setAadhaarOtp(createInitialAadhaarOtpState());
+    }
+
+    updateField("aadharNumber", formattedValue);
+  };
+
+  const handleSendAadhaarOtp = async () => {
+    if (!isValidAadhaarNumber(formData.aadharNumber)) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: "Please enter a valid 12-digit Aadhaar number",
+        success: "",
+      }));
+      return;
+    }
+
+    if (!user?.token) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: "Please login again to continue verification",
+        success: "",
+      }));
+      return;
+    }
+
+    try {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        sending: true,
+        error: "",
+        success: "",
+      }));
+
+      const response = await fetch("/api/aadhaar/send-otp", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          aadhaarNumber: formData.aadharNumber,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to send Aadhaar OTP");
+      }
+
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        sending: false,
+        otpSent: !result.testMode,
+        otpSessionToken: result.otpSessionToken || "",
+        verified: false,
+        verificationToken: "",
+        otp: "",
+        success: result.testMode ? "" : result.message || "OTP sent successfully",
+        error: result.testMode ? result.message || "Test mode is enabled. Real OTP SMS will not be delivered." : "",
+        maskedAadhaar: result.maskedAadhaar || "",
+      }));
+    } catch (err) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        sending: false,
+        otpSent: false,
+        otpSessionToken: "",
+        verified: false,
+        verificationToken: "",
+        error: err.message || "Failed to send Aadhaar OTP",
+        success: "",
+      }));
+    }
+  };
+
+  const handleVerifyAadhaarOtp = async () => {
+    if (!isValidAadhaarNumber(formData.aadharNumber)) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: "Please enter a valid 12-digit Aadhaar number",
+        success: "",
+      }));
+      return;
+    }
+
+    if (!aadhaarOtp.otpSessionToken) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: "Please send OTP first",
+        success: "",
+      }));
+      return;
+    }
+
+    const otpValue = String(aadhaarOtp.otp || "").trim();
+    if (!/^\d{4,8}$/.test(otpValue)) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: "Please enter a valid OTP",
+        success: "",
+      }));
+      return;
+    }
+
+    if (!user?.token) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        error: "Please login again to continue verification",
+        success: "",
+      }));
+      return;
+    }
+
+    try {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        verifying: true,
+        error: "",
+        success: "",
+      }));
+
+      const response = await fetch("/api/aadhaar/verify-otp", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          aadhaarNumber: formData.aadharNumber,
+          otp: otpValue,
+          otpSessionToken: aadhaarOtp.otpSessionToken,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to verify Aadhaar OTP");
+      }
+
+      const verificationToken =
+        result.aadhaarVerificationToken || result.aadharVerificationToken;
+
+      if (!verificationToken) {
+        throw new Error("Verification token missing in response");
+      }
+
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        verifying: false,
+        verified: true,
+        verificationToken,
+        success: result.message || "Aadhaar verified successfully",
+        error: "",
+        maskedAadhaar: result.maskedAadhaar || prev.maskedAadhaar,
+      }));
+    } catch (err) {
+      setAadhaarOtp((prev) => ({
+        ...prev,
+        verifying: false,
+        verified: false,
+        verificationToken: "",
+        error: err.message || "Failed to verify Aadhaar OTP",
+        success: "",
+      }));
+    }
+  };
+
+  const handleVerifyPan = async () => {
+    const panNumber = String(formData.panNumber || "").trim().toUpperCase();
+
+    if (!isValidPanNumber(panNumber)) {
+      setPanState((prev) => ({
+        ...prev,
+        error: "Please enter a valid PAN number",
+        success: "",
+      }));
+      return;
+    }
+
+    if (!user?.token) {
+      setPanState((prev) => ({
+        ...prev,
+        error: "Please login again to continue verification",
+        success: "",
+      }));
+      return;
+    }
+
+    try {
+      setPanState((prev) => ({
+        ...prev,
+        verifying: true,
+        error: "",
+        success: "",
+      }));
+
+      const response = await fetch("/api/pan/verify", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ panNumber }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to verify PAN card");
+      }
+
+      setPanState((prev) => ({
+        ...prev,
+        verified: true,
+        verificationToken: data.panVerificationToken,
+        success: `PAN Card verified successfully for ${data.registeredName || "your account"}.`,
+        registeredName: data.registeredName || "",
+        verifying: false,
+      }));
+
+      const nextUser = {
+        ...(kycProfile || user),
+        panKyc: {
+          status: "verified",
+          panNumber,
+          registeredName: data.registeredName || "",
+          verifiedAt: new Date().toISOString(),
+        },
+      };
+      setKycProfile(nextUser);
+      setUser?.(nextUser);
+      localStorage.setItem("user", JSON.stringify(nextUser));
+    } catch (err) {
+      setPanState((prev) => ({
+        ...prev,
+        error: err.message || "Verification failed. Please try again.",
+        verifying: false,
+      }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -134,6 +457,22 @@ export default function StartCrowdfundingPage() {
       }
       if (step === 2 && (!formData.beneficiaryName || !formData.organizerPhone)) {
         setError("Beneficiary name and Organizer phone are required.");
+        return;
+      }
+      if (
+        step === 2 &&
+        !isAadhaarAlreadyVerified &&
+        (!aadhaarOtp.verified || !aadhaarOtp.verificationToken)
+      ) {
+        setError("Please complete Aadhaar OTP verification before continuing.");
+        return;
+      }
+      if (
+        step === 2 &&
+        !isPanAlreadyVerified &&
+        (!panState.verified || !panState.verificationToken)
+      ) {
+        setError("Please complete PAN Card verification before continuing.");
         return;
       }
       if (step === 4 && (!formData.accountNumber || !formData.ifscCode)) {
@@ -156,6 +495,16 @@ export default function StartCrowdfundingPage() {
       return;
     }
 
+    if (!isAadhaarAlreadyVerified && (!aadhaarOtp.verified || !aadhaarOtp.verificationToken)) {
+      setError("Please complete Aadhaar OTP verification before launching the campaign.");
+      return;
+    }
+
+    if (!isPanAlreadyVerified && (!panState.verified || !panState.verificationToken)) {
+      setError("Please complete PAN Card verification before launching the campaign.");
+      return;
+    }
+
     if (!formData.legalAccepted || !formData.infoVerifiedByUser) {
       setError("Please accept the terms and verify that the info is true.");
       return;
@@ -171,10 +520,16 @@ export default function StartCrowdfundingPage() {
         data.append(key, formData[key]);
       });
 
+      if (!isAadhaarAlreadyVerified && aadhaarOtp.verificationToken) {
+        data.append("aadhaarVerificationToken", aadhaarOtp.verificationToken);
+        data.append("aadharVerificationToken", aadhaarOtp.verificationToken);
+      }
+
+      if (!isPanAlreadyVerified && panState.verificationToken) {
+        data.append("panVerificationToken", panState.verificationToken);
+      }
+
       if (files.image) data.append("image", files.image);
-      if (files.beneficiaryAadhaar) data.append("beneficiaryAadhaar", files.beneficiaryAadhaar);
-      if (files.beneficiaryPan) data.append("beneficiaryPan", files.beneficiaryPan);
-      if (files.organizerAadhaarPan) data.append("organizerAadhaarPan", files.organizerAadhaarPan);
       if (files.cancelledCheque) data.append("cancelledCheque", files.cancelledCheque);
 
       files.reports.forEach((file) => {
@@ -392,31 +747,186 @@ export default function StartCrowdfundingPage() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="block text-sm font-bold text-slate-700">Beneficiary Aadhaar</label>
-                      <div className="relative border border-slate-200 rounded-xl p-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                        <input type="file" onChange={(e) => handleFileChange("beneficiaryAadhaar", e)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                        <span className="text-slate-500 text-sm truncate pr-8">{files.beneficiaryAadhaar ? files.beneficiaryAadhaar.name : "Upload Aadhaar Front/Back"}</span>
-                        <FaUpload className="text-slate-400" />
-                      </div>
-                    </div>
+                    <div className="md:col-span-2">
+                      {profileLoading ? (
+                        <div className="border border-slate-200 rounded-xl p-4 text-sm text-slate-500 flex items-center gap-3">
+                          <FaSpinner className="animate-spin text-[#F43676]" />
+                          Checking saved identity verification...
+                        </div>
+                      ) : isAadhaarAlreadyVerified && isPanAlreadyVerified ? (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-5 flex items-center gap-4">
+                          <div className="bg-green-100 p-3 rounded-full">
+                            <FaCircleCheck className="text-green-600 text-xl" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-green-800">Identity already verified</p>
+                            <p className="text-sm text-green-700">
+                              Using Aadhaar {verifiedUser?.aadhaarKyc?.maskedAadhaar ? `(${verifiedUser.aadhaarKyc.maskedAadhaar})` : ""} and PAN {verifiedUser?.panKyc?.panNumber ? `(${verifiedUser.panKyc.panNumber})` : ""} from your verified profile.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-5">
+                          <div className="border border-slate-200 rounded-xl p-5">
+                            <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                              <span className="bg-[#2D3A8C] text-white text-xs px-2.5 py-1 rounded-full font-bold">1</span>
+                              Aadhaar Verification
+                            </h3>
 
-                    <div className="space-y-2">
-                      <label className="block text-sm font-bold text-slate-700">Beneficiary PAN</label>
-                      <div className="relative border border-slate-200 rounded-xl p-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                        <input type="file" onChange={(e) => handleFileChange("beneficiaryPan", e)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                        <span className="text-slate-500 text-sm truncate pr-8">{files.beneficiaryPan ? files.beneficiaryPan.name : "Upload PAN Card"}</span>
-                        <FaUpload className="text-slate-400" />
-                      </div>
-                    </div>
+                            {isAadhaarAlreadyVerified || aadhaarOtp.verified ? (
+                              <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+                                <FaCircleCheck className="text-green-600 text-xl" />
+                                <div>
+                                  <p className="font-bold text-green-800 text-sm">Aadhaar Verified</p>
+                                  <p className="text-xs text-green-700">
+                                    {aadhaarOtp.verified
+                                      ? `Verified successfully ${aadhaarOtp.maskedAadhaar ? `(${aadhaarOtp.maskedAadhaar})` : ""}`
+                                      : `Verified via profile ${verifiedUser?.aadhaarKyc?.maskedAadhaar ? `(${verifiedUser.aadhaarKyc.maskedAadhaar})` : ""}`}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <label className="block text-sm font-bold text-slate-700">
+                                  Aadhaar Number <span className="text-red-500">*</span>
+                                </label>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                  <input
+                                    type="text"
+                                    value={formData.aadharNumber}
+                                    onChange={(e) => handleAadhaarChange(e.target.value)}
+                                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:border-[#F43676] outline-none"
+                                    placeholder="2345 6789 0123"
+                                    maxLength={14}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={handleSendAadhaarOtp}
+                                    disabled={aadhaarOtp.sending || !isValidAadhaarNumber(formData.aadharNumber)}
+                                    className={`px-5 py-3 rounded-xl font-bold transition-colors ${
+                                      aadhaarOtp.sending || !isValidAadhaarNumber(formData.aadharNumber)
+                                        ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                                        : "bg-[#2D3A8C] text-white hover:bg-[#1f2a70]"
+                                    }`}
+                                  >
+                                    {aadhaarOtp.sending ? "Sending..." : aadhaarOtp.otpSent ? "Resend OTP" : "Send OTP"}
+                                  </button>
+                                </div>
+                                <p className="text-xs text-slate-400">12 digits, cannot start with 0 or 1.</p>
 
-                    <div className="md:col-span-2 space-y-2">
-                      <label className="block text-sm font-bold text-slate-700">Organizer Identity (Aadhaar/PAN)</label>
-                      <div className="relative border border-slate-200 rounded-xl p-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                        <input type="file" onChange={(e) => handleFileChange("organizerAadhaarPan", e)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                        <span className="text-slate-500 text-sm truncate pr-8">{files.organizerAadhaarPan ? files.organizerAadhaarPan.name : "Upload Organizer ID"}</span>
-                        <FaUpload className="text-slate-400" />
-                      </div>
+                                {aadhaarOtp.otpSent && (
+                                  <div className="flex flex-col sm:flex-row gap-2">
+                                    <input
+                                      type="text"
+                                      value={aadhaarOtp.otp}
+                                      onChange={(e) =>
+                                        setAadhaarOtp((prev) => ({
+                                          ...prev,
+                                          otp: e.target.value.replace(/\D/g, "").slice(0, 8),
+                                          error: "",
+                                        }))
+                                      }
+                                      className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:border-[#F43676] outline-none"
+                                      placeholder="Enter OTP"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={handleVerifyAadhaarOtp}
+                                      disabled={aadhaarOtp.verifying || aadhaarOtp.otp.trim().length < 4}
+                                      className={`px-5 py-3 rounded-xl font-bold transition-colors ${
+                                        aadhaarOtp.verifying || aadhaarOtp.otp.trim().length < 4
+                                          ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                                          : "bg-[#F43676] text-white hover:bg-[#d62860]"
+                                      }`}
+                                    >
+                                      {aadhaarOtp.verifying ? "Verifying..." : "Verify OTP"}
+                                    </button>
+                                  </div>
+                                )}
+
+                                {aadhaarOtp.success && (
+                                  <p className="text-green-700 text-sm flex items-center gap-2">
+                                    <FaCircleCheck className="text-xs" />
+                                    {aadhaarOtp.success}
+                                  </p>
+                                )}
+                                {aadhaarOtp.error && (
+                                  <p className="text-red-500 text-sm flex items-center gap-2">
+                                    <FaCircleExclamation className="text-xs" />
+                                    {aadhaarOtp.error}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="border border-slate-200 rounded-xl p-5">
+                            <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                              <span className="bg-[#2D3A8C] text-white text-xs px-2.5 py-1 rounded-full font-bold">2</span>
+                              PAN Card Verification
+                            </h3>
+
+                            {isPanAlreadyVerified || panState.verified ? (
+                              <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+                                <FaCircleCheck className="text-green-600 text-xl" />
+                                <div>
+                                  <p className="font-bold text-green-800 text-sm">PAN Card Verified</p>
+                                  <p className="text-xs text-green-700">
+                                    {panState.verified
+                                      ? `Verified successfully (${formData.panNumber})`
+                                      : `Verified via profile ${verifiedUser?.panKyc?.panNumber ? `(${verifiedUser.panKyc.panNumber})` : ""}`}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <label className="block text-sm font-bold text-slate-700">
+                                  PAN Number <span className="text-red-500">*</span>
+                                </label>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                  <input
+                                    type="text"
+                                    value={formData.panNumber}
+                                    onChange={(e) => {
+                                      setPanState(createInitialPanState());
+                                      updateField("panNumber", e.target.value.toUpperCase().trim());
+                                    }}
+                                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:border-[#F43676] outline-none"
+                                    placeholder="ABCDE1234F"
+                                    maxLength={10}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={handleVerifyPan}
+                                    disabled={panState.verifying || !isValidPanNumber(formData.panNumber)}
+                                    className={`px-5 py-3 rounded-xl font-bold transition-colors ${
+                                      panState.verifying || !isValidPanNumber(formData.panNumber)
+                                        ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                                        : "bg-[#2D3A8C] text-white hover:bg-[#1f2a70]"
+                                    }`}
+                                  >
+                                    {panState.verifying ? "Verifying..." : "Verify PAN"}
+                                  </button>
+                                </div>
+                                <p className="text-xs text-slate-400">Format: 5 letters, 4 digits, 1 letter.</p>
+
+                                {panState.success && (
+                                  <p className="text-green-700 text-sm flex items-center gap-2">
+                                    <FaCircleCheck className="text-xs" />
+                                    {panState.success}
+                                  </p>
+                                )}
+                                {panState.error && (
+                                  <p className="text-red-500 text-sm flex items-center gap-2">
+                                    <FaCircleExclamation className="text-xs" />
+                                    {panState.error}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="md:col-span-2">

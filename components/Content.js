@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSpinner, FaCopy, FaPen, FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube, FaPlay, FaUser } from "react-icons/fa";
+import { FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSpinner, FaCopy, FaPen, FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube, FaPlay, FaHandHoldingHeart, FaMapMarkerAlt, FaRupeeSign } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { PenTool, User, BadgeCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -42,6 +42,7 @@ const tags = [
 ];
 
 export default function Content({ initialPetitions = [], initialPagination = {} }) {
+  const [activeContentTab, setActiveContentTab] = useState("petitions");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -95,6 +96,29 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
   };
   const loading = petitionsLoading;
   const error = isPetitionsError ? petitionsError.message : null;
+
+  // Fetch crowdfunding campaigns when the tab is selected
+  const {
+    data: crowdfundingCampaigns = [],
+    isLoading: crowdfundingLoading,
+    isError: isCrowdfundingError,
+    error: crowdfundingError,
+  } = useQuery({
+    queryKey: ["crowdfundingCampaigns", "homepage"],
+    queryFn: async () => {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${backendUrl}/api/crowdfunding`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch crowdfunding campaigns");
+      }
+
+      const data = await response.json();
+      return Array.isArray(data) ? data : data.campaigns || [];
+    },
+    enabled: activeContentTab === "crowdfunding",
+    staleTime: 60 * 1000,
+  });
 
   // Recent posts based on first 4 petitions
   const recentPosts = petitions.slice(0, 4).map((p) => ({
@@ -166,6 +190,7 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
+    setActiveContentTab("petitions");
     setCurrentPage(1); // Reset to first page when searching
     setShowSuggestions(false);
   };
@@ -240,6 +265,13 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
     });
   };
 
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(Number(amount) || 0);
+
   // Get category label
   const getCategoryLabel = (category) => {
     return categoryLabels[category] || category;
@@ -275,6 +307,33 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Main Content - Left Side */}
             <div className="lg:w-2/3">
+              <div className="bg-white rounded-3xl p-2 shadow-sm mb-6">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveContentTab("petitions")}
+                    className={`rounded-2xl px-4 py-3 text-sm sm:text-base font-bold transition-all ${activeContentTab === "petitions"
+                      ? "bg-[#F43676] text-white shadow-md shadow-pink-100"
+                      : "text-[#302d55] hover:bg-pink-50"
+                      }`}
+                  >
+                    Petitions
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveContentTab("crowdfunding")}
+                    className={`rounded-2xl px-4 py-3 text-sm sm:text-base font-bold transition-all ${activeContentTab === "crowdfunding"
+                      ? "bg-[#F43676] text-white shadow-md shadow-pink-100"
+                      : "text-[#302d55] hover:bg-pink-50"
+                      }`}
+                  >
+                    Crowdfunding
+                  </button>
+                </div>
+              </div>
+
+              {activeContentTab === "petitions" && (
+                <>
               {/* Loading State */}
               {loading && (
                 <div className="flex items-center justify-center py-20">
@@ -488,6 +547,137 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
                   {Math.min(currentPage * ITEMS_PER_PAGE, paginationInfo.totalPetitions)} of{" "}
                   {paginationInfo.totalPetitions} petitions
                 </p>
+              )}
+                </>
+              )}
+
+              {activeContentTab === "crowdfunding" && (
+                <>
+                  {crowdfundingLoading && (
+                    <div className="flex items-center justify-center py-20">
+                      <FaSpinner className="animate-spin text-4xl text-[#F43676]" />
+                      <span className="ml-3 text-lg text-gray-600">Loading crowdfunding campaigns...</span>
+                    </div>
+                  )}
+
+                  {isCrowdfundingError && !crowdfundingLoading && (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+                      <p className="text-red-600 mb-4">Error: {crowdfundingError.message}</p>
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-2 bg-[#F43676] text-white rounded-lg hover:bg-[#e02a60] transition-colors"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  )}
+
+                  {!crowdfundingLoading && !isCrowdfundingError && crowdfundingCampaigns.length === 0 && (
+                    <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
+                      <FaHandHoldingHeart className="text-5xl text-pink-100 mx-auto mb-4" />
+                      <h3 className="text-xl font-bold text-[#002050] mb-2">No crowdfunding campaigns found</h3>
+                      <p className="text-[#302d55] mb-5">There are no active crowdfunding campaigns at the moment.</p>
+                      <Link
+                        href="/start-crowdfunding"
+                        className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg transition-all duration-200"
+                      >
+                        <FaHandHoldingHeart className="text-sm" />
+                        Start Crowdfunding
+                      </Link>
+                    </div>
+                  )}
+
+                  {!crowdfundingLoading && !isCrowdfundingError && crowdfundingCampaigns.length > 0 && (
+                    <div className="space-y-6">
+                      {crowdfundingCampaigns.map((campaign) => {
+                        const goalAmount = Number(campaign.goalAmount) || 0;
+                        const raisedAmount = Number(campaign.raisedAmount) || 0;
+                        const progress = goalAmount > 0 ? Math.min((raisedAmount / goalAmount) * 100, 100) : 0;
+
+                        return (
+                          <div
+                            key={campaign._id || campaign.slug}
+                            className="relative bg-white rounded-3xl shadow-sm hover:shadow-md transition-shadow"
+                          >
+                            <Link
+                              href={`/crowdfunding/${campaign.slug || campaign._id}`}
+                              className="flex flex-col sm:flex-row items-center"
+                            >
+                              <div className="sm:w-2/5 relative sm:-ml-6 my-6 sm:my-8">
+                                <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-pink-100 to-blue-100">
+                                  {campaign.image ? (
+                                    <img
+                                      src={campaign.image}
+                                      alt={campaign.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <FaHandHoldingHeart className="text-5xl text-[#F43676]" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="absolute top-4 left-4 bg-white text-[#302d55] px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
+                                  {campaign.category || "Crowdfunding"}
+                                </div>
+                              </div>
+
+                              <div className="sm:w-3/5 p-8">
+                                <div className="flex flex-wrap gap-3 text-sm text-gray-500 mb-4">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <FaMapMarkerAlt className="text-[#F43676] text-xs" />
+                                    {campaign.location || "India"}
+                                  </span>
+                                  {campaign.deadline && (
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <FaCalendarAlt className="text-[#F43676] text-xs" />
+                                      Ends {formatDate(campaign.deadline)}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <h3 className="text-2xl font-bold text-[#002050] mb-4 leading-tight hover:text-[#F43676] transition-colors">
+                                  {campaign.title}
+                                </h3>
+
+                                <p className="text-[#302d55] text-base mb-5 leading-relaxed line-clamp-3">
+                                  {campaign.story?.substring(0, 200)}
+                                  {campaign.story?.length > 200 ? "..." : ""}
+                                </p>
+
+                                <div className="mb-5">
+                                  <div className="flex items-center justify-between gap-4 text-sm mb-2">
+                                    <span className="font-bold text-[#002050]">{formatCurrency(raisedAmount)}</span>
+                                    <span className="text-gray-500">of {formatCurrency(goalAmount)}</span>
+                                  </div>
+                                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full bg-gradient-to-r from-[#F43676] to-[#2D3A8C]"
+                                      style={{ width: `${progress}%` }}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="min-w-0">
+                                    <p className="text-xs text-gray-500">Beneficiary</p>
+                                    <p className="text-sm font-semibold text-[#302d55] truncate">
+                                      {campaign.beneficiaryName || "Community fundraiser"}
+                                    </p>
+                                  </div>
+                                  <div className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all duration-200">
+                                    <FaRupeeSign className="text-xs" />
+                                    Support Campaign
+                                  </div>
+                                </div>
+                              </div>
+                            </Link>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
