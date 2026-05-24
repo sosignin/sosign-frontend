@@ -350,12 +350,19 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
                               <FaPlay className="text-white text-sm ml-0.5" />
                             </div>
                           )}
+                          {/* Signature Count Badge for 1000+ signatures */}
+                          {petition.numberOfSignatures >= 1000 && (
+                            <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md z-10 flex items-center gap-1.5 animate-pulse">
+                              <PenTool className="w-3.5 h-3.5" />
+                              <span>{petition.numberOfSignatures.toLocaleString()} Signatures</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Content */}
                         <div className="sm:w-3/5 p-8">
                           {/* Category Tags - Show ALL categories */}
-                          <div className="flex flex-wrap gap-2 mb-4">
+                          <div className="flex flex-wrap gap-2 mb-4 items-center">
                             {petition.categories && petition.categories.length > 0 ? (
                               petition.categories.map((category, idx) => (
                                 <span
@@ -368,6 +375,12 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
                             ) : (
                               <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-medium">
                                 Uncategorized
+                              </span>
+                            )}
+                            {petition.numberOfSignatures >= 1000 && (
+                              <span className="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-red-500 text-white rounded-full text-sm font-bold flex items-center gap-1.5 shadow-sm">
+                                <PenTool className="w-4 h-4" />
+                                <span>{petition.numberOfSignatures.toLocaleString()} Signatures</span>
                               </span>
                             )}
                           </div>

@@ -94,6 +94,7 @@ export default function Banner({ initialPetitions = [] }) {
         comments: `${petition.numberOfSignatures || 0} Signatures`,
         link: `/currentpetitions/${petition.slug || petition._id}`,
         constituencyRequired: petition.constituencySettings?.required || false,
+        numberOfSignatures: petition.numberOfSignatures || 0,
       }));
     }
     return defaultHeroSlides;
@@ -155,6 +156,7 @@ export default function Banner({ initialPetitions = [] }) {
             comments: `${petition.numberOfSignatures || 0} Signatures`,
             link: `/currentpetitions/${petition.slug || petition._id}`,
             verificationRequired: petition.constituencySettings?.required || petition.signingRequirements?.constituency?.required || petition.signingRequirements?.aadhar?.required || false,
+            numberOfSignatures: petition.numberOfSignatures || 0,
           }));
 
           setHeroSlides(slides);
@@ -339,6 +341,14 @@ export default function Banner({ initialPetitions = [] }) {
                 </motion.div>
               </AnimatePresence>
 
+              {/* Signature Count Badge for 1000+ signatures */}
+              {heroSlides[currentSlide]?.numberOfSignatures >= 1000 && (
+                <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-500 to-red-500 text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-lg z-20 flex items-center gap-1.5 animate-pulse">
+                  <PenTool className="w-3.5 h-3.5" />
+                  <span>{heroSlides[currentSlide].numberOfSignatures.toLocaleString()} Signatures</span>
+                </div>
+              )}
+
               {/* Left Navigation Arrow */}
               <button
                 onClick={prevSlide}
@@ -367,7 +377,7 @@ export default function Banner({ initialPetitions = [] }) {
                   transition={{ duration: 0.4, ease: "easeInOut" }}
                 >
                   {/* Category Tags */}
-                  <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-5">
+                  <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-5 items-center">
                     {heroSlides[currentSlide]?.categories?.map((category, index) => (
                       <Link
                         key={index}
@@ -377,6 +387,12 @@ export default function Banner({ initialPetitions = [] }) {
                         {category}
                       </Link>
                     ))}
+                    {heroSlides[currentSlide]?.numberOfSignatures >= 1000 && (
+                      <span className="px-3 sm:px-4 py-1 sm:py-1.5 bg-gradient-to-r from-amber-500 to-red-500 text-white rounded-full text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-sm">
+                        <PenTool className="w-4 h-4" />
+                        <span>{heroSlides[currentSlide].numberOfSignatures.toLocaleString()} Signatures</span>
+                      </span>
+                    )}
                   </div>
 
                   {/* Title */}

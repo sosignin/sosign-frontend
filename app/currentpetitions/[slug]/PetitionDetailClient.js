@@ -768,7 +768,6 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 {/* Cinematic Gradients */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10" />
                                 <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/40 z-10" />
-
                                 {/* Title Overlay */}
                                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 z-20">
                                     <div className="max-w-4xl">
@@ -778,6 +777,8 @@ export default function PetitionDetailClient({ initialPetition }) {
                                         </h1>
                                     </div>
                                 </div>
+
+
 
                                 {/* Thumbnail selector integrated into image area */}
                                 {petition.petitionDetails?.images?.length > 1 && (
