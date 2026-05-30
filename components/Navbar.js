@@ -165,12 +165,12 @@ export default function Navbar() {
           <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
             {/* Navigation Links - Hidden on mobile */}
             <div className="hidden lg:flex items-center gap-8">
-              <Link
+              {/* <Link
                 href="/"
                 className="text-[#F43676] font-semibold text-base hover:text-[#F43676] transition-all duration-200 border-b-2 border-[#F43676] pb-1"
               >
                 Home
-              </Link>
+              </Link> */}
 
               {/* Start Campaign Dropdown */}
               <div

@@ -316,7 +316,7 @@ export default function Banner({ initialPetitions = [] }) {
         <div className="relative bg-white rounded-3xl shadow-lg overflow-hidden p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row items-stretch gap-6 lg:gap-8">
             {/* Left Side - Image */}
-            <div className="lg:w-[55%] relative h-[280px] sm:h-[350px] lg:h-[400px] overflow-hidden rounded-2xl group shadow-lg bg-gray-100 flex-shrink-0">
+            <div className="lg:w-[55%] relative h-[280px] sm:h-[350px] lg:h-auto min-h-[350px] lg:min-h-[400px] overflow-hidden rounded-2xl group shadow-lg bg-gray-100 flex-shrink-0">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentSlide}

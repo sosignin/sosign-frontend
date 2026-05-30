@@ -79,10 +79,10 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
     placeholderData: keepPreviousData,
     initialData: (currentPage === 1 && !searchQuery) ? {
       petitions: initialPetitions,
-      totalPages: initialPagination.totalPages,
-      totalPetitions: initialPagination.totalPetitions,
-      hasNextPage: initialPagination.hasNextPage,
-      hasPrevPage: initialPagination.hasPrevPage
+      totalPages: Math.ceil((initialPagination.totalPetitions || 0) / ITEMS_PER_PAGE) || 1,
+      totalPetitions: initialPagination.totalPetitions || 0,
+      hasNextPage: 1 < Math.ceil((initialPagination.totalPetitions || 0) / ITEMS_PER_PAGE),
+      hasPrevPage: false
     } : undefined,
     staleTime: 60 * 1000,
   });
