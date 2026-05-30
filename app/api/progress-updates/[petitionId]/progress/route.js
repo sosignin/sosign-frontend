@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-// @desc    Update petition progress percentage
+// @desc    Update petition target signatures for progress display
 // @route   PUT /api/progress-updates/[petitionId]/progress
 export async function PUT(request, { params }) {
   try {

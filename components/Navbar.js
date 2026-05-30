@@ -493,7 +493,12 @@ export default function Navbar() {
                       {(user.name || "U").charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className="hidden sm:inline truncate max-w-[100px] lg:max-w-[150px]">{user.name || "Profile"}</span>
+                  <div className="hidden sm:flex flex-col items-start text-left leading-tight">
+                    <span className="truncate max-w-[100px] lg:max-w-[150px] font-semibold">{user.name || "Profile"}</span>
+                    {user.uniqueCode && (
+                      <span className="text-[10px] text-gray-500 font-mono tracking-wider">{user.uniqueCode}</span>
+                    )}
+                  </div>
                 </motion.button>
                 <AnimatePresence>
                   {dropdownOpen && (

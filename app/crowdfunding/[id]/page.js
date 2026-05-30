@@ -33,6 +33,31 @@ export default function CampaignPage({ params }) {
   const [donorName, setDonorName] = useState("");
   const [isDonating, setIsDonating] = useState(false);
   const [donationSuccess, setDonationSuccess] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = async () => {
+    const shareData = {
+      title: campaign?.title || "Support this campaign on SoSign",
+      text: campaign?.story ? `${campaign.story.slice(0, 100)}...` : "Support this crowdfunding campaign!",
+      url: typeof window !== "undefined" ? window.location.href : "",
+    };
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log("Share failed or was cancelled", err);
+      }
+    } else if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      } catch (err) {
+        alert("Failed to copy link");
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchCampaign = async () => {
@@ -264,8 +289,11 @@ export default function CampaignPage({ params }) {
             )}
 
             <div className="mt-6 flex items-center justify-between gap-4">
-              <button className="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50">
-                <FaShareNodes /> Share
+              <button 
+                onClick={handleShare}
+                className="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
+              >
+                <FaShareNodes /> {shareCopied ? "Link Copied!" : "Share"}
               </button>
             </div>
           </div>

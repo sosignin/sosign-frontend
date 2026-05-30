@@ -21,12 +21,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${beVietnamPro.variable} antialiased`}>
+      <body className={`${beVietnamPro.variable} antialiased min-h-screen flex flex-col`}>
         <AuthProvider>
           <QueryProvider>
             <ProfileGuard>
               <Navbar />
-              <main>{children}</main>
+              <main className="flex-grow">{children}</main>
+              <Footer />
             </ProfileGuard>
           </QueryProvider>
         </AuthProvider>

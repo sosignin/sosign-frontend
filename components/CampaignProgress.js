@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,12 +9,12 @@ import {
   FileText,
   Video,
   ThumbsUp,
-  Share2,
   CheckCircle,
   AlertCircle,
   X,
   UploadCloud,
   Milestone,
+  Target,
 } from "lucide-react";
 
 export default function CampaignProgress({ petitionId, isCreator, petition }) {
@@ -24,12 +24,15 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [targetSignatures, setTargetSignatures] = useState(Number(petition?.targetSignatures) || 0);
+  const [targetInput, setTargetInput] = useState(petition?.targetSignatures ? String(petition.targetSignatures) : "");
+  const [targetSubmitting, setTargetSubmitting] = useState(false);
+  const [targetError, setTargetError] = useState("");
   
   // Form state
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [updateType, setUpdateType] = useState("text");
-  const [progressPercentage, setProgressPercentage] = useState(petition?.progressPercentage || 0);
   const [milestoneLabel, setMilestoneLabel] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [selectedImages, setSelectedImages] = useState([]);
@@ -39,10 +42,18 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
   const docInputRef = useRef(null);
 
   useEffect(() => {
-    fetchUpdates();
-  }, [petitionId]);
+    const nextTarget = Number(petition?.targetSignatures) || 0;
+    setTargetSignatures(nextTarget);
+    setTargetInput(nextTarget > 0 ? String(nextTarget) : "");
+  }, [petition?.targetSignatures, petitionId]);
 
-  const fetchUpdates = async () => {
+  const signatureCount = Number(petition?.numberOfSignatures) || 0;
+  const targetNumber = Number(targetSignatures) || 0;
+  const signatureProgressPercentage =
+    targetNumber > 0 ? Math.min(Math.floor((signatureCount / targetNumber) * 100), 100) : 0;
+  const remainingSignatures = targetNumber > 0 ? Math.max(targetNumber - signatureCount, 0) : 0;
+
+  const fetchUpdates = useCallback(async () => {
     try {
       setLoading(true);
       // Determine if there is a logged in user to pass token for reaction status
@@ -58,7 +69,11 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [petitionId]);
+
+  useEffect(() => {
+    fetchUpdates();
+  }, [fetchUpdates]);
 
   const handleImageChange = (e) => {
     if (e.target.files) {
@@ -87,9 +102,6 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
       formData.append("content", content);
       formData.append("updateType", updateType);
       
-      if (progressPercentage !== petition?.progressPercentage) {
-        formData.append("progressPercentage", progressPercentage);
-      }
       if (updateType === "milestone" && milestoneLabel) {
         formData.append("milestoneLabel", milestoneLabel);
         formData.append("milestoneStatus", "completed");
@@ -127,6 +139,49 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
       alert(err.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleTargetSubmit = async (e) => {
+    e.preventDefault();
+    const nextTarget = Number(targetInput);
+
+    if (!Number.isInteger(nextTarget) || nextTarget < 1) {
+      setTargetError("Enter a valid target signature count.");
+      return;
+    }
+
+    const userInfo = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user")) : null;
+    if (!userInfo?.token) {
+      setTargetError("Please login to update the target.");
+      return;
+    }
+
+    try {
+      setTargetSubmitting(true);
+      setTargetError("");
+
+      const response = await fetch(`/api/progress-updates/${petitionId}/progress`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ targetSignatures: nextTarget }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update target signatures");
+      }
+
+      const savedTarget = Number(data.targetSignatures) || nextTarget;
+      setTargetSignatures(savedTarget);
+      setTargetInput(String(savedTarget));
+    } catch (err) {
+      setTargetError(err.message);
+    } finally {
+      setTargetSubmitting(false);
     }
   };
 
@@ -192,20 +247,69 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
 
       {/* Progress Bar */}
       <div className="mb-10 bg-gray-50 p-5 rounded-2xl border border-gray-100">
-        <div className="flex justify-between items-end mb-2">
-          <span className="font-bold text-gray-700 text-sm uppercase tracking-wider">Overall Goal Completion</span>
-          <span className="font-black text-2xl text-[#1a1a2e]">{petition?.progressPercentage || 0}%</span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-3">
+          <div>
+            <span className="font-bold text-gray-700 text-sm uppercase tracking-wider">Signature Target Progress</span>
+            <p className="text-sm text-gray-500 mt-1">
+              {signatureCount.toLocaleString()} signatures
+              {targetNumber > 0 ? ` of ${targetNumber.toLocaleString()} target` : " collected"}
+            </p>
+          </div>
+          <span className="font-black text-2xl text-[#1a1a2e]">{signatureProgressPercentage}%</span>
         </div>
         <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden shadow-inner">
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: `${petition?.progressPercentage || 0}%` }}
+            animate={{ width: `${signatureProgressPercentage}%` }}
             transition={{ duration: 1, ease: "easeOut" }}
             className="h-full bg-gradient-to-r from-[#3650AD] via-purple-500 to-[#F43676] rounded-full relative"
           >
             <div className="absolute inset-0 bg-white/20 w-full h-full animate-pulse"></div>
           </motion.div>
         </div>
+
+        {targetNumber > 0 && (
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-gray-500">
+            <span>{remainingSignatures.toLocaleString()} signatures remaining to target</span>
+            <span className="sm:text-right">Signing remains open after 100%</span>
+          </div>
+        )}
+
+        {isCreator && (
+          <form onSubmit={handleTargetSubmit} className="mt-5 pt-5 border-t border-gray-200">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Target Signatures</label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Target className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={targetInput}
+                  onChange={(e) => {
+                    setTargetInput(e.target.value);
+                    setTargetError("");
+                  }}
+                  placeholder="1000"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#3650AD] focus:border-transparent font-medium"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={targetSubmitting}
+                className="px-5 py-3 rounded-xl bg-[#3650AD] text-white font-bold hover:bg-[#2b4089] transition-colors disabled:opacity-70"
+              >
+                {targetSubmitting ? "Saving..." : "Save Target"}
+              </button>
+            </div>
+            {targetError && (
+              <p className="text-sm text-red-500 mt-2 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                {targetError}
+              </p>
+            )}
+          </form>
+        )}
       </div>
 
       {/* Create Update Form */}
@@ -242,7 +346,7 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Type of Update</label>
                   <select
@@ -256,20 +360,6 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
                     <option value="video">Video Link (YouTube)</option>
                     <option value="milestone">Milestone Reached</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Update Overall Progress ({progressPercentage}%)
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={progressPercentage}
-                    onChange={(e) => setProgressPercentage(parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-3 accent-[#F43676]"
-                  />
                 </div>
               </div>
 

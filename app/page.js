@@ -8,7 +8,6 @@ import FeaturedTopic from "@/components/FeaturedTopic";
 import Content from "@/components/Content";
 import YouHave from "@/components/YouHave";
 import SuccessStories from "@/components/SuccessStories";
-import Footer from "@/components/Footer";
 
 async function getPetitions() {
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -67,7 +66,6 @@ export default async function Home() {
       <Content initialPetitions={petitions.slice(0, 6)} initialPagination={paginationInfo} />
       <YouHave />
       <SuccessStories />
-      <Footer />
     </>
   );
 }

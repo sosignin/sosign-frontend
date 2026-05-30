@@ -7,7 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import { FaChevronRight, FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube, FaPinterestP, FaSearch, FaCalendarAlt, FaPlay, FaPen, FaSpinner } from "react-icons/fa";
 import { BadgeCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import Footer from "@/components/Footer";
 import ProfileEditModal from "@/components/ProfileEditModal";
 
 // Sample blog posts data with categories
@@ -624,7 +623,6 @@ export default function CategoryPage() {
                     </div >
                 </section >
             </main >
-            <Footer />
             <ProfileEditModal
                 isOpen={showProfileModal}
                 onClose={() => setShowProfileModal(false)}
