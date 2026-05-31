@@ -669,6 +669,15 @@ export default function PetitionDetailClient({ initialPetition }) {
 
     const videoId = getYoutubeId(petition?.petitionDetails?.videoUrl);
 
+    const heroImages =
+        petition.petitionDetails?.images?.length > 0
+            ? petition.petitionDetails.images
+            : petition.petitionDetails?.image
+              ? [petition.petitionDetails.image]
+              : [];
+    const heroImage = heroImages[activeImageIndex] ?? heroImages[0] ?? null;
+    const hasMultipleHeroImages = heroImages.length > 1;
+
     return (
         <div className="min-h-screen bg-[#f0f2f5] pb-12">
             {/* Top Navigation / Language Bar */}
@@ -706,112 +715,165 @@ export default function PetitionDetailClient({ initialPetition }) {
             </div>
 
             {/* Cinematic Header Section */}
-            <div className="w-full bg-[#111111] mt-6 overflow-hidden">
+            <div className="w-full mt-6 overflow-hidden">
                 <div className="max-w-[1500px] mx-auto">
-                    <div className="flex flex-col lg:flex-row min-h-[500px]">
-                        {/* Left Side - Hero Image & Title */}
-                        <div className="lg:w-[65%] w-full relative">
-                            <div className="relative h-[350px] lg:h-full w-full">
-                                {petition.petitionDetails?.images && petition.petitionDetails.images.length > 0 ? (
-                                    <>
-                                        <AnimatePresence mode="wait">
-                                            <motion.div
-                                                key={activeImageIndex}
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.4 }}
-                                                className="w-full h-full"
-                                            >
-                                                <Image
-                                                    src={petition.petitionDetails.images[activeImageIndex]}
-                                                    alt={`${petition.title} - Image ${activeImageIndex + 1}`}
-                                                    fill
-                                                    className="object-contain"
-                                                    priority
-                                                />
-                                            </motion.div>
-                                        </AnimatePresence>
+                    <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr] lg:grid-rows-[auto_auto]">
+                        {/* Image — top left, no title overlay */}
+                        <div className="relative min-h-[320px] lg:min-h-[420px] overflow-hidden lg:col-start-1 lg:row-start-1">
+                            {heroImage ? (
+                                <>
+                                    {/* Blurred fill — no black letterboxing */}
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={`bg-${activeImageIndex}`}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                            className="absolute inset-0 scale-110"
+                                        >
+                                            <Image
+                                                src={heroImage}
+                                                alt=""
+                                                fill
+                                                className="object-cover blur-2xl brightness-75 saturate-125"
+                                                aria-hidden
+                                            />
+                                        </motion.div>
+                                    </AnimatePresence>
 
-                                        {petition.petitionDetails.images.length > 1 && (
-                                            <>
-                                                <button
-                                                    onClick={() => setActiveImageIndex((prev) => (prev === 0 ? petition.petitionDetails.images.length - 1 : prev - 1))}
-                                                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all z-20"
-                                                >
-                                                    <ChevronLeft className="w-6 h-6" />
-                                                </button>
-                                                <button
-                                                    onClick={() => setActiveImageIndex((prev) => (prev === petition.petitionDetails.images.length - 1 ? 0 : prev + 1))}
-                                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all z-20"
-                                                >
-                                                    <ChevronRight className="w-6 h-6" />
-                                                </button>
-                                            </>
-                                        )}
-                                    </>
-                                ) : petition.petitionDetails?.image ? (
-                                    <Image
-                                        src={petition.petitionDetails.image}
-                                        alt={petition.title}
-                                        fill
-                                        className="object-contain"
-                                        priority
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex flex-col items-center justify-center text-white/50 bg-gray-800">
-                                        <ImageIcon className="w-16 h-16 mb-4 opacity-20" />
-                                        <p>No Image Available</p>
-                                    </div>
-                                )}
+                                    {/* Main image */}
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={activeImageIndex}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                            className="absolute inset-0 z-[1]"
+                                        >
+                                            <Image
+                                                src={heroImage}
+                                                alt={`${petition.title} - Image ${activeImageIndex + 1}`}
+                                                fill
+                                                className="object-cover"
+                                                priority
+                                            />
+                                        </motion.div>
+                                    </AnimatePresence>
 
-                                {/* Cinematic Gradients */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10" />
-                                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/40 z-10" />
-                                {/* Title Overlay */}
-                                <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 z-20">
-                                    <div className="max-w-4xl">
-                                        <div className="w-16 h-1.5 bg-[#F43676] mb-6 rounded-full" />
-                                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-[1.1] drop-shadow-2xl">
-                                            {petition.title}
-                                        </h1>
-                                    </div>
-                                </div>
-
-
-
-                                {/* Thumbnail selector integrated into image area */}
-                                {petition.petitionDetails?.images?.length > 1 && (
-                                    <div className="absolute bottom-6 right-6 flex gap-2 z-30 max-w-[200px] overflow-x-auto pb-1 scrollbar-hide">
-                                        {petition.petitionDetails.images.map((img, idx) => (
+                                    {hasMultipleHeroImages && (
+                                        <>
                                             <button
-                                                key={idx}
-                                                onClick={() => setActiveImageIndex(idx)}
-                                                className={`relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === idx ? "border-[#F43676] scale-110 shadow-lg" : "border-white/20 opacity-50 hover:opacity-100"}`}
+                                                onClick={() => setActiveImageIndex((prev) => (prev === 0 ? heroImages.length - 1 : prev - 1))}
+                                                className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all z-20"
                                             >
-                                                <Image
-                                                    src={img}
-                                                    alt={`Thumbnail ${idx + 1}`}
-                                                    fill
-                                                    className="object-cover"
-                                                />
+                                                <ChevronLeft className="w-6 h-6" />
                                             </button>
-                                        ))}
-                                    </div>
-                                )}
+                                            <button
+                                                onClick={() => setActiveImageIndex((prev) => (prev === heroImages.length - 1 ? 0 : prev + 1))}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all z-20"
+                                            >
+                                                <ChevronRight className="w-6 h-6" />
+                                            </button>
+                                        </>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="w-full h-full min-h-[320px] flex flex-col items-center justify-center text-white/50 bg-gray-800">
+                                    <ImageIcon className="w-16 h-16 mb-4 opacity-20" />
+                                    <p>No Image Available</p>
+                                </div>
+                            )}
+
+                            {hasMultipleHeroImages && (
+                                <div className="absolute bottom-4 right-4 flex gap-2 z-30 max-w-[200px] overflow-x-auto pb-1 scrollbar-hide">
+                                    {heroImages.map((img, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setActiveImageIndex(idx)}
+                                            className={`relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === idx ? "border-[#F43676] scale-110 shadow-lg" : "border-white/20 opacity-50 hover:opacity-100"}`}
+                                        >
+                                            <Image
+                                                src={img}
+                                                alt={`Thumbnail ${idx + 1}`}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Blurred bottom extension — title sits here, not on the image */}
+                        <div className={`relative overflow-hidden lg:col-start-1 lg:row-start-2 ${heroImage ? "" : "bg-gray-800"}`}>
+                            {heroImage && (
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={`title-ext-${activeImageIndex}`}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        className="absolute inset-0 scale-[1.35]"
+                                    >
+                                        <Image
+                                            src={heroImage}
+                                            alt=""
+                                            fill
+                                            className="object-cover object-bottom blur-2xl brightness-75 saturate-125"
+                                            aria-hidden
+                                        />
+                                    </motion.div>
+                                </AnimatePresence>
+                            )}
+                            <div className={`absolute inset-0 ${heroImage ? "bg-black/25 backdrop-blur-[2px]" : "bg-black/20"}`} />
+                            <div className="relative z-10 p-6 md:p-10">
+                                <div className="max-w-4xl">
+                                    <div className="w-16 h-1.5 bg-[#F43676] mb-4 md:mb-5 rounded-full" />
+                                    <h1 className="text-2xl md:text-3xl lg:text-[2.75rem] font-black text-white leading-[1.12] drop-shadow-lg">
+                                        {petition.title}
+                                    </h1>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Right Side - Signing Sidebar */}
-                        <div className="lg:w-[35%] w-full bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] flex items-center justify-center p-6 lg:p-8 border-l border-white/5">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.6, delay: 0.2 }}
-                                className="w-full max-w-md"
-                            >
-                                {/* The White Card */}
-                                <div className="bg-white rounded-[2rem] shadow-2xl p-6 md:p-7 space-y-5 relative overflow-hidden">
+                        {/* Right — sign card spans image + title extension rows */}
+                        <div className="relative min-h-[380px] overflow-hidden border-t lg:border-t-0 lg:col-start-2 lg:row-start-1 lg:row-span-2">
+                            {heroImage ? (
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={`side-${activeImageIndex}`}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        className="absolute inset-0 scale-110"
+                                    >
+                                        <Image
+                                            src={heroImage}
+                                            alt=""
+                                            fill
+                                            className="object-cover object-left blur-2xl brightness-75 saturate-125"
+                                            aria-hidden
+                                        />
+                                    </motion.div>
+                                </AnimatePresence>
+                            ) : (
+                                <div className="absolute inset-0 bg-gray-800" />
+                            )}
+                            <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] pointer-events-none" />
+
+                            <div className="relative z-10 flex items-center justify-center p-6 lg:p-8 h-full min-h-[380px]">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.6, delay: 0.2 }}
+                                    className="w-full max-w-md"
+                                >
+                                    {/* The White Card */}
+                                    <div className="bg-white rounded-[2rem] shadow-2xl p-6 md:p-7 space-y-5 relative overflow-hidden">
                                     {/* Stats Banner inside Card */}
                                     <div className="text-center pb-5 border-b border-gray-100">
                                         <div className="flex items-center justify-center gap-2 mb-1">
@@ -1099,12 +1161,13 @@ export default function PetitionDetailClient({ initialPetition }) {
                                     </button>
                                 </div>
                             )}
+                                    </div>
+                                </motion.div>
+                            </div>
                         </div>
-                    </motion.div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
             <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
                 {/* Additional Petition Details */}

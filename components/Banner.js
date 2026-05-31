@@ -313,10 +313,10 @@ export default function Banner({ initialPetitions = [] }) {
 
       {/* Hero Slider Section */}
       <div className="py-6">
-        <div className="relative bg-white rounded-3xl shadow-lg overflow-hidden p-4 sm:p-6 lg:p-8">
-          <div className="flex flex-col lg:flex-row items-stretch gap-6 lg:gap-8">
+        <div className="relative max-w-7xl mx-auto bg-white rounded-3xl shadow-lg overflow-hidden p-4 sm:p-6 lg:p-7">
+          <div className="flex flex-col lg:flex-row items-stretch gap-6 lg:gap-7">
             {/* Left Side - Image */}
-            <div className="lg:w-[55%] relative h-[280px] sm:h-[350px] lg:h-auto min-h-[350px] lg:min-h-[400px] overflow-hidden rounded-2xl group shadow-lg bg-gray-100 flex-shrink-0">
+            <div className="lg:w-[55%] relative h-[260px] sm:h-[320px] lg:h-auto min-h-[320px] lg:min-h-[370px] overflow-hidden rounded-2xl group shadow-lg bg-gray-100 flex-shrink-0">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentSlide}
@@ -367,7 +367,7 @@ export default function Banner({ initialPetitions = [] }) {
             </div>
 
             {/* Right Side - Content */}
-            <div className="lg:w-1/2 p-4 sm:p-6 lg:p-8 flex flex-col justify-center min-h-[200px] lg:min-h-0">
+            <div className="lg:w-1/2 p-4 sm:p-5 lg:p-6 flex flex-col justify-center min-h-[190px] lg:min-h-0">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentSlide}
@@ -377,7 +377,7 @@ export default function Banner({ initialPetitions = [] }) {
                   transition={{ duration: 0.4, ease: "easeInOut" }}
                 >
                   {/* Category Tags */}
-                  <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-5 items-center">
+                  <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 items-center">
                     {heroSlides[currentSlide]?.categories?.map((category, index) => (
                       <Link
                         key={index}
@@ -396,7 +396,7 @@ export default function Banner({ initialPetitions = [] }) {
                   </div>
 
                   {/* Title */}
-                  <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-[#002050] mb-3 sm:mb-4 leading-tight line-clamp-2 flex items-center gap-2">
+                  <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-2xl font-bold text-[#002050] mb-3 sm:mb-4 leading-tight line-clamp-2 flex items-center gap-2">
                     <Link
                       href={heroSlides[currentSlide]?.link || "/currentpetitions"}
                       className="hover:text-[#F43676] transition-colors"
@@ -411,7 +411,7 @@ export default function Banner({ initialPetitions = [] }) {
                   </h1>
 
                   {/* Description */}
-                  <p className="text-[#302d55] text-sm sm:text-base mb-4 sm:mb-6 leading-relaxed line-clamp-3">
+                  <p className="text-[#302d55] text-sm sm:text-base mb-4 sm:mb-5 leading-relaxed line-clamp-3">
                     {heroSlides[currentSlide]?.description}
                   </p>
 
@@ -425,7 +425,7 @@ export default function Banner({ initialPetitions = [] }) {
                   </Link>
 
                   {/* Sign This Petition Button */}
-                  <div className="mb-4 sm:mb-6">
+                  <div className="mb-4 sm:mb-5">
                     <Link
                       href={heroSlides[currentSlide]?.link || "/currentpetitions"}
                       className="inline-block bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer"
@@ -458,7 +458,7 @@ export default function Banner({ initialPetitions = [] }) {
           </div>
 
           {/* Slide Indicators */}
-          <div className="flex justify-center gap-2 mt-4 lg:mt-6">
+          <div className="flex justify-center gap-2 mt-4 lg:mt-5">
             {heroSlides.map((_, index) => (
               <button
                 key={index}

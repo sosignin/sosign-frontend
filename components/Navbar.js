@@ -141,20 +141,20 @@ export default function Navbar() {
       transition={{ duration: 0.6, ease: "easeOut" }}
       className={`w-full bg-white border-b sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg border-transparent' : 'border-gray-200'}`}
     >
-      <div className="max-w-[95%] xl:max-w-[90%] mx-auto pl-0 pr-2 sm:pl-0 sm:pr-3 lg:pl-0 lg:pr-4">
-        <div className={`flex justify-between items-center transition-all duration-300 ${isScrolled ? 'h-[75px]' : 'h-[105px]'}`}>
-          <div className="flex-shrink-0 flex items-center">
+      <div className="max-w-7xl mx-auto pl-0 pr-3 sm:pl-0 sm:pr-4 lg:pl-0 lg:pr-5">
+        <div className={`flex justify-between items-center transition-all duration-300 ${isScrolled ? 'h-[68px]' : 'h-[92px]'}`}>
+          <div className="flex-shrink-0 flex items-center -ml-1 sm:-ml-2">
             <motion.div whileHover={{ scale: 1.05 }}>
               <Link href="/">
                 <Image
                   src="/log.png"
                   alt="SOSIGN Logo"
-                  width={140}
-                  height={45}
+                  width={120}
+                  height={38}
                   className={`w-auto transition-all duration-300 ${
                     isScrolled 
-                      ? (user?.name?.length > 15 ? 'h-7' : 'h-10') 
-                      : (user?.name?.length > 15 ? 'h-9' : 'h-12')
+                      ? (user?.name?.length > 15 ? 'h-6' : 'h-9') 
+                      : (user?.name?.length > 15 ? 'h-8' : 'h-10')
                   }`}
                 />
               </Link>
@@ -162,9 +162,9 @@ export default function Navbar() {
           </div>
 
           {/* Right side: Navigation + Actions */}
-          <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
+          <div className="flex items-center gap-2 sm:gap-3 lg:gap-5">
             {/* Navigation Links - Hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-6">
               {/* <Link
                 href="/"
                 className="text-[#F43676] font-semibold text-base hover:text-[#F43676] transition-all duration-200 border-b-2 border-[#F43676] pb-1"
@@ -178,9 +178,9 @@ export default function Navbar() {
                 onMouseEnter={() => setCampaignDropdown(true)}
                 onMouseLeave={() => setCampaignDropdown(false)}
               >
-                <button className="flex items-center gap-1 text-[#302d55] font-semibold text-base hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1">
+                <button className="flex items-center gap-1 text-[#302d55] font-semibold text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1">
                   Start Campaign
-                  <FaChevronDown className="text-sm" />
+                  <FaChevronDown className="text-xs" />
                 </button>
                 <AnimatePresence>
                   {campaignDropdown && (
@@ -237,9 +237,9 @@ export default function Navbar() {
                 onMouseEnter={() => setPagesDropdown(true)}
                 onMouseLeave={() => setPagesDropdown(false)}
               >
-                <button className="flex items-center gap-1 text-[#302d55] font-semibold text-base hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1">
+                <button className="flex items-center gap-1 text-[#302d55] font-semibold text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1">
                   Pages
-                  <FaChevronDown className="text-sm" />
+                  <FaChevronDown className="text-xs" />
                 </button>
                 <AnimatePresence>
                   {pagesDropdown && (
@@ -280,25 +280,25 @@ export default function Navbar() {
 
               <Link
                 href="/contact"
-                className="text-[#302d55] font-semibold text-base hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1"
+                className="text-[#302d55] font-semibold text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1"
               >
                 Contact
               </Link>
             </div>
 
             {/* Social Icons - Hidden on mobile */}
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2.5">
               {/* Facebook */}
               <a
                 href="https://www.facebook.com/sosign.in/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
               >
-                <div className="relative w-4 h-4 overflow-hidden">
-                  <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-4">
-                    <FaFacebookF className="text-sm text-[#3d3d5c] h-4 flex items-center justify-center" />
-                    <FaFacebookF className="text-sm text-[#F43676] h-4 flex items-center justify-center" />
+                <div className="relative w-3.5 h-3.5 overflow-hidden">
+                  <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
+                    <FaFacebookF className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
+                    <FaFacebookF className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
                   </div>
                 </div>
               </a>
@@ -307,12 +307,12 @@ export default function Navbar() {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
               >
-                <div className="relative w-4 h-4 overflow-hidden">
-                  <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-4">
-                    <FaXTwitter className="text-sm text-[#3d3d5c] h-4 flex items-center justify-center" />
-                    <FaXTwitter className="text-sm text-[#F43676] h-4 flex items-center justify-center" />
+                <div className="relative w-3.5 h-3.5 overflow-hidden">
+                  <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
+                    <FaXTwitter className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
+                    <FaXTwitter className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
                   </div>
                 </div>
               </a>
@@ -321,12 +321,12 @@ export default function Navbar() {
                 href="https://telegram.org"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
               >
-                <div className="relative w-4 h-4 overflow-hidden">
-                  <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-4">
-                    <FaTelegramPlane className="text-sm text-[#3d3d5c] h-4 flex items-center justify-center" />
-                    <FaTelegramPlane className="text-sm text-[#F43676] h-4 flex items-center justify-center" />
+                <div className="relative w-3.5 h-3.5 overflow-hidden">
+                  <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
+                    <FaTelegramPlane className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
+                    <FaTelegramPlane className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
                   </div>
                 </div>
               </a>
@@ -335,12 +335,12 @@ export default function Navbar() {
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
               >
-                <div className="relative w-4 h-4 overflow-hidden">
-                  <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-4">
-                    <FaInstagram className="text-sm text-[#3d3d5c] h-4 flex items-center justify-center" />
-                    <FaInstagram className="text-sm text-[#F43676] h-4 flex items-center justify-center" />
+                <div className="relative w-3.5 h-3.5 overflow-hidden">
+                  <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
+                    <FaInstagram className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
+                    <FaInstagram className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
                   </div>
                 </div>
               </a>
@@ -349,25 +349,25 @@ export default function Navbar() {
                 href="https://www.youtube.com/@sosign-in"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
               >
-                <div className="relative w-4 h-4 overflow-hidden">
-                  <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-4">
-                    <FaYoutube className="text-sm text-[#3d3d5c] h-4 flex items-center justify-center" />
-                    <FaYoutube className="text-sm text-[#F43676] h-4 flex items-center justify-center" />
+                <div className="relative w-3.5 h-3.5 overflow-hidden">
+                  <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
+                    <FaYoutube className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
+                    <FaYoutube className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
                   </div>
                 </div>
               </a>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <NotificationCenter />
 
               {/* Search Button and Overlay */}
               <div className="relative" ref={searchRef}>
                 <button
                   onClick={toggleSearch}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${searchOpen
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${searchOpen
                     ? "bg-[#e02a60] text-white"
                     : "bg-[#F43676] text-white hover:bg-[#e02a60]"
                     }`}
@@ -385,7 +385,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-[70px] sm:top-12 w-auto sm:w-96 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50"
+                    className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-[62px] sm:top-11 w-auto sm:w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
                   >
                     {/* Search Input */}
                     <form onSubmit={handleSearchSubmit} className="p-3 sm:p-4 border-b border-gray-100">
@@ -465,9 +465,9 @@ export default function Navbar() {
             {user && (
               <Link
                 href="/wallet"
-                className="hidden lg:flex relative items-center gap-1.5 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white px-3 py-2 rounded-full font-medium text-sm hover:shadow-lg hover:shadow-pink-300/30 transition-all duration-200"
+                className="hidden lg:flex relative items-center gap-1.5 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white px-2.5 py-1.5 rounded-full font-medium text-xs hover:shadow-lg hover:shadow-pink-300/30 transition-all duration-200"
               >
-                <FaWallet className="text-sm" />
+                <FaWallet className="text-xs" />
                 <span className="hidden sm:inline">{walletBalance.toFixed(1)} Pts</span>
                 <span className="sm:hidden">{walletBalance.toFixed(0)} Pts</span>
               </Link>
@@ -478,7 +478,7 @@ export default function Navbar() {
               <div className="relative">
                 <motion.button
                   onClick={toggleDropdown}
-                  className="flex items-center gap-2 text-[#302d55] font-medium text-sm hover:text-[#F43676] transition-colors duration-200 py-2 px-1"
+                  className="flex items-center gap-1.5 text-[#302d55] font-medium text-xs hover:text-[#F43676] transition-colors duration-200 py-1.5 px-1"
                   whileHover={{ scale: 1.05 }}
                 >
                   {/* Profile Picture with fallback */}
@@ -486,15 +486,15 @@ export default function Navbar() {
                     <img
                       src={user.profilePicture || user.photoURL}
                       alt={user.name || "Profile"}
-                      className="w-8 h-8 rounded-full border-2 border-[#F43676] object-cover"
+                      className="w-7 h-7 rounded-full border-2 border-[#F43676] object-cover"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#F43676] to-[#e02a60] flex items-center justify-center text-white text-xs font-bold border-2 border-[#F43676]">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-r from-[#F43676] to-[#e02a60] flex items-center justify-center text-white text-[10px] font-bold border-2 border-[#F43676]">
                       {(user.name || "U").charAt(0).toUpperCase()}
                     </div>
                   )}
                   <div className="hidden sm:flex flex-col items-start text-left leading-tight">
-                    <span className="truncate max-w-[100px] lg:max-w-[150px] font-semibold">{user.name || "Profile"}</span>
+                    <span className="truncate max-w-[90px] lg:max-w-[130px] font-semibold text-sm">{user.name || "Profile"}</span>
                     {user.uniqueCode && (
                       <span className="text-[10px] text-gray-500 font-mono tracking-wider">{user.uniqueCode}</span>
                     )}
@@ -536,9 +536,9 @@ export default function Navbar() {
               <motion.div whileHover={{ scale: 1.05 }}>
                 <Link
                   href="/login"
-                  className="bg-[#F43676] text-white px-6 py-2.5 rounded-full font-semibold text-base hover:bg-[#e02a60] transition-colors duration-200 flex items-center gap-2"
+                  className="bg-[#F43676] text-white px-5 py-2 rounded-full font-semibold text-sm hover:bg-[#e02a60] transition-colors duration-200 flex items-center gap-1.5"
                 >
-                  <FaUserCircle className="text-base" />
+                  <FaUserCircle className="text-sm" />
                   Login
                 </Link>
               </motion.div>
@@ -546,10 +546,10 @@ export default function Navbar() {
 
             {/* Mobile Menu Button */}
             <button
-              className="lg:hidden w-8 h-8 flex items-center justify-center text-[#302d55]"
+              className="lg:hidden w-7 h-7 flex items-center justify-center text-[#302d55]"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {mobileMenuOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+              {mobileMenuOpen ? <FaTimes className="text-lg" /> : <FaBars className="text-lg" />}
             </button>
           </div>
         </div>
@@ -561,7 +561,7 @@ export default function Navbar() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden border-t border-gray-100 py-4"
+              className="lg:hidden border-t border-gray-100 py-3"
             >
               <div className="flex flex-col gap-3">
                 <Link
@@ -641,18 +641,18 @@ export default function Navbar() {
                 )}
 
                 {/* Social Icons for Mobile */}
-                <div className="flex items-center gap-3 py-3 border-t border-gray-100 mt-2">
+                <div className="flex items-center gap-2.5 py-2.5 border-t border-gray-100 mt-2">
                   {/* Facebook */}
                   <a
                     href="https://facebook.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                    className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
                   >
-                    <div className="relative w-4 h-4 overflow-hidden">
-                      <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-4">
-                        <FaFacebookF className="text-sm text-[#3d3d5c] h-4 flex items-center justify-center" />
-                        <FaFacebookF className="text-sm text-[#F43676] h-4 flex items-center justify-center" />
+                    <div className="relative w-3.5 h-3.5 overflow-hidden">
+                      <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
+                        <FaFacebookF className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
+                        <FaFacebookF className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
                       </div>
                     </div>
                   </a>
@@ -661,12 +661,12 @@ export default function Navbar() {
                     href="https://twitter.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                    className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
                   >
-                    <div className="relative w-4 h-4 overflow-hidden">
-                      <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-4">
-                        <FaXTwitter className="text-sm text-[#3d3d5c] h-4 flex items-center justify-center" />
-                        <FaXTwitter className="text-sm text-[#F43676] h-4 flex items-center justify-center" />
+                    <div className="relative w-3.5 h-3.5 overflow-hidden">
+                      <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
+                        <FaXTwitter className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
+                        <FaXTwitter className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
                       </div>
                     </div>
                   </a>
@@ -675,12 +675,12 @@ export default function Navbar() {
                     href="https://telegram.org"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                    className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
                   >
-                    <div className="relative w-4 h-4 overflow-hidden">
-                      <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-4">
-                        <FaTelegramPlane className="text-sm text-[#3d3d5c] h-4 flex items-center justify-center" />
-                        <FaTelegramPlane className="text-sm text-[#F43676] h-4 flex items-center justify-center" />
+                    <div className="relative w-3.5 h-3.5 overflow-hidden">
+                      <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
+                        <FaTelegramPlane className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
+                        <FaTelegramPlane className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
                       </div>
                     </div>
                   </a>
@@ -689,12 +689,12 @@ export default function Navbar() {
                     href="https://instagram.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                    className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
                   >
-                    <div className="relative w-4 h-4 overflow-hidden">
-                      <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-4">
-                        <FaInstagram className="text-sm text-[#3d3d5c] h-4 flex items-center justify-center" />
-                        <FaInstagram className="text-sm text-[#F43676] h-4 flex items-center justify-center" />
+                    <div className="relative w-3.5 h-3.5 overflow-hidden">
+                      <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
+                        <FaInstagram className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
+                        <FaInstagram className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
                       </div>
                     </div>
                   </a>
@@ -703,12 +703,12 @@ export default function Navbar() {
                     href="https://youtube.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                    className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
                   >
-                    <div className="relative w-4 h-4 overflow-hidden">
-                      <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-4">
-                        <FaYoutube className="text-sm text-[#3d3d5c] h-4 flex items-center justify-center" />
-                        <FaYoutube className="text-sm text-[#F43676] h-4 flex items-center justify-center" />
+                    <div className="relative w-3.5 h-3.5 overflow-hidden">
+                      <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
+                        <FaYoutube className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
+                        <FaYoutube className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
                       </div>
                     </div>
                   </a>
