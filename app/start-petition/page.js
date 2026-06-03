@@ -64,7 +64,7 @@ const createInitialAadhaarOtpState = () => ({
 });
 
 export default function StartPetitionPage() {
-  const { user, loading: authLoading, clearUser } = useAuth();
+  const { user, loading: authLoading, clearUser, fetchWalletBalance } = useAuth();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -97,6 +97,8 @@ export default function StartPetitionPage() {
     error: "",
     success: "",
     registeredName: "",
+    fatherName: "",
+    panType: "",
   });
   const [voterState, setVoterState] = useState({
     verified: false,
@@ -105,6 +107,12 @@ export default function StartPetitionPage() {
     error: "",
     success: "",
     registeredName: "",
+    dob: "",
+    gender: "",
+    relation: "",
+    relationType: "",
+    area: "",
+    district: "",
   });
   // Signing requirements settings
   const [signingRequirements, setSigningRequirements] = useState({
@@ -831,10 +839,13 @@ export default function StartPetitionPage() {
         ...prev,
         verified: true,
         verificationToken: data.panVerificationToken,
-        success: `PAN Card verified successfully for ${data.registeredName}!`,
+        success: `PAN Card verified successfully!`,
         registeredName: data.registeredName,
+        fatherName: data.fatherName,
+        panType: data.panType,
         verifying: false,
       }));
+      if (fetchWalletBalance) fetchWalletBalance();
     } catch (error) {
       setPanState((prev) => ({
         ...prev,
@@ -889,10 +900,17 @@ export default function StartPetitionPage() {
         ...prev,
         verified: true,
         verificationToken: data.voterVerificationToken,
-        success: `Voter ID verified successfully for ${data.registeredName}!`,
+        success: `Voter ID verified successfully!`,
         registeredName: data.registeredName,
+        dob: data.dob,
+        gender: data.gender,
+        relation: data.relation,
+        relationType: data.relationType,
+        area: data.area,
+        district: data.district,
         verifying: false,
       }));
+      if (fetchWalletBalance) fetchWalletBalance();
     } catch (error) {
       setVoterState((prev) => ({
         ...prev,
@@ -2745,17 +2763,31 @@ export default function StartPetitionPage() {
                         </h4>
                         
                         {user?.panKyc?.status === "verified" || panState.verified ? (
-                          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-                            <div className="bg-green-100 p-2 rounded-full">
+                          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+                            <div className="bg-green-100 p-2 rounded-full mt-0.5">
                               <FaCircleCheck className="text-green-600 text-xl" />
                             </div>
-                            <div>
+                            <div className="flex-1">
                               <p className="font-bold text-green-800 text-sm">PAN Card Verified</p>
-                              <p className="text-xs text-green-700">
+                              <p className="text-xs text-green-700 mb-2">
                                 {panState.verified ?
                                   `Verified successfully: ${formData.starter.panNumber}`
                                 : `Verified via PAN Card ${user.panKyc.panNumber ? `(${user.panKyc.panNumber})` : ""}`}
                               </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white/70 p-3 rounded-lg border border-green-100 text-xs">
+                                <div>
+                                  <span className="text-gray-500 block font-medium">Name</span>
+                                  <span className="font-bold text-gray-800">{panState.verified ? panState.registeredName : (user.panKyc.registeredName || "N/A")}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block font-medium">Father Name</span>
+                                  <span className="font-bold text-gray-800">{panState.verified ? panState.fatherName : (user.panKyc.fatherName || "N/A")}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block font-medium">PAN Type</span>
+                                  <span className="font-bold text-gray-800">{panState.verified ? panState.panType : (user.panKyc.panType || "N/A")}</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         ) : (
@@ -2779,6 +2811,8 @@ export default function StartPetitionPage() {
                                           error: "",
                                           success: "",
                                           registeredName: "",
+                                          fatherName: "",
+                                          panType: "",
                                         });
                                       }
                                       handleInputChange("starter.panNumber", value);
@@ -2865,17 +2899,51 @@ export default function StartPetitionPage() {
                         </h4>
                         
                         {user?.voterKyc?.status === "verified" || voterState.verified ? (
-                          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-                            <div className="bg-green-100 p-2 rounded-full">
+                          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+                            <div className="bg-green-100 p-2 rounded-full mt-0.5">
                               <FaCircleCheck className="text-green-600 text-xl" />
                             </div>
-                            <div>
+                            <div className="flex-1">
                               <p className="font-bold text-green-800 text-sm">Voter ID Verified</p>
-                              <p className="text-xs text-green-700">
+                              <p className="text-xs text-green-700 mb-2">
                                 {voterState.verified ?
                                   `Verified successfully: ${formData.starter.voterNumber}`
                                 : `Verified via Voter ID ${user.voterKyc.voterId ? `(${user.voterKyc.voterId})` : ""}`}
                               </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-white/70 p-3 rounded-lg border border-green-100 text-xs">
+                                <div>
+                                  <span className="text-gray-500 block font-medium">Name</span>
+                                  <span className="font-bold text-gray-800">{voterState.verified ? voterState.registeredName : (user.voterKyc.registeredName || "N/A")}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block font-medium">Voter ID Number</span>
+                                  <span className="font-bold text-gray-800">{voterState.verified ? formData.starter.voterNumber : (user.voterKyc.voterId || "N/A")}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block font-medium">DOB</span>
+                                  <span className="font-bold text-gray-800">{voterState.verified ? voterState.dob : (user.voterKyc.dob || "N/A")}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block font-medium">Gender</span>
+                                  <span className="font-bold text-gray-800">{voterState.verified ? voterState.gender : (user.voterKyc.gender || "N/A")}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block font-medium">Relation</span>
+                                  <span className="font-bold text-gray-800">{voterState.verified ? voterState.relation : (user.voterKyc.relation || "N/A")}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block font-medium">Relation Type</span>
+                                  <span className="font-bold text-gray-800">{voterState.verified ? voterState.relationType : (user.voterKyc.relationType || "N/A")}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block font-medium">Area</span>
+                                  <span className="font-bold text-gray-800">{voterState.verified ? voterState.area : (user.voterKyc.area || "N/A")}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block font-medium">District</span>
+                                  <span className="font-bold text-gray-800">{voterState.verified ? voterState.district : (user.voterKyc.district || "N/A")}</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         ) : (
@@ -2899,6 +2967,12 @@ export default function StartPetitionPage() {
                                           error: "",
                                           success: "",
                                           registeredName: "",
+                                          dob: "",
+                                          gender: "",
+                                          relation: "",
+                                          relationType: "",
+                                          area: "",
+                                          district: "",
                                         });
                                       }
                                       handleInputChange("starter.voterNumber", value);

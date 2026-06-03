@@ -58,6 +58,8 @@ const createInitialPanState = () => ({
   error: "",
   success: "",
   registeredName: "",
+  fatherName: "",
+  panType: "",
 });
 
 const isValidAadhaarNumber = (value = "") =>
@@ -89,7 +91,7 @@ const initialFormData = {
 };
 
 export default function StartCrowdfundingPage() {
-  const { user, setUser, loading: authLoading } = useAuth();
+  const { user, setUser, loading: authLoading, fetchWalletBalance } = useAuth();
   const router = useRouter();
   const [formData, setFormData] = useState(initialFormData);
   const [files, setFiles] = useState({
@@ -420,8 +422,10 @@ export default function StartCrowdfundingPage() {
         ...prev,
         verified: true,
         verificationToken: data.panVerificationToken,
-        success: `PAN Card verified successfully for ${data.registeredName || "your account"}.`,
+        success: `PAN Card verified successfully!`,
         registeredName: data.registeredName || "",
+        fatherName: data.fatherName || "",
+        panType: data.panType || "",
         verifying: false,
       }));
 
@@ -431,12 +435,15 @@ export default function StartCrowdfundingPage() {
           status: "verified",
           panNumber,
           registeredName: data.registeredName || "",
+          fatherName: data.fatherName || "",
+          panType: data.panType || "",
           verifiedAt: new Date().toISOString(),
         },
       };
       setKycProfile(nextUser);
       setUser?.(nextUser);
       localStorage.setItem("user", JSON.stringify(nextUser));
+      if (fetchWalletBalance) fetchWalletBalance();
     } catch (err) {
       setPanState((prev) => ({
         ...prev,
@@ -867,15 +874,29 @@ export default function StartCrowdfundingPage() {
                             </h3>
 
                             {isPanAlreadyVerified || panState.verified ? (
-                              <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-                                <FaCircleCheck className="text-green-600 text-xl" />
-                                <div>
+                              <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+                                <FaCircleCheck className="text-green-600 text-xl mt-0.5" />
+                                <div className="flex-1">
                                   <p className="font-bold text-green-800 text-sm">PAN Card Verified</p>
-                                  <p className="text-xs text-green-700">
+                                  <p className="text-xs text-green-700 mb-2">
                                     {panState.verified
                                       ? `Verified successfully (${formData.panNumber})`
                                       : `Verified via profile ${verifiedUser?.panKyc?.panNumber ? `(${verifiedUser.panKyc.panNumber})` : ""}`}
                                   </p>
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white/70 p-3 rounded-lg border border-green-100 text-xs">
+                                    <div>
+                                      <span className="text-slate-500 block font-medium">Name</span>
+                                      <span className="font-bold text-slate-800">{panState.verified ? panState.registeredName : (verifiedUser?.panKyc?.registeredName || "N/A")}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-slate-500 block font-medium">Father Name</span>
+                                      <span className="font-bold text-slate-800">{panState.verified ? panState.fatherName : (verifiedUser?.panKyc?.fatherName || "N/A")}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-slate-500 block font-medium">PAN Type</span>
+                                      <span className="font-bold text-slate-800">{panState.verified ? panState.panType : (verifiedUser?.panKyc?.panType || "N/A")}</span>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             ) : (

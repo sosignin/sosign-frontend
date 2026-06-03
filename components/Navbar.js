@@ -141,9 +141,9 @@ export default function Navbar() {
       transition={{ duration: 0.6, ease: "easeOut" }}
       className={`w-full bg-white border-b sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg border-transparent' : 'border-gray-200'}`}
     >
-      <div className="max-w-7xl mx-auto pl-0 pr-3 sm:pl-0 sm:pr-4 lg:pl-0 lg:pr-5">
-        <div className={`flex justify-between items-center transition-all duration-300 ${isScrolled ? 'h-[68px]' : 'h-[92px]'}`}>
-          <div className="flex-shrink-0 flex items-center -ml-1 sm:-ml-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-5 xl:px-6">
+        <div className={`flex justify-between items-center gap-2 transition-all duration-300 ${isScrolled ? 'h-[68px]' : 'h-[92px]'}`}>
+          <div className="flex-shrink-0 flex items-center pl-0 sm:pl-1 lg:pl-2">
             <motion.div whileHover={{ scale: 1.05 }}>
               <Link href="/">
                 <Image
@@ -162,9 +162,9 @@ export default function Navbar() {
           </div>
 
           {/* Right side: Navigation + Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 lg:gap-5">
+          <div className="flex items-center gap-2 sm:gap-2 lg:gap-3 min-w-0">
             {/* Navigation Links - Hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-6">
+            <div className="hidden lg:flex items-center gap-3">
               {/* <Link
                 href="/"
                 className="text-[#F43676] font-semibold text-base hover:text-[#F43676] transition-all duration-200 border-b-2 border-[#F43676] pb-1"
@@ -178,9 +178,9 @@ export default function Navbar() {
                 onMouseEnter={() => setCampaignDropdown(true)}
                 onMouseLeave={() => setCampaignDropdown(false)}
               >
-                <button className="flex items-center gap-1 text-[#302d55] font-semibold text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1">
+                <button className="flex items-center gap-1 text-[#302d55] font-semibold text-xs md:text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1">
                   Start Campaign
-                  <FaChevronDown className="text-xs" />
+                  <FaChevronDown className="text-[10px]" />
                 </button>
                 <AnimatePresence>
                   {campaignDropdown && (
@@ -237,9 +237,9 @@ export default function Navbar() {
                 onMouseEnter={() => setPagesDropdown(true)}
                 onMouseLeave={() => setPagesDropdown(false)}
               >
-                <button className="flex items-center gap-1 text-[#302d55] font-semibold text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1">
+                <button className="flex items-center gap-1 text-[#302d55] font-semibold text-xs md:text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1">
                   Pages
-                  <FaChevronDown className="text-xs" />
+                  <FaChevronDown className="text-[10px]" />
                 </button>
                 <AnimatePresence>
                   {pagesDropdown && (
@@ -280,7 +280,7 @@ export default function Navbar() {
 
               <Link
                 href="/contact"
-                className="text-[#302d55] font-semibold text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1"
+                className="text-[#302d55] font-semibold text-xs md:text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1"
               >
                 Contact
               </Link>
@@ -478,7 +478,7 @@ export default function Navbar() {
               <div className="relative">
                 <motion.button
                   onClick={toggleDropdown}
-                  className="flex items-center gap-1.5 text-[#302d55] font-medium text-xs hover:text-[#F43676] transition-colors duration-200 py-1.5 px-1"
+                  className="flex items-center gap-1.5 min-w-0 text-[#302d55] font-medium text-xs hover:text-[#F43676] transition-colors duration-200 py-1.5 px-1"
                   whileHover={{ scale: 1.05 }}
                 >
                   {/* Profile Picture with fallback */}
@@ -493,8 +493,8 @@ export default function Navbar() {
                       {(user.name || "U").charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <div className="hidden sm:flex flex-col items-start text-left leading-tight">
-                    <span className="truncate max-w-[90px] lg:max-w-[130px] font-semibold text-sm">{user.name || "Profile"}</span>
+                  <div className="hidden sm:flex flex-col items-start text-left leading-tight min-w-0">
+                    <span className="truncate max-w-[100px] md:max-w-[120px] lg:max-w-[140px] font-semibold text-xs md:text-sm">{user.name || "Profile"}</span>
                     {user.uniqueCode && (
                       <span className="text-[10px] text-gray-500 font-mono tracking-wider">{user.uniqueCode}</span>
                     )}
