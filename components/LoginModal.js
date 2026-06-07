@@ -8,7 +8,7 @@ import Image from "next/image";
 import { auth, provider } from "../utils/Firebase";
 import { signInWithPopup } from "firebase/auth";
 
-const LoginModal = ({ isOpen, onClose }) => {
+const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -38,7 +38,11 @@ const LoginModal = ({ isOpen, onClose }) => {
     try {
       await login(loginEmail, loginPassword);
       onClose(); // Close modal after successful login
-      window.location.reload(); // Refresh the page to fetch user's petitions
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        window.location.reload(); // Refresh the page to fetch user's petitions
+      }
     } catch (error) {
       setLoginError(error.message);
     }
@@ -57,7 +61,11 @@ const LoginModal = ({ isOpen, onClose }) => {
       const name = `${firstName} ${lastName}`;
       await signup(name, designation, signupEmail, mobile, createPassword);
       onClose(); // Close modal after successful signup
-      window.location.reload(); // Refresh the page to fetch user's petitions
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        window.location.reload(); // Refresh the page to fetch user's petitions
+      }
     } catch (error) {
       setSignupError(error.message);
     }
@@ -69,7 +77,11 @@ const LoginModal = ({ isOpen, onClose }) => {
       const user = result.user;
       await googleLogin(user);
       onClose(); // Close modal after successful login
-      window.location.reload(); // Refresh the page to fetch user's petitions
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        window.location.reload(); // Refresh the page to fetch user's petitions
+      }
     } catch (error) {
       console.error("Google Sign-In Error:", error);
       setLoginError("Failed to sign in with Google.");

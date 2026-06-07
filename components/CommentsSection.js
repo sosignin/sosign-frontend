@@ -488,7 +488,7 @@ const CommentsSection = ({ petitionId }) => {
                       </div>
                       {user && user._id === comment?.user?._id && (
                         <div className="flex space-x-2">
-                          <button
+                          {/* <button
                             onClick={() => {
                               setEditingComment(comment._id);
                               setEditContent(comment.content);
@@ -496,7 +496,7 @@ const CommentsSection = ({ petitionId }) => {
                             className="text-blue-600 hover:text-blue-800 text-sm"
                           >
                             Edit
-                          </button>
+                          </button> */}
                           <button
                             onClick={() => handleDeleteComment(comment._id)}
                             className="text-red-600 hover:text-red-800 text-sm"
@@ -671,6 +671,11 @@ const CommentsSection = ({ petitionId }) => {
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={() => {
+          // Refresh comments without reloading the page
+          // This preserves the comment text the user typed
+          fetchComments();
+        }}
       />
     </div>
   );

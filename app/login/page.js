@@ -63,14 +63,18 @@ function LoginContent() {
     }
   }, [searchParams]);
 
-  // Check if existing user needs to complete profile
+  // If user is already logged in (e.g. from another tab), redirect away
   useEffect(() => {
     if (!loading && user) {
       const isIncomplete = !user.designation || !user.mobileNumber;
       if (isIncomplete) {
+        // Show additional info form to complete profile
         setShowAdditionalInfo(true);
         if (user.designation) setDesignation(user.designation);
         if (user.mobileNumber) setMobile(user.mobileNumber);
+      } else {
+        // Profile is complete, redirect to intended destination
+        router.push(redirectUrl);
       }
     }
   }, [user, loading]);

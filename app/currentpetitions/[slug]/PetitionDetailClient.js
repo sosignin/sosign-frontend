@@ -680,39 +680,6 @@ export default function PetitionDetailClient({ initialPetition }) {
 
     return (
         <div className="min-h-screen bg-[#f0f2f5] pb-12">
-            {/* Top Navigation / Language Bar */}
-            <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40 px-4 md:px-6 py-3">
-                <div className="max-w-[1400px] mx-auto flex justify-between items-center">
-                    <Link href="/currentpetitions" className="text-gray-600 hover:text-[#F43676] transition-colors flex items-center gap-2 text-sm font-medium">
-                        <ChevronLeft className="w-4 h-4" />
-                        Back to Petitions
-                    </Link>
-                    
-                    <div className="relative flex-shrink-0" ref={langRef}>
-                        <div id="google_translate_element"></div>
-                        <button 
-                            onClick={() => setIsLangOpen(!isLangOpen)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 font-medium text-sm ${isLangOpen ? "bg-pink-50 text-[#F43676] border-[#F43676]" : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-pink-50 hover:text-[#F43676]"}`}
-                        >
-                            <Languages className="w-4 h-4" />
-                            <span>{languages.find(l => l.code === currentLanguage)?.name || "Language"}</span>
-                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isLangOpen ? "rotate-180" : ""}`} />
-                        </button>
-                        
-                        <div className={`absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 transition-all duration-200 ${isLangOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}>
-                            {languages.map((lang) => (
-                                <button
-                                    key={lang.code}
-                                    onClick={() => changeLanguage(lang.code)}
-                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${currentLanguage === lang.code ? "text-[#F43676] font-semibold bg-pink-50/50" : "text-gray-600"}`}
-                                >
-                                    {lang.name}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {/* Cinematic Header Section */}
             <div className="w-full mt-6 overflow-hidden">
@@ -1170,6 +1137,38 @@ export default function PetitionDetailClient({ initialPetition }) {
             </div>
 
             <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
+                {/* Back Link & Language Switcher */}
+                <div className="flex justify-between items-center mt-6 mb-2">
+                    {/* <Link href="/currentpetitions" className="text-gray-600 hover:text-[#F43676] transition-colors flex items-center gap-2 text-sm font-medium">
+                        <ChevronLeft className="w-4 h-4" />
+                        Back to Petitions
+                    </Link> */}
+
+                    <div className="relative flex-shrink-0" ref={langRef}>
+                        <div id="google_translate_element"></div>
+                        <button 
+                            onClick={() => setIsLangOpen(!isLangOpen)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 font-medium text-sm ${isLangOpen ? "bg-pink-50 text-[#F43676] border-[#F43676]" : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-pink-50 hover:text-[#F43676]"}`}
+                        >
+                            <Languages className="w-4 h-4" />
+                            <span>{languages.find(l => l.code === currentLanguage)?.name || "Language"}</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isLangOpen ? "rotate-180" : ""}`} />
+                        </button>
+                        
+                        <div className={`absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 transition-all duration-200 ${isLangOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}>
+                            {languages.map((lang) => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => changeLanguage(lang.code)}
+                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${currentLanguage === lang.code ? "text-[#F43676] font-semibold bg-pink-50/50" : "text-gray-600"}`}
+                                >
+                                    {lang.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
                 {/* Additional Petition Details */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Decision Makers */}

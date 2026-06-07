@@ -238,6 +238,55 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     fetchUser();
+
+    // Sync auth state across browser tabs
+    const handleStorageChange = (e) => {
+      if (e.key === 'user') {
+        if (e.newValue) {
+          try {
+            const userData = JSON.parse(e.newValue);
+            if (userData.token) {
+              setUser(userData);
+            } else {
+              setUser(null);
+            }
+          } catch {
+            setUser(null);
+          }
+        } else {
+          // User was removed (logged out in another tab)
+          setUser(null);
+        }
+      }
+    };
+
+    // Re-check auth when tab becomes visible (handles new tabs)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            if (userData.token) {
+              setUser(userData);
+            }
+          } catch {
+            // ignore
+          }
+        } else if (user) {
+          // localStorage was cleared but state still has user
+          setUser(null);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Fetch wallet balance when user logs in
