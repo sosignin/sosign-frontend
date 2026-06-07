@@ -684,31 +684,11 @@ export default function PetitionDetailClient({ initialPetition }) {
             {/* Cinematic Header Section */}
             <div className="w-full mt-6 overflow-hidden">
                 <div className="max-w-[1500px] mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr] lg:grid-rows-[auto_auto]">
-                        {/* Image — top left, no title overlay */}
-                        <div className="relative min-h-[320px] lg:min-h-[420px] overflow-hidden lg:col-start-1 lg:row-start-1">
+                    <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr]">
+                        {/* Image with title overlay at bottom */}
+                        <div className="relative min-h-[320px] lg:min-h-[480px] overflow-hidden lg:col-start-1 rounded-2xl">
                             {heroImage ? (
                                 <>
-                                    {/* Blurred fill — no black letterboxing */}
-                                    <AnimatePresence mode="wait">
-                                        <motion.div
-                                            key={`bg-${activeImageIndex}`}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4 }}
-                                            className="absolute inset-0 scale-110"
-                                        >
-                                            <Image
-                                                src={heroImage}
-                                                alt=""
-                                                fill
-                                                className="object-cover blur-2xl brightness-75 saturate-125"
-                                                aria-hidden
-                                            />
-                                        </motion.div>
-                                    </AnimatePresence>
-
                                     {/* Main image */}
                                     <AnimatePresence mode="wait">
                                         <motion.div
@@ -723,11 +703,21 @@ export default function PetitionDetailClient({ initialPetition }) {
                                                 src={heroImage}
                                                 alt={`${petition.title} - Image ${activeImageIndex + 1}`}
                                                 fill
-                                                className="object-cover"
+                                                className="object-contain"
                                                 priority
                                             />
                                         </motion.div>
                                     </AnimatePresence>
+
+                                    {/* Title overlay at bottom */}
+                                    <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-4 md:p-5">
+                                        <div className="max-w-3xl mx-auto">
+                                            <div className="w-12 h-1 bg-[#F43676] mb-3 rounded-full" />
+                                            <h1 className="text-lg md:text-xl lg:text-2xl font-black text-white leading-tight drop-shadow-lg line-clamp-3">
+                                                {petition.title}
+                                            </h1>
+                                        </div>
+                                    </div>
 
                                     {hasMultipleHeroImages && (
                                         <>
@@ -745,6 +735,25 @@ export default function PetitionDetailClient({ initialPetition }) {
                                             </button>
                                         </>
                                     )}
+
+                                    {hasMultipleHeroImages && (
+                                        <div className="absolute bottom-16 md:bottom-20 right-4 flex gap-2 z-20 max-w-[200px] overflow-x-auto pb-1 scrollbar-hide">
+                                            {heroImages.map((img, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => setActiveImageIndex(idx)}
+                                                    className={`relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === idx ? "border-[#F43676] scale-110 shadow-lg" : "border-white/20 opacity-50 hover:opacity-100"}`}
+                                                >
+                                                    <Image
+                                                        src={img}
+                                                        alt={`Thumbnail ${idx + 1}`}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </>
                             ) : (
                                 <div className="w-full h-full min-h-[320px] flex flex-col items-center justify-center text-white/50 bg-gray-800">
@@ -752,85 +761,10 @@ export default function PetitionDetailClient({ initialPetition }) {
                                     <p>No Image Available</p>
                                 </div>
                             )}
-
-                            {hasMultipleHeroImages && (
-                                <div className="absolute bottom-4 right-4 flex gap-2 z-30 max-w-[200px] overflow-x-auto pb-1 scrollbar-hide">
-                                    {heroImages.map((img, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => setActiveImageIndex(idx)}
-                                            className={`relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === idx ? "border-[#F43676] scale-110 shadow-lg" : "border-white/20 opacity-50 hover:opacity-100"}`}
-                                        >
-                                            <Image
-                                                src={img}
-                                                alt={`Thumbnail ${idx + 1}`}
-                                                fill
-                                                className="object-cover"
-                                            />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
                         </div>
 
-                        {/* Blurred bottom extension — title sits here, not on the image */}
-                        <div className={`relative overflow-hidden lg:col-start-1 lg:row-start-2 ${heroImage ? "" : "bg-gray-800"}`}>
-                            {heroImage && (
-                                <AnimatePresence mode="wait">
-                                    <motion.div
-                                        key={`title-ext-${activeImageIndex}`}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
-                                        className="absolute inset-0 scale-[1.35]"
-                                    >
-                                        <Image
-                                            src={heroImage}
-                                            alt=""
-                                            fill
-                                            className="object-cover object-bottom blur-2xl brightness-75 saturate-125"
-                                            aria-hidden
-                                        />
-                                    </motion.div>
-                                </AnimatePresence>
-                            )}
-                            <div className={`absolute inset-0 ${heroImage ? "bg-black/25 backdrop-blur-[2px]" : "bg-black/20"}`} />
-                            <div className="relative z-10 p-6 md:p-10">
-                                <div className="max-w-4xl">
-                                    <div className="w-16 h-1.5 bg-[#F43676] mb-4 md:mb-5 rounded-full" />
-                                    <h1 className="text-2xl md:text-3xl lg:text-[2.75rem] font-black text-white leading-[1.12] drop-shadow-lg">
-                                        {petition.title}
-                                    </h1>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right — sign card spans image + title extension rows */}
-                        <div className="relative min-h-[380px] overflow-hidden border-t lg:border-t-0 lg:col-start-2 lg:row-start-1 lg:row-span-2">
-                            {heroImage ? (
-                                <AnimatePresence mode="wait">
-                                    <motion.div
-                                        key={`side-${activeImageIndex}`}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
-                                        className="absolute inset-0 scale-110"
-                                    >
-                                        <Image
-                                            src={heroImage}
-                                            alt=""
-                                            fill
-                                            className="object-cover object-left blur-2xl brightness-75 saturate-125"
-                                            aria-hidden
-                                        />
-                                    </motion.div>
-                                </AnimatePresence>
-                            ) : (
-                                <div className="absolute inset-0 bg-gray-800" />
-                            )}
-                            <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] pointer-events-none" />
+                        {/* Right — sign card */}
+                        <div className="relative min-h-[380px] overflow-hidden border-t lg:border-t-0 lg:col-start-2 bg-gray-50">
 
                             <div className="relative z-10 flex items-center justify-center p-6 lg:p-8 h-full min-h-[380px]">
                                 <motion.div
