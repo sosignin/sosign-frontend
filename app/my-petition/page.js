@@ -20,7 +20,8 @@ import {
   FaUsers,
   FaCalendarAlt,
   FaArrowRight,
-  FaEdit
+  FaEdit,
+  FaComments
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import LoginModal from "../../components/LoginModal";
@@ -73,6 +74,12 @@ const MyPetitionsPage = () => {
       },
     },
   });
+
+  // Comment management state
+  const [showCommentsModal, setShowCommentsModal] = useState(null);
+  const [pendingComments, setPendingComments] = useState({});
+  const [commentsLoading, setCommentsLoading] = useState({});
+  const [approvingComments, setApprovingComments] = useState(new Set());
 
   const { user, loading: authLoading } = useAuth();
 
@@ -443,11 +450,12 @@ const MyPetitionsPage = () => {
                   required: editFormData.signingRequirements.aadhar.required,
                 },
               },
+              approved: false, // Mark as pending approval after edit
             }
             : p
         ));
         setShowEditModal(null);
-        alert("Petition updated successfully!");
+        alert("Petition updated successfully! Your changes are pending admin approval.");
       } else {
         alert(data.message || "Failed to update petition");
       }
@@ -456,6 +464,112 @@ const MyPetitionsPage = () => {
       alert("Error updating petition. Please try again.");
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const fetchPendingComments = async (petitionId) => {
+    try {
+      setCommentsLoading(prev => ({ ...prev, [petitionId]: true }));
+      const userInfo = JSON.parse(localStorage.getItem("user"));
+
+      // Use the dedicated pending comments endpoint with protect middleware
+      const response = await fetch(`/api/comments/petition/${petitionId}/pending`, {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch comments: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // The pending endpoint returns pendingComments directly
+      const pendingItems = data.pendingComments || [];
+
+      setPendingComments(prev => ({
+        ...prev,
+        [petitionId]: pendingItems,
+      }));
+    } catch (error) {
+      console.error("Error fetching pending comments:", error);
+      alert("Error fetching comments. Please try again.");
+    } finally {
+      setCommentsLoading(prev => ({ ...prev, [petitionId]: false }));
+    }
+  };
+
+  const approveComment = async (commentId, petitionId) => {
+    try {
+      setApprovingComments(prev => new Set(prev).add(commentId));
+      const userInfo = JSON.parse(localStorage.getItem("user"));
+
+      const response = await fetch(`/api/comments/${commentId}/approve`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to approve comment: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Remove from pending
+      setPendingComments(prev => ({
+        ...prev,
+        [petitionId]: prev[petitionId]?.filter(c => c._id !== commentId) || [],
+      }));
+      alert("Comment approved successfully!");
+    } catch (error) {
+      console.error("Error approving comment:", error);
+      alert("Error approving comment. Please try again.");
+    } finally {
+      setApprovingComments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(commentId);
+        return newSet;
+      });
+    }
+  };
+
+  const rejectComment = async (commentId, petitionId) => {
+    try {
+      setApprovingComments(prev => new Set(prev).add(commentId));
+      const userInfo = JSON.parse(localStorage.getItem("user"));
+
+      const response = await fetch(`/api/comments/${commentId}/reject`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to reject comment: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Remove from pending
+      setPendingComments(prev => ({
+        ...prev,
+        [petitionId]: prev[petitionId]?.filter(c => c._id !== commentId) || [],
+      }));
+      alert("Comment rejected successfully!");
+    } catch (error) {
+      console.error("Error rejecting comment:", error);
+      alert("Error rejecting comment. Please try again.");
+    } finally {
+      setApprovingComments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(commentId);
+        return newSet;
+      });
     }
   };
 
@@ -705,6 +819,15 @@ const MyPetitionsPage = () => {
                                 className="flex items-center gap-1.5 px-3 py-2 bg-[#3650AD] hover:bg-[#2a4085] text-white text-sm font-medium rounded-lg transition-colors"
                               >
                                 <FaEdit className="text-xs" /> Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setShowCommentsModal(petition._id);
+                                  fetchPendingComments(petition._id);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors"
+                              >
+                                <FaComments className="text-xs" /> Comments
                               </button>
                               <button
                                 onClick={() => declareVictory(petition._id)}
@@ -1014,6 +1137,95 @@ const MyPetitionsPage = () => {
                                       <FaTimes /> Cancel
                                     </button>
                                   </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Comments Modal */}
+                            {showCommentsModal === petition._id && (
+                              <div className="mt-4 p-5 bg-purple-50 border border-purple-200 rounded-xl">
+                                <h4 className="font-semibold text-[#1a1a2e] mb-4 flex items-center gap-2 text-lg">
+                                  <FaComments className="text-purple-600" /> Pending Comments ({pendingComments[petition._id]?.length || 0})
+                                </h4>
+
+                                {commentsLoading[petition._id] ? (
+                                  <div className="flex items-center justify-center py-8">
+                                    <FaSpinner className="animate-spin text-2xl text-purple-600" />
+                                  </div>
+                                ) : (pendingComments[petition._id]?.length || 0) === 0 ? (
+                                  <div className="text-center py-8 text-gray-500">
+                                    <p>No pending comments to review.</p>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                                    {pendingComments[petition._id]?.map((comment) => (
+                                      <div key={comment._id} className="bg-white p-4 rounded-lg border border-purple-100">
+                                        <div className="flex items-start justify-between gap-4">
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <p className="font-semibold text-gray-800">{comment.userName || "Anonymous"}</p>
+                                              <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Pending</span>
+                                            </div>
+                                            <p className="text-gray-700 text-sm mb-3">{comment.text}</p>
+                                            <p className="text-xs text-gray-400">
+                                              Posted on {new Date(comment.createdAt).toLocaleDateString()}
+                                            </p>
+
+                                            {/* Display replies if any */}
+                                            {comment.replies && comment.replies.length > 0 && (
+                                              <div className="mt-3 pl-4 border-l-2 border-purple-200 space-y-2">
+                                                <p className="text-xs font-semibold text-gray-600">Replies:</p>
+                                                {comment.replies.map((reply) => (
+                                                  <div key={reply._id} className="text-sm bg-gray-50 p-2 rounded">
+                                                    <p className="font-medium text-gray-700">{reply.userName || "Anonymous"}</p>
+                                                    <p className="text-gray-600">{reply.text}</p>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Action Buttons */}
+                                          <div className="flex gap-2 flex-shrink-0">
+                                            <button
+                                              onClick={() => approveComment(comment._id, petition._id)}
+                                              disabled={approvingComments.has(comment._id)}
+                                              className="flex items-center gap-1 px-3 py-2 bg-green-100 hover:bg-green-200 text-green-700 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+                                            >
+                                              {approvingComments.has(comment._id) ? (
+                                                <FaSpinner className="animate-spin" />
+                                              ) : (
+                                                <FaCheck />
+                                              )}
+                                              Approve
+                                            </button>
+                                            <button
+                                              onClick={() => rejectComment(comment._id, petition._id)}
+                                              disabled={approvingComments.has(comment._id)}
+                                              className="flex items-center gap-1 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+                                            >
+                                              {approvingComments.has(comment._id) ? (
+                                                <FaSpinner className="animate-spin" />
+                                              ) : (
+                                                <FaTimes />
+                                              )}
+                                              Reject
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Close Button */}
+                                <div className="flex gap-2 mt-4 pt-4 border-t border-purple-200">
+                                  <button
+                                    onClick={() => setShowCommentsModal(null)}
+                                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300"
+                                  >
+                                    Close
+                                  </button>
                                 </div>
                               </div>
                             )}

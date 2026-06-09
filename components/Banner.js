@@ -219,7 +219,7 @@ export default function Banner({ initialPetitions = [] }) {
   if (!mounted) return null;
 
   return (
-    <section className="bg-[#f0f2f5] mt px-4 sm:px-8 lg:px-12 pt-6">
+    <section className="bg-[#f0f2f5] px-4 sm:px-8 lg:px-12 pt-6">
       {/* Top Stories Ticker Bar */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden flex items-stretch">
         {/* Top Stories Label */}
@@ -313,16 +313,16 @@ export default function Banner({ initialPetitions = [] }) {
 
       {/* Hero Slider Section */}
       <div className="py-6">
-        <div className="relative max-w-7xl mx-auto bg-white rounded-3xl shadow-lg overflow-hidden p-4 sm:p-6 lg:p-7">
+        <div className="relative bg-white rounded-3xl shadow-lg overflow-hidden p-4 sm:p-6 lg:p-7">
           <div className="flex flex-col lg:flex-row items-stretch gap-6 lg:gap-7">
             {/* Left Side - Image */}
             <div className="lg:w-[55%] relative h-[260px] sm:h-[320px] lg:h-auto min-h-[320px] lg:min-h-[370px] overflow-hidden rounded-2xl group shadow-lg bg-gray-100 flex-shrink-0">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentSlide}
-                  initial={{ opacity: 0, scale: 1.05 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   transition={{ duration: 0.5, ease: "easeInOut" }}
                   className="absolute inset-0 w-full h-full"
                 >

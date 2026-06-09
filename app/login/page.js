@@ -300,6 +300,24 @@ function LoginContent() {
     setForgotLoading(true);
 
     try {
+      // Validate email using our API route
+      const validationResponse = await fetch("/api/validate-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      const validationData = await validationResponse.json();
+
+      // Check if email is valid
+      if (!validationData.isValid) {
+        setForgotError("Please enter a valid email address");
+        setForgotLoading(false);
+        return;
+      }
+
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const response = await fetch(`${backendUrl}/api/users/forgot-password`, {
         method: "POST",
