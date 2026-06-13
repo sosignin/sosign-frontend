@@ -1078,7 +1078,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                         Back to Petitions
                     </Link> */}
 
-                    <div className="relative flex-shrink-0" ref={langRef}>
+                    <div className="relative flex-shrink-0 ml-auto" ref={langRef}>
                         <div id="google_translate_element"></div>
                         <button 
                             onClick={() => setIsLangOpen(!isLangOpen)}
@@ -1089,7 +1089,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                             <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isLangOpen ? "rotate-180" : ""}`} />
                         </button>
                         
-                        <div className={`absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 transition-all duration-200 ${isLangOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}>
+                        <div className={`absolute right-0 sm:right-0 mt-2 w-48 max-h-[60vh] overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 transition-all duration-200 ${isLangOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}
+                            style={{ maxWidth: 'calc(100vw - 2rem)' }}
+                        >
                             {languages.map((lang) => (
                                 <button
                                     key={lang.code}

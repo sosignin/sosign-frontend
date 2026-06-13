@@ -841,7 +841,27 @@ const MyPetitionsPage = () => {
                                 )}
                                 Victory
                               </button>
-                              {!petition.hidden && !hideRequestStatus[petition._id]?.hasRequest && (
+                              {/* Hide Request Status / Button */}
+                              {petition.hidden ? (
+                                <span className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg cursor-default">
+                                  <FaEyeSlash className="text-xs" /> Hidden
+                                </span>
+                              ) : hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "pending" ? (
+                                <span className="flex items-center gap-1.5 px-3 py-2 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-lg cursor-default border border-yellow-200">
+                                  <FaClock className="text-xs" /> Hide Pending
+                                </span>
+                              ) : hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "approved" ? (
+                                <span className="flex items-center gap-1.5 px-3 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-lg cursor-default border border-green-200">
+                                  <FaCheck className="text-xs" /> Hide Approved
+                                </span>
+                              ) : hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "rejected" ? (
+                                <button
+                                  onClick={() => setShowHideModal(petition._id)}
+                                  className="flex items-center gap-1.5 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition-colors border border-red-200"
+                                >
+                                  <FaTimes className="text-xs" /> Hide Rejected
+                                </button>
+                              ) : (
                                 <button
                                   onClick={() => setShowHideModal(petition._id)}
                                   className="flex items-center gap-1.5 px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 text-sm font-medium rounded-lg transition-colors"
@@ -856,10 +876,57 @@ const MyPetitionsPage = () => {
                               </Link>
                             </div>
 
-                            {/* Hide Modal */}
+                            {/* Hide Request Rejected Info Banner */}
+                            {hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "rejected" && showHideModal !== petition._id && (
+                              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+                                <div className="flex items-start gap-2">
+                                  <FaTimes className="text-red-500 mt-0.5 flex-shrink-0" />
+                                  <div className="flex-1">
+                                    <p className="text-sm font-semibold text-red-700">Hide request was rejected by admin</p>
+                                    {hideRequestStatus[petition._id]?.adminNote && (
+                                      <p className="text-xs text-red-600 mt-1 bg-red-100/50 p-2 rounded-lg">
+                                        <span className="font-bold">Admin note:</span> {hideRequestStatus[petition._id].adminNote}
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      You can submit a new hide request by clicking the &quot;Hide Rejected&quot; button above.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Hide Request Pending Info Banner */}
+                            {hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "pending" && (
+                              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                                <div className="flex items-start gap-2">
+                                  <FaClock className="text-yellow-500 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-sm font-semibold text-yellow-700">Hide request is pending admin review</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Submitted on {hideRequestStatus[petition._id]?.createdAt ? formatDate(hideRequestStatus[petition._id].createdAt) : "recently"}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Hide Modal - for new requests or re-submission after rejection */}
                             {showHideModal === petition._id && (
                               <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                                <h4 className="font-semibold text-gray-700 mb-2">Request to Hide Petition</h4>
+                                <h4 className="font-semibold text-gray-700 mb-2">
+                                  {hideRequestStatus[petition._id]?.status === "rejected" ? "Re-submit Hide Request" : "Request to Hide Petition"}
+                                </h4>
+                                {hideRequestStatus[petition._id]?.status === "rejected" && (
+                                  <div className="mb-3 p-2 bg-red-50 border border-red-100 rounded-lg">
+                                    <p className="text-xs text-red-600">
+                                      <span className="font-bold">Previous request was rejected.</span>
+                                      {hideRequestStatus[petition._id]?.adminNote && (
+                                        <> Admin note: {hideRequestStatus[petition._id].adminNote}</>
+                                      )}
+                                    </p>
+                                  </div>
+                                )}
                                 <textarea
                                   value={hideReason}
                                   onChange={(e) => setHideReason(e.target.value)}
