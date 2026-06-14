@@ -47,6 +47,7 @@ function LoginContent() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
   const [forgotError, setForgotError] = useState("");
+  const [devResetUrl, setDevResetUrl] = useState("");
   const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
   const [completingProfile, setCompletingProfile] = useState(false);
   const recaptchaVerifierRef = useRef(null);
@@ -291,6 +292,7 @@ function LoginContent() {
     e.preventDefault();
     setForgotError("");
     setForgotMessage("");
+    setDevResetUrl("");
 
     if (!forgotEmail.trim()) {
       setForgotError("Please enter your email address");
@@ -313,7 +315,11 @@ function LoginContent() {
 
       // Check if email is valid
       if (!validationData.isValid) {
-        setForgotError("Please enter a valid email address");
+        if (validationData.disposable) {
+          setForgotError("Disposable/temporary email addresses are not allowed. Please use a permanent email.");
+        } else {
+          setForgotError("The email address appears to be invalid. Please enter a valid email address.");
+        }
         setForgotLoading(false);
         return;
       }
@@ -331,6 +337,9 @@ function LoginContent() {
 
       if (response.ok) {
         setForgotMessage(data.message || "Password reset link has been sent to your email.");
+        if (data.resetUrl) {
+          setDevResetUrl(data.resetUrl);
+        }
         setForgotEmail("");
       } else {
         setForgotError(data.message || "Failed to send reset email. Please try again.");
@@ -920,7 +929,21 @@ function LoginContent() {
               )}
 
               {forgotMessage && (
-                <p className="text-green-600 text-sm bg-green-50 py-2 px-3 rounded-lg">{forgotMessage}</p>
+                <div className="bg-green-50 p-3 rounded-lg space-y-2 text-left">
+                  <p className="text-green-600 text-sm">{forgotMessage}</p>
+                  {devResetUrl && (
+                    <div className="pt-1 border-t border-green-200">
+                      <a 
+                        href={devResetUrl} 
+                        className="text-[#F43676] font-bold underline hover:text-[#e02a60] text-sm break-all"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Reset Password Link (Dev Mode) →
+                      </a>
+                    </div>
+                  )}
+                </div>
               )}
 
               <div className="flex gap-3">
@@ -931,6 +954,7 @@ function LoginContent() {
                     setForgotEmail("");
                     setForgotError("");
                     setForgotMessage("");
+                    setDevResetUrl("");
                   }}
                   className="flex-1 py-3 rounded-xl border-2 border-gray-200 font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
                 >

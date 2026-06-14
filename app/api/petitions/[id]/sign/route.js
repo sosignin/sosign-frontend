@@ -23,6 +23,9 @@ export async function PUT(request, { params }) {
         body = JSON.stringify({
           referralCode: json.referralCode,
           constituencyNumber: json.constituencyNumber,
+          aadharNumber: json.aadharNumber,
+          aadhaarVerificationToken: json.aadhaarVerificationToken,
+          aadharVerificationToken: json.aadharVerificationToken,
         });
       }
     } catch (e) {
