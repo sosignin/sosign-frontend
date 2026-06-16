@@ -80,11 +80,13 @@ export default function YouHave() {
 
               {/* Content */}
               <div className="absolute inset-0 p-4 flex flex-col justify-end">
-                {/* Signature Count Badge */}
+                {/* Signature Count Badge - only show for 1000+ signatures */}
+                {(petition.numberOfSignatures || 0) >= 1000 && (
                 <div className="absolute top-4 right-4 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
                   <PenTool className="w-3 h-3" />
                   {petition.numberOfSignatures || 0}
                 </div>
+                )}
 
                 {/* Category Tag */}
                 {petition.category && (

@@ -104,11 +104,13 @@ export default function SuccessStories() {
                                     <span>Victory!</span>
                                 </div>
 
-                                {/* Signature Count Badge */}
+                                {/* Signature Count Badge - only show for 1000+ signatures */}
+                                {(petition.totalSignatures || 0) >= 1000 && (
                                 <div className="absolute top-4 right-4 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
                                     <FaUsers className="text-white" />
                                     {formatSignatures(petition.totalSignatures)}
                                 </div>
+                                )}
 
                                 {/* Category Tag */}
                                 {petition.category && (

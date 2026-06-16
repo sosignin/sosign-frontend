@@ -54,7 +54,7 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
   const router = useRouter();
   const { user } = useAuth();
 
-  const ITEMS_PER_PAGE = 6;
+  const ITEMS_PER_PAGE = 20;
 
   // Fetch petitions from API
   const {

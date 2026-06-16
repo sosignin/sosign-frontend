@@ -7,7 +7,7 @@ import LoginModal from "./LoginModal";
 import config from "../config/api";
 import { Clock, ThumbsUp } from "lucide-react";
 
-const CommentsSection = ({ petitionId }) => {
+const CommentsSection = ({ petitionId, petitionStarterId }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,6 +22,9 @@ const CommentsSection = ({ petitionId }) => {
   const [hasMore, setHasMore] = useState(true);
 
   const { user } = useAuth();
+
+  // Check if the current user is the petition creator
+  const isPetitioner = user && petitionStarterId && user._id === petitionStarterId;
 
   // Fetch comments
   const fetchComments = async (pageNum = 1, append = false) => {
@@ -551,6 +554,7 @@ const CommentsSection = ({ petitionId }) => {
                         <ThumbsUp className="w-4 h-4" />
                         <span>{(comment?.likes || []).length}</span>
                       </button>
+                      {isPetitioner && (
                       <button
                         onClick={() => {
                           setReplyingTo(
@@ -562,6 +566,7 @@ const CommentsSection = ({ petitionId }) => {
                       >
                         Reply
                       </button>
+                      )}
                     </div>
 
                     {/* Reply Form */}
@@ -621,8 +626,11 @@ const CommentsSection = ({ petitionId }) => {
                                     : "?"}
                                 </div>
                                 <div>
-                                  <p className="font-medium text-sm text-gray-900">
+                                  <p className="font-medium text-sm text-gray-900 flex items-center gap-1.5">
                                     {reply?.user?.name || "Unknown User"}
+                                    {reply?.user?._id === petitionStarterId && (
+                                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full uppercase tracking-wider">Petitioner</span>
+                                    )}
                                   </p>
                                   <p className="text-xs text-gray-500">
                                     {formatDate(reply.createdAt)}

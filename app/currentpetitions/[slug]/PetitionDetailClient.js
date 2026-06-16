@@ -1641,7 +1641,7 @@ export default function PetitionDetailClient({ initialPetition }) {
 
                 {/* Comments Section */}
                 <div id="comments" className="mt-8">
-                    <CommentsSection petitionId={petition._id} />
+                    <CommentsSection petitionId={petition._id} petitionStarterId={petition.petitionStarter?.user?._id || petition.petitionStarter?.user} />
                 </div>
             </div>
 
