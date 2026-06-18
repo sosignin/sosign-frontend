@@ -52,7 +52,7 @@ function LoginContent() {
   const [completingProfile, setCompletingProfile] = useState(false);
   const recaptchaVerifierRef = useRef(null);
 
-  const { login, signup, loading, googleLogin, updateProfile, user, logout } = useAuth();
+  const { login, signup, loading, googleLogin, updateProfile, user, logout, setUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -81,6 +81,36 @@ function LoginContent() {
   }, [user, loading]);
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+  // Handle impersonation token auto-login from admin panel
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      const fetchAndSetUser = async () => {
+        try {
+          const res = await axios.get(`${backendUrl}/api/users/profile`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          
+          if (res.data) {
+            const userData = { ...res.data, token };
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+            
+            // Redirect user
+            const redirect = searchParams.get('redirect') || '/';
+            router.push(redirect);
+          }
+        } catch (err) {
+          console.error("Failed to impersonate user:", err);
+          setLoginError("Failed to auto-login. Token might be invalid.");
+        }
+      };
+      fetchAndSetUser();
+    }
+  }, [searchParams, backendUrl, router, setUser]);
 
   // Send OTP to phone number
   const handleSendOtp = async () => {
