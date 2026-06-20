@@ -17,7 +17,7 @@ async function getPetitions() {
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
   try {
-    const res = await fetch(`${backendUrl}/api/petitions?limit=10`, {
+    const res = await fetch(`${backendUrl}/api/petitions?limit=20`, {
       next: { revalidate: 60 }, // Revalidate every 60 seconds (ISR)
       signal: controller.signal,
     });
@@ -63,7 +63,7 @@ export default async function Home() {
       {/* <Slider /> */}
       {/* <Video /> */}
       {/* <FeaturedTopic /> */}
-      <Content initialPetitions={petitions.slice(0, 6)} initialPagination={paginationInfo} />
+      <Content initialPetitions={petitions} initialPagination={paginationInfo} />
       <YouHave />
       <SuccessStories />
     </>

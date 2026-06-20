@@ -125,7 +125,7 @@ export default function CurrentPetitions() {
   const { data: petitions = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: ["currentPetitions"],
     queryFn: async () => {
-      const data = await safeFetch("/api/petitions");
+      const data = await safeFetch("/api/petitions?limit=100");
       if (data.success === false && data.rateLimited) {
         console.warn('Rate limit exceeded for current petitions, using fallback');
         return [];

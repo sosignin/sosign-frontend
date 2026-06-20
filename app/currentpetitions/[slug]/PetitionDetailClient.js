@@ -174,20 +174,30 @@ export default function PetitionDetailClient({ initialPetition }) {
     }, []);
 
     const changeLanguage = (langCode) => {
-        // 1. Set the Google Translate cookie (most reliable way)
         const domain = window.location.hostname;
-        const cookieValue = `/en/${langCode}`;
-        document.cookie = `googtrans=${cookieValue}; path=/;`;
-        document.cookie = `googtrans=${cookieValue}; path=/; domain=${domain};`;
+        
+        // 1. Clear or set the Google Translate cookie
+        if (langCode === "en") {
+            document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
+            document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain};`;
+        } else {
+            const cookieValue = `/en/${langCode}`;
+            document.cookie = `googtrans=${cookieValue}; path=/;`;
+            document.cookie = `googtrans=${cookieValue}; path=/; domain=${domain};`;
+        }
         
         // 2. Try to trigger the hidden select element
         const findSelect = () => document.querySelector(".goog-te-combo") || 
                                  document.querySelector("#google_translate_element select") ||
                                  document.querySelector("select.goog-te-combo");
 
+        // The target value for the google combo box (empty string restores original language)
+        const targetValue = langCode === "en" ? "" : langCode;
+
         const select = findSelect();
         if (select) {
-            select.value = langCode;
+            select.value = targetValue;
             select.dispatchEvent(new Event("change"));
             setCurrentLanguage(langCode);
         } else {
@@ -196,17 +206,15 @@ export default function PetitionDetailClient({ initialPetition }) {
             const interval = setInterval(() => {
                 const retrySelect = findSelect();
                 if (retrySelect) {
-                    retrySelect.value = langCode;
+                    retrySelect.value = targetValue;
                     retrySelect.dispatchEvent(new Event("change"));
                     setCurrentLanguage(langCode);
                     clearInterval(interval);
                 }
                 if (++retries > 5) {
                     // Fallback: If still not found after retries, reload the page 
-                    // The cookie we set above will trigger translation on reload
-                    if (langCode !== "en") {
-                        window.location.reload();
-                    }
+                    // The cookie we set above will trigger the correct translation state on reload
+                    window.location.reload();
                     clearInterval(interval);
                 }
             }, 300);
