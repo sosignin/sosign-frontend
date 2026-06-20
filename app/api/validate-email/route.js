@@ -26,18 +26,26 @@ export async function POST(request) {
 
     const validationData = await validationResponse.json();
 
-    // The API returns "IsValid" (uppercase I), "Score", "State", etc.
-    const isValid = validationData.IsValid === true && (validationData.Score || 0) >= 80;
-    const isDisposable = validationData.Disposable === true;
+    // The API might return lowercase or uppercase keys
+    const apiIsValid = validationData.isValid !== undefined ? validationData.isValid : validationData.IsValid;
+    const apiScore = validationData.score !== undefined ? validationData.score : validationData.Score;
+    const apiDisposable = validationData.disposable !== undefined ? validationData.disposable : validationData.Disposable;
+    const apiState = validationData.state !== undefined ? validationData.state : validationData.State;
+    const apiReason = validationData.reason !== undefined ? validationData.reason : validationData.Reason;
+    const apiFree = validationData.free !== undefined ? validationData.free : validationData.Free;
+    const apiRole = validationData.role !== undefined ? validationData.role : validationData.Role;
+
+    const isValid = apiIsValid === true && (apiScore || 0) >= 80;
+    const isDisposable = apiDisposable === true;
 
     return Response.json({
       isValid: isValid && !isDisposable,
-      score: validationData.Score || 0,
-      state: validationData.State || "Unknown",
-      reason: validationData.Reason || "",
+      score: apiScore || 0,
+      state: apiState || "Unknown",
+      reason: apiReason || "",
       disposable: isDisposable,
-      free: validationData.Free || false,
-      role: validationData.Role || false,
+      free: apiFree || false,
+      role: apiRole || false,
       data: validationData,
     });
   } catch (error) {
