@@ -319,16 +319,15 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
                   >
                     Petitions
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveContentTab("crowdfunding")}
-                    className={`rounded-2xl px-4 py-3 text-sm sm:text-base font-bold transition-all ${activeContentTab === "crowdfunding"
+                  <Link
+                    href="/crowdfunding"
+                    className={`rounded-2xl px-4 py-3 text-sm sm:text-base font-bold transition-all text-center ${activeContentTab === "crowdfunding"
                       ? "bg-[#F43676] text-white shadow-md shadow-pink-100"
                       : "text-[#302d55] hover:bg-pink-50"
                       }`}
                   >
                     Crowdfunding
-                  </button>
+                  </Link>
                 </div>
               </div>
 
