@@ -13,6 +13,6 @@ export default function robots() {
         "/kyc-callback",
       ],
     },
-    sitemap: "https://www.sosign.in/sitemap.xml",
+    sitemap: "https://sosign.in/sitemap.xml",
   };
 }

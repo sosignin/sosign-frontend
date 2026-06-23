@@ -14,7 +14,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 export const metadata = {
-  metadataBase: new URL("https://www.sosign.in"),
+  metadataBase: new URL("https://sosign.in"),
   title: {
     default: "SoSign | Start & Sign Petitions for Change",
     template: "%s | SoSign",
@@ -25,7 +25,7 @@ export const metadata = {
     title: "SoSign | Start & Sign Petitions for Change",
     description:
       "Start a petition, gather verified signatures via Aadhaar, and launch crowdfunding campaigns to create lasting social impact on SoSign.",
-    url: "https://www.sosign.in",
+    url: "https://sosign.in",
     siteName: "SoSign",
     locale: "en_IN",
     type: "website",

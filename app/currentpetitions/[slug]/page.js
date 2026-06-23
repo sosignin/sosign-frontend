@@ -25,7 +25,7 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const petition = await getPetition(slug);
 
-  const baseUrl = "https://www.sosign.in";
+  const baseUrl = "https://sosign.in";
   const petitionUrl = `${baseUrl}/currentpetitions/${slug}`;
 
   if (!petition) {

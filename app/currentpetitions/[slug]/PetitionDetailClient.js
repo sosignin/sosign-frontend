@@ -1358,7 +1358,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                     <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                         {(() => {
                             // Use production domain for social sharing (Facebook requires publicly accessible URLs)
-                            const productionDomain = "https://www.sosign.in";
+                            const productionDomain = "https://sosign.in";
                             const path = `/currentpetitions/${slug}`;
 
                             // For copy/display, use current origin; for Facebook, use production

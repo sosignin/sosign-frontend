@@ -3,7 +3,7 @@ import SuccessfulPetitionClient from "./SuccessfulPetitionClient";
 async function getSuccessfulPetition(slug) {
   try {
     const backendUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      process.env.NEXT_PUBLIC_API_URL || "https://api.sosign.in";
     const response = await fetch(`${backendUrl}/api/successful-petitions/${slug}`, {
       cache: "no-store",
     });
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const petition = await getSuccessfulPetition(slug);
 
-  const baseUrl = "https://www.sosign.in";
+  const baseUrl = "https://sosign.in";
   const petitionUrl = `${baseUrl}/successfulpetitions/${slug}`;
 
   if (!petition) {

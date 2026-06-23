@@ -1,8 +1,8 @@
-const BASE_URL = "https://www.sosign.in";
+const BASE_URL = "https://sosign.in";
 
 export default async function sitemap() {
   const backendUrl =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_API_URL || "https://api.sosign.in";
 
   // Static pages
   const staticPages = [
