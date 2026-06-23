@@ -6,12 +6,24 @@ import React, { useEffect } from "react";
  * KYC Callback Page
  * 
  * DigiLocker redirects to this page after the user completes authentication.
- * This page sends a postMessage to the parent/opener window to signal completion,
- * then auto-closes. This eliminates the need for costly status-check polling.
+ * This page signals the parent window via localStorage (the `storage` event
+ * fires in all other same-origin tabs/windows). This is more reliable than
+ * postMessage since window.opener gets nullified during cross-origin navigation.
  */
 const KycCallbackPage = () => {
   useEffect(() => {
-    // Notify the parent window that DigiLocker auth is complete
+    // Signal completion to the parent window via localStorage
+    // The `storage` event fires in ALL other same-origin tabs/windows
+    try {
+      localStorage.setItem(
+        "digilocker_complete",
+        JSON.stringify({ success: true, timestamp: Date.now() })
+      );
+    } catch (err) {
+      console.error("Failed to signal completion:", err);
+    }
+
+    // Also try postMessage as a backup (works if opener is still available)
     try {
       if (window.opener) {
         window.opener.postMessage(
@@ -20,13 +32,13 @@ const KycCallbackPage = () => {
         );
       }
     } catch (err) {
-      console.error("Failed to send message to opener:", err);
+      // Silently ignore — localStorage approach is the primary method
     }
 
     // Auto-close this popup after a short delay
     const timer = setTimeout(() => {
       window.close();
-    }, 2000);
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, []);

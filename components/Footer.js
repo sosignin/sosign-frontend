@@ -255,12 +255,12 @@ export default function Footer() {
       </div> */}
 
       {/* Scroll to Top Button */}
-      <button
+      {/* <button
         onClick={scrollToTop}
         className="absolute bottom-6 right-6 w-10 h-10 bg-[#F43676] rounded-full flex items-center justify-center hover:bg-[#e02a60] transition-colors shadow-lg"
       >
         <FaArrowUp className="text-white text-sm" />
-      </button>
+      </button> */}
     </footer>
   );
 }

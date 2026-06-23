@@ -57,24 +57,48 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
     }
   }, [onKycSuccess]);
 
-  // Listen for postMessage from the kyc-callback popup window
+  // Listen for completion signal from the kyc-callback page.
+  // Primary: `storage` event fires when kyc-callback writes to localStorage.
+  // This is reliable even when window.opener is null (cross-origin navigation).
+  // Backup: `message` event in case postMessage works.
   useEffect(() => {
+    const handleStorageEvent = (event) => {
+      if (event.key === "digilocker_complete" && event.newValue) {
+        try {
+          const data = JSON.parse(event.newValue);
+          if (data?.success) {
+            // Clean up the signal
+            localStorage.removeItem("digilocker_complete");
+
+            const cid = clientIdRef.current;
+            const token = tokenRef.current;
+            if (cid && token) {
+              handleComplete(cid, token);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to parse digilocker_complete:", err);
+        }
+      }
+    };
+
     const handleMessage = (event) => {
-      // Only accept messages from our own origin
       if (event.origin !== window.location.origin) return;
-      
       if (event.data?.type === "DIGILOCKER_COMPLETE" && event.data?.success) {
         const cid = clientIdRef.current;
         const token = tokenRef.current;
-        
         if (cid && token) {
           handleComplete(cid, token);
         }
       }
     };
 
+    window.addEventListener("storage", handleStorageEvent);
     window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("storage", handleStorageEvent);
+      window.removeEventListener("message", handleMessage);
+    };
   }, [handleComplete]);
 
   const handleInitialize = async () => {
