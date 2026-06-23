@@ -75,6 +75,7 @@ export default function StartPetitionPage() {
   const [tempImage, setTempImage] = useState(null); // Currently being cropped
   const [showCropper, setShowCropper] = useState(false);
   const [croppingIndex, setCroppingIndex] = useState(null);
+  const [imageError, setImageError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [touchedFields, setTouchedFields] = useState({});
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -2177,12 +2178,10 @@ export default function StartPetitionPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3">
                   {selectedImages.map((img, idx) => (
                     <div key={idx} className="relative group aspect-video">
-                      <Image
+                      <img
                         src={URL.createObjectURL(img)}
                         alt={`Selected ${idx + 1}`}
                         className="w-full h-full object-cover rounded-xl border border-gray-200"
-                        width={200}
-                        height={112}
                       />
                       <button
                         type="button"
@@ -2216,6 +2215,13 @@ export default function StartPetitionPage() {
                   )}
                 </div>
 
+                {imageError && (
+                  <p className="text-sm text-red-500 mb-3 font-semibold flex items-center gap-1.5 bg-red-50 p-2.5 rounded-lg border border-red-100">
+                    <FaCircleExclamation className="text-red-500" />
+                    {imageError}
+                  </p>
+                )}
+                
                 <input
                   id="imageUpload"
                   type="file"
@@ -2224,7 +2230,14 @@ export default function StartPetitionPage() {
                   onChange={(e) => {
                     if (e.target.files?.[0]) {
                       const file = e.target.files[0];
-                      setSelectedImages(prev => [...prev, file]);
+                      if (file.size > 2 * 1024 * 1024) {
+                        setImageError("Image size must be less than 2MB");
+                      } else {
+                        setImageError("");
+                        setTempImage(file);
+                        setCroppingIndex(null);
+                        setShowCropper(true);
+                      }
                       e.target.value = ""; // Reset for same file selection
                     }
                   }}

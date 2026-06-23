@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 import { X, ZoomIn, ZoomOut, Check, Crop, Maximize, Square, RectangleHorizontal } from "lucide-react";
 
 export default function ImageCropper({ imageFile, onCrop, onCancel }) {
   const [imgSrc, setImgSrc] = useState("");
   const [zoom, setZoom] = useState(1);
   const [aspectRatio, setAspectRatio] = useState(16 / 9); // Default to 16:9
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const dragX = useMotionValue(0);
+  const dragY = useMotionValue(0);
   
   const containerRef = useRef(null);
   const imgRef = useRef(null);
@@ -24,8 +26,9 @@ export default function ImageCropper({ imageFile, onCrop, onCancel }) {
   // Reset zoom and position when aspect ratio changes
   useEffect(() => {
     setZoom(1);
-    setPosition({ x: 0, y: 0 });
-  }, [aspectRatio]);
+    dragX.set(0);
+    dragY.set(0);
+  }, [aspectRatio, dragX, dragY]);
 
   const handleCrop = () => {
     const img = imgRef.current;
@@ -117,21 +120,16 @@ export default function ImageCropper({ imageFile, onCrop, onCancel }) {
             <div className="absolute inset-0 z-0 bg-[#0a0a0f] flex items-center justify-center">
                {imgSrc && (
                  <motion.img
+                   key={`${imgSrc}-${aspectRatio}`}
                    ref={imgRef}
                    src={imgSrc}
                    alt="Crop preview"
                    drag
                    dragMomentum={false}
-                   onDrag={(e, info) => {
-                     setPosition(prev => ({
-                       x: prev.x + info.delta.x,
-                       y: prev.y + info.delta.y
-                     }));
-                   }}
                    style={{ 
                      scale: zoom,
-                     x: position.x,
-                     y: position.y,
+                     x: dragX,
+                     y: dragY,
                      cursor: "move",
                      touchAction: "none"
                    }}
@@ -143,11 +141,11 @@ export default function ImageCropper({ imageFile, onCrop, onCancel }) {
                      const contRatio = container.width / container.height;
                      
                      if (imgRatio > contRatio) {
-                       img.style.width = "100%";
-                       img.style.height = "auto";
-                     } else {
                        img.style.height = "100%";
                        img.style.width = "auto";
+                     } else {
+                       img.style.width = "100%";
+                       img.style.height = "auto";
                      }
                    }}
                  />
