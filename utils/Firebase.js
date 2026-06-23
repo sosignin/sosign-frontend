@@ -1,23 +1,31 @@
 // Import the functions you need from the SDKs you need
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { initializeApp } from "firebase/app";
-import { GoogleAuthProvider } from "firebase/auth";
+import { getAnalytics } from "firebase/analytics";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, GoogleAuthProvider } from "firebase/auth";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyB7-AhsuGmhsjQ1wG7NJrp1-ROGFpbTzRo",
-  authDomain: "loginsosign.firebaseapp.com",
-  projectId: "loginsosign",
-  storageBucket: "loginsosign.firebasestorage.app",
-  messagingSenderId: "12104021682",
-  appId: "1:12104021682:web:dac6f996147d3e5918bbab"
+  apiKey: "AIzaSyAL-fa3dzo2cjctRIJ8mZmmibDARZOGTFM",
+  authDomain: "sosign-world.firebaseapp.com",
+  projectId: "sosign-world",
+  storageBucket: "sosign-world.firebasestorage.app",
+  messagingSenderId: "499235294983",
+  appId: "1:499235294983:web:4c9a19e2ae106c11807fa2",
+  measurementId: "G-ZN9R5F7V8M"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+let analytics;
+if (typeof window !== "undefined") {
+  analytics = getAnalytics(app);
+}
+
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-export { auth, provider, RecaptchaVerifier, signInWithPhoneNumber };
+export { auth, provider, RecaptchaVerifier, signInWithPhoneNumber, analytics };

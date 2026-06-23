@@ -1,114 +1,28 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { FaIdCard, FaCheckCircle, FaSpinner, FaTimesCircle, FaClock, FaExternalLinkAlt, FaLock } from "react-icons/fa";
 
 const AadhaarKycSection = ({ user, onKycSuccess }) => {
-  // status: "idle" | "initializing" | "linking" | "polling" | "completing" | "success" | "error"
+  // status: "idle" | "initializing" | "linking" | "completing" | "success" | "error"
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [successData, setSuccessData] = useState(null);
   const [clientId, setClientId] = useState(null);
   const [oauthUrl, setOauthUrl] = useState(null);
   
-  const pollingTimerRef = useRef(null);
+  const completedCalledRef = useRef(false);
+  const popupRef = useRef(null);
+  const clientIdRef = useRef(null);
+  const tokenRef = useRef(null);
 
   const isVerified = user?.aadhaarKyc?.status === "verified";
 
-  // Stop polling on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
-    };
-  }, []);
+  const handleComplete = useCallback(async (cid, token) => {
+    // Guard: prevent duplicate calls
+    if (completedCalledRef.current) return;
+    completedCalledRef.current = true;
 
-  const handleInitialize = async () => {
-    setStatus("initializing");
-    setError("");
-    setClientId(null);
-    setOauthUrl(null);
-
-    try {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      if (!storedUser?.token) throw new Error("Not authenticated");
-
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      
-      const response = await fetch(`${backendUrl}/api/aadhaar/digilocker/initialize`, {
-        method: "POST",
-        headers: { 
-          Authorization: `Bearer ${storedUser.token}`,
-          "Content-Type": "application/json"
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to initialize DigiLocker session");
-      }
-
-      setClientId(data.clientId);
-      setOauthUrl(data.url);
-      setStatus("linking");
-
-      // Open DigiLocker in a new window
-      window.open(data.url, "_blank", "width=600,height=700");
-
-      // Start polling for status
-      startPolling(data.clientId, storedUser.token);
-    } catch (err) {
-      console.error("Initialization Error:", err);
-      setError(err.message || "An unexpected error occurred.");
-      setStatus("error");
-    }
-  };
-
-  const startPolling = (cid, token) => {
-    if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
-    
-    setStatus("polling");
-    
-    pollingTimerRef.current = setInterval(async () => {
-      try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const response = await fetch(`${backendUrl}/api/aadhaar/digilocker/status`, {
-          method: "POST",
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ clientId: cid }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          // If status check fails, we might want to continue polling unless it's a fatal error
-          console.warn("Polling status failed:", data.message);
-          return;
-        }
-
-        if (data.isFailed) {
-          clearInterval(pollingTimerRef.current);
-          setError("DigiLocker authentication failed or was cancelled.");
-          setStatus("error");
-        } else if (data.isCompleted) {
-          clearInterval(pollingTimerRef.current);
-          if (data.aadhaarLinked) {
-            handleComplete(cid, token);
-          } else {
-            setError("Your Aadhaar is not linked to this DigiLocker account.");
-            setStatus("error");
-          }
-        }
-      } catch (err) {
-        console.error("Polling Error:", err);
-      }
-    }, 4000); // Poll every 4 seconds
-  };
-
-  const handleComplete = async (cid, token) => {
     setStatus("completing");
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -137,7 +51,72 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
       if (onKycSuccess) onKycSuccess(data.aadhaarKyc);
     } catch (err) {
       console.error("Completion Error:", err);
+      completedCalledRef.current = false; // Allow retry on error
       setError(err.message || "Failed to finalize verification.");
+      setStatus("error");
+    }
+  }, [onKycSuccess]);
+
+  // Listen for postMessage from the kyc-callback popup window
+  useEffect(() => {
+    const handleMessage = (event) => {
+      // Only accept messages from our own origin
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data?.type === "DIGILOCKER_COMPLETE" && event.data?.success) {
+        const cid = clientIdRef.current;
+        const token = tokenRef.current;
+        
+        if (cid && token) {
+          handleComplete(cid, token);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [handleComplete]);
+
+  const handleInitialize = async () => {
+    setStatus("initializing");
+    setError("");
+    setClientId(null);
+    setOauthUrl(null);
+    completedCalledRef.current = false;
+
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (!storedUser?.token) throw new Error("Not authenticated");
+
+      tokenRef.current = storedUser.token;
+
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      
+      const response = await fetch(`${backendUrl}/api/aadhaar/digilocker/initialize`, {
+        method: "POST",
+        headers: { 
+          Authorization: `Bearer ${storedUser.token}`,
+          "Content-Type": "application/json"
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to initialize DigiLocker session");
+      }
+
+      setClientId(data.clientId);
+      clientIdRef.current = data.clientId;
+      setOauthUrl(data.url);
+      setStatus("linking");
+
+      // Open DigiLocker in a new window
+      const popup = window.open(data.url, "_blank", "width=600,height=700");
+      popupRef.current = popup;
+    } catch (err) {
+      console.error("Initialization Error:", err);
+      setError(err.message || "An unexpected error occurred.");
       setStatus("error");
     }
   };
@@ -204,24 +183,24 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
   }
 
   // ─── Verification Flow UI ───
-  const isProcessing = ["initializing", "polling", "completing"].includes(status);
+  const isProcessing = ["initializing", "completing"].includes(status);
 
   return (
     <div className="mt-8 p-6 bg-white rounded-2xl border-2 border-gray-100 shadow-sm overflow-hidden relative">
       <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-0 opacity-50"></div>
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-6">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status === "error" ? "bg-gradient-to-r from-red-500 to-red-600" : isProcessing ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-gradient-to-r from-blue-600 to-blue-700"}`}>
-            {isProcessing ? <FaSpinner className="text-white text-lg animate-spin" /> : <FaLock className="text-white text-lg" />}
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status === "error" ? "bg-gradient-to-r from-red-500 to-red-600" : isProcessing || status === "linking" ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-gradient-to-r from-blue-600 to-blue-700"}`}>
+            {isProcessing || status === "linking" ? <FaSpinner className="text-white text-lg animate-spin" /> : <FaLock className="text-white text-lg" />}
           </div>
           <div>
             <h3 className="text-xl font-bold text-[#1a1a2e]">Identity Verification</h3>
             <p className="text-xs text-gray-500">
-              {status === "linking" ? "Waiting for DigiLocker authentication..." : status === "polling" ? "Verifying your documents..." : status === "error" ? "Verification failed" : "Secure KYC via DigiLocker OAuth"}
+              {status === "linking" ? "Waiting for DigiLocker authentication..." : status === "completing" ? "Fetching Aadhaar details..." : status === "error" ? "Verification failed" : "Secure KYC via DigiLocker OAuth"}
             </p>
           </div>
-          <span className={`ml-auto px-3 py-1 text-xs font-bold rounded-full ${status === "error" ? "bg-red-100 text-red-700" : isProcessing ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
-            {status === "error" ? "FAILED" : isProcessing ? "IN PROGRESS" : "NOT VERIFIED"}
+          <span className={`ml-auto px-3 py-1 text-xs font-bold rounded-full ${status === "error" ? "bg-red-100 text-red-700" : isProcessing || status === "linking" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
+            {status === "error" ? "FAILED" : isProcessing || status === "linking" ? "IN PROGRESS" : "NOT VERIFIED"}
           </span>
         </div>
 
@@ -275,7 +254,10 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
               Please complete the login in the popup window. If you closed it, click below to reopen.
             </p>
             <button 
-              onClick={() => window.open(oauthUrl, "_blank", "width=600,height=700")}
+              onClick={() => {
+                const popup = window.open(oauthUrl, "_blank", "width=600,height=700");
+                popupRef.current = popup;
+              }}
               className="px-6 py-2 bg-white border-2 border-blue-600 text-blue-600 rounded-full text-sm font-bold hover:bg-blue-50 transition-colors inline-flex items-center gap-2"
             >
               <FaExternalLinkAlt className="text-xs" />
@@ -284,12 +266,12 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
           </div>
         )}
 
-        {/* Polling/Completing State */}
-        {(status === "polling" || status === "completing") && (
+        {/* Completing State */}
+        {status === "completing" && (
           <div className="text-center py-10">
             <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
             <h4 className="text-lg font-bold text-gray-800 mb-2">
-              {status === "polling" ? "Verifying Login..." : "Fetching Aadhaar Details..."}
+              Fetching Aadhaar Details...
             </h4>
             <p className="text-sm text-gray-500 animate-pulse">
               This usually takes less than 10 seconds. Please don&apos;t close this page.
