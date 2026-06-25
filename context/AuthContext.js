@@ -173,6 +173,10 @@ export const AuthProvider = ({ children }) => {
         mobileNumber: updatedData.mobileNumber,
         socialLinks: updatedData.socialLinks,
         aadhaarKyc: updatedData.aadhaarKyc || storedUser.aadhaarKyc,
+        panKyc: updatedData.panKyc || storedUser.panKyc,
+        voterKyc: updatedData.voterKyc || storedUser.voterKyc,
+        plan: updatedData.plan || storedUser.plan,
+        freeChecksRemaining: updatedData.freeChecksRemaining !== undefined ? updatedData.freeChecksRemaining : storedUser.freeChecksRemaining,
       };
 
       setUser(newUserData);

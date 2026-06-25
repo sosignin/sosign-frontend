@@ -25,6 +25,7 @@ export default function WalletPage() {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [addAmount, setAddAmount] = useState("");
+    const [plans, setPlans] = useState([]);
     const [isAdding, setIsAdding] = useState(false);
     const [showAddForm, setShowAddForm] = useState(false);
     const [message, setMessage] = useState({ type: "", text: "" });
@@ -70,6 +71,15 @@ export default function WalletPage() {
             if (reqResponse.ok) {
                 const data = await reqResponse.json();
                 setActiveRequests(data.requests || []);
+            }
+
+            // Fetch dynamic plans list
+            const plansResponse = await fetch(`${backendUrl}/api/plans`);
+            if (plansResponse.ok) {
+                const data = await plansResponse.json();
+                if (Array.isArray(data)) {
+                    setPlans(data);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch wallet data:", error);
@@ -180,7 +190,10 @@ export default function WalletPage() {
         });
     };
 
-    const quickAmounts = [999, 49000];
+    const purchasablePlans = plans.filter(p => p.key !== "free");
+    const quickAmounts = purchasablePlans.length > 0
+        ? purchasablePlans.map(p => p.price)
+        : [999, 49000, 99000, 499999];
 
     if (!user) {
         return null;
@@ -188,7 +201,7 @@ export default function WalletPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-pink-50 py-8 px-4">
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
@@ -197,6 +210,29 @@ export default function WalletPage() {
                 >
                     <h1 className="text-3xl font-bold text-[#302d55] mb-2">My Points Wallet</h1>
                     <p className="text-gray-500">Manage your wallet balance in points (₹5 = 1 Point)</p>
+                </motion.div>
+
+                {/* Plan Status Card */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.15 }}
+                    className="bg-white rounded-3xl p-6 mb-8 shadow-md border border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4"
+                >
+                    <div>
+                        <h3 className="text-lg font-bold text-[#302d55] mb-1">Active Plan Status</h3>
+                        <p className="text-sm text-gray-500">Your points billing tier and remaining identity verifications</p>
+                    </div>
+                    <div className="flex gap-4 flex-wrap">
+                        <div className="bg-pink-50 border border-pink-100 rounded-2xl px-5 py-3 text-center min-w-[120px]">
+                            <p className="text-[10px] text-pink-600 font-bold uppercase tracking-wider">Current Tier</p>
+                            <p className="text-lg font-extrabold text-[#F43676] capitalize">{user.plan || "Free"}</p>
+                        </div>
+                        <div className="bg-blue-50 border border-blue-100 rounded-2xl px-5 py-3 text-center min-w-[120px]">
+                            <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Free Checks</p>
+                            <p className="text-lg font-extrabold text-blue-700">{user.freeChecksRemaining ?? 4} Left</p>
+                        </div>
+                    </div>
                 </motion.div>
 
                 {/* Balance Card */}
@@ -225,6 +261,126 @@ export default function WalletPage() {
                         Purchase Points
                     </button>
                 </motion.div>
+
+                {/* Pricing Plans Grid */}
+                <div className="mb-8">
+                    <h3 className="text-xl font-bold text-[#302d55] mb-2 text-center">Verification Credit Plans</h3>
+                    <p className="text-sm text-gray-500 text-center mb-6">Select a plan to purchase credits. Higher-tier plans offer discounted verification rates.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {purchasablePlans.length === 0 ? (
+                            <div className="col-span-full text-center py-6 text-gray-400 italic">
+                                No premium subscription plans available.
+                            </div>
+                        ) : (
+                            purchasablePlans.map((p, idx) => (
+                                <motion.div
+                                    key={p.key}
+                                    whileHover={{ y: -5 }}
+                                    className={`bg-white rounded-2xl p-5 border-2 shadow-sm flex flex-col justify-between transition-all ${
+                                        user.plan === p.key
+                                            ? "border-[#F43676] ring-2 ring-pink-100"
+                                            : "border-gray-100 hover:border-pink-300"
+                                    }`}
+                                >
+                                    <div className="mb-4">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                                                p.key === "bronze" ? "bg-amber-100 text-amber-800" :
+                                                p.key === "silver" ? "bg-slate-100 text-slate-800" :
+                                                p.key === "gold" ? "bg-yellow-100 text-yellow-800" :
+                                                p.key === "platinum" ? "bg-purple-100 text-purple-800" :
+                                                "bg-pink-50 text-[#F43676]"
+                                            }`}>
+                                                {p.name.replace(" Plan", "")}
+                                            </span>
+                                            {user.plan === p.key && (
+                                                <span className="text-[9px] bg-pink-500 text-white font-semibold px-2 py-0.5 rounded-full">
+                                                    Active
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h4 className="text-2xl font-bold text-gray-900 mb-1">₹{p.price.toLocaleString()}</h4>
+                                        <p className="text-sm text-[#F43676] font-bold mb-2">{p.points.toLocaleString()} Points</p>
+                                        <p className="text-[11px] text-gray-500 leading-snug">{p.bestFor}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setAddAmount(p.price.toString());
+                                            setShowAddForm(true);
+                                            // Scroll to recharge input dynamically
+                                            const formElement = document.querySelector('form');
+                                            if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
+                                        }}
+                                        className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                            user.plan === p.key
+                                                ? "bg-pink-50 text-[#F43676] border border-[#F43676] hover:bg-pink-100"
+                                                : "bg-[#302d55] text-white hover:bg-[#3f3b6d]"
+                                        }`}
+                                    >
+                                        Buy {p.name}
+                                    </button>
+                                </motion.div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* Rates Comparison Table */}
+                <div className="bg-white rounded-3xl p-6 mb-8 shadow-md border border-gray-100">
+                    <h3 className="text-lg font-bold text-[#302d55] mb-2">Verification Point Deductions</h3>
+                    <p className="text-xs text-gray-500 mb-4 font-normal">Higher plan tiers consume fewer points per verification, giving you more value for your points balance.</p>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs text-gray-500">
+                            <thead className="text-[10px] text-gray-700 uppercase bg-gray-50 rounded-lg">
+                                <tr>
+                                    <th className="px-4 py-3">Verification Type</th>
+                                    {purchasablePlans.map((p, idx) => (
+                                        <th key={p.key} className={`px-3 py-3 ${
+                                            idx % 4 === 0 ? "text-amber-700" :
+                                            idx % 4 === 1 ? "text-slate-700" :
+                                            idx % 4 === 2 ? "text-yellow-700" :
+                                            "text-purple-700"
+                                        }`}>
+                                            {p.name.replace(" Plan", "")}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                <tr className="hover:bg-gray-50/50">
+                                    <td className="px-4 py-3 font-medium text-gray-900">Aadhaar Verification</td>
+                                    {purchasablePlans.map(p => (
+                                        <td key={p.key} className="px-3 py-3 font-semibold">{p.deductions?.aadhaar} pts</td>
+                                    ))}
+                                </tr>
+                                <tr className="hover:bg-gray-50/50">
+                                    <td className="px-4 py-3 font-medium text-gray-900">PAN Card Verification</td>
+                                    {purchasablePlans.map(p => (
+                                        <td key={p.key} className="px-3 py-3 font-semibold">{p.deductions?.pan} pts</td>
+                                    ))}
+                                </tr>
+                                <tr className="hover:bg-gray-50/50">
+                                    <td className="px-4 py-3 font-medium text-gray-900">Voter ID Verification</td>
+                                    {purchasablePlans.map(p => (
+                                        <td key={p.key} className="px-3 py-3 font-semibold">{p.deductions?.voter} pts</td>
+                                    ))}
+                                </tr>
+                                <tr className="hover:bg-gray-50/50 bg-pink-50/20">
+                                    <td className="px-4 py-3 font-semibold text-gray-900">Aadhaar + PAN (Combined)</td>
+                                    {purchasablePlans.map(p => (
+                                        <td key={p.key} className="px-3 py-3 font-bold text-pink-700">{p.deductions?.aadhaar_pan} pts</td>
+                                    ))}
+                                </tr>
+                                <tr className="hover:bg-gray-50/50 bg-pink-50/20">
+                                    <td className="px-4 py-3 font-semibold text-gray-900">Aadhaar + Voter (Combined)</td>
+                                    {purchasablePlans.map(p => (
+                                        <td key={p.key} className="px-3 py-3 font-bold text-pink-700">{p.deductions?.aadhaar_voter} pts</td>
+                                    ))}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
                 {/* Payment Instructions (Only if request exists) */}
                 {currentRequest && (
