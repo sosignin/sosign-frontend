@@ -1456,111 +1456,126 @@ export default function PetitionDetailClient({ initialPetition }) {
                             <p className="font-bold text-[#1a1a2e] text-lg">Download Petition Data</p>
                         </div>
 
-                        {downloadSuccess && (
-                            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-start gap-3">
-                                <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                        {user?.plan !== "platinum" ? (
+                            <div className="bg-amber-50 border border-amber-200 p-5 rounded-xl flex items-start gap-3">
+                                <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
                                 <div>
-                                    <p className="font-semibold">Download request submitted successfully!</p>
-                                    <p className="text-sm text-green-600">Please wait for admin approval. You will be able to download once approved.</p>
+                                    <p className="text-amber-800 font-semibold">Platinum Feature Only</p>
+                                    <p className="text-gray-600 text-sm mt-1">
+                                        Petition data download requests are only available for users on the **Platinum Plan**. 
+                                        Please upgrade your plan to access and download complete petition data.
+                                    </p>
                                 </div>
                             </div>
-                        )}
-
-                        {downloadError && (
-                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
-                                <p className="font-medium">Error: {downloadError}</p>
-                                <button
-                                    onClick={() => setDownloadError(null)}
-                                    className="text-sm underline mt-1"
-                                >
-                                    Dismiss
-                                </button>
-                            </div>
-                        )}
-
-                        <p className="text-gray-600 text-sm mb-4">
-                            Download a complete data file of this petition including all signatures, comments, and details.
-                            This requires admin approval.
-                        </p>
-
-                        {downloadStatus.loading ? (
-                            <div className="text-center py-4">
-                                <p className="text-gray-500">Checking download status...</p>
-                            </div>
-                        ) : downloadStatus.canDownload ? (
-                            <div className="space-y-3">
-                                <div className="bg-green-50 border border-green-200 p-4 rounded-lg flex items-start gap-3">
-                                    <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                                    <div>
-                                        <p className="text-green-800 font-semibold">Your download request has been approved!</p>
-                                        <p className="text-green-600 text-sm">You can now download the petition data.</p>
-                                    </div>
-                                </div>
-                                {downloadStatus.approvedFields && downloadStatus.approvedFields.length > 0 && (
-                                    <div className="mt-3">
-                                        <p className="text-green-700 text-xs font-medium mb-1">Approved data fields:</p>
-                                        <div className="flex flex-wrap gap-1">
-                                            {downloadStatus.approvedFields.map((field) => {
-                                                const fieldLabels = {
-                                                    petitionDetails: "Petition Details",
-                                                    petitionStarter: "Petition Starter",
-                                                    decisionMakers: "Decision Makers",
-                                                    statistics: "Statistics",
-                                                    signatures: "Signatures List",
-                                                    comments: "Comments List",
-                                                };
-                                                return (
-                                                    <span
-                                                        key={field}
-                                                        className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded"
-                                                    >
-                                                        {fieldLabels[field] || field}
-                                                    </span>
-                                                );
-                                            })}
+                        ) : (
+                            <>
+                                {downloadSuccess && (
+                                    <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-start gap-3">
+                                        <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <p className="font-semibold">Download request submitted successfully!</p>
+                                            <p className="text-sm text-green-600">Please wait for admin approval. You will be able to download once approved.</p>
                                         </div>
                                     </div>
                                 )}
-                                <button
-                                    onClick={handleDownloadPetition}
-                                    disabled={downloadLoading}
-                                    className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-[#3650AD] to-[#F43676] text-white rounded-lg font-semibold hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-lg disabled:opacity-50 inline-flex items-center justify-center gap-2"
-                                >
-                                    <Download className="w-5 h-5" />
-                                    {downloadLoading ? "Downloading..." : "Download Petition Data (PDF)"}
-                                </button>
-                            </div>
-                        ) : downloadStatus.hasRequest && downloadStatus.status === "pending" ? (
-                            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg flex items-start gap-3">
-                                <Clock className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
-                                <div>
-                                    <p className="text-yellow-800 font-semibold">Your download request is pending</p>
-                                    <p className="text-yellow-600 text-sm">Please wait for admin approval. Check back later.</p>
-                                </div>
-                            </div>
-                        ) : downloadStatus.hasRequest && downloadStatus.status === "rejected" ? (
-                            <div className="space-y-3">
-                                <div className="bg-red-50 border border-red-200 p-4 rounded-lg flex items-start gap-3">
-                                    <XCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-                                    <div>
-                                        <p className="text-red-800 font-semibold">Your previous request was rejected</p>
-                                        <p className="text-red-600 text-sm">You can submit a new request with a different reason.</p>
+
+                                {downloadError && (
+                                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+                                        <p className="font-medium">Error: {downloadError}</p>
+                                        <button
+                                            onClick={() => setDownloadError(null)}
+                                            className="text-sm underline mt-1"
+                                        >
+                                            Dismiss
+                                        </button>
                                     </div>
-                                </div>
-                                <button
-                                    onClick={() => setShowDownloadModal(true)}
-                                    className="px-5 py-2.5 bg-[#3650AD] text-white rounded-lg font-medium hover:bg-[#2a3f8a] transition-colors"
-                                >
-                                    Request Again
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => setShowDownloadModal(true)}
-                                className="px-5 py-2.5 bg-[#3650AD] text-white rounded-lg font-medium hover:bg-[#2a3f8a] transition-colors"
-                            >
-                                Request Download Access
-                            </button>
+                                )}
+
+                                <p className="text-gray-600 text-sm mb-4">
+                                    Download a complete data file of this petition including all signatures, comments, and details.
+                                    This requires admin approval.
+                                </p>
+
+                                {downloadStatus.loading ? (
+                                    <div className="text-center py-4">
+                                        <p className="text-gray-500">Checking download status...</p>
+                                    </div>
+                                ) : downloadStatus.canDownload ? (
+                                    <div className="space-y-3">
+                                        <div className="bg-green-50 border border-green-200 p-4 rounded-lg flex items-start gap-3">
+                                            <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-green-800 font-semibold">Your download request has been approved!</p>
+                                                <p className="text-green-600 text-sm">You can now download the petition data.</p>
+                                            </div>
+                                        </div>
+                                        {downloadStatus.approvedFields && downloadStatus.approvedFields.length > 0 && (
+                                            <div className="mt-3">
+                                                <p className="text-green-700 text-xs font-medium mb-1">Approved data fields:</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {downloadStatus.approvedFields.map((field) => {
+                                                        const fieldLabels = {
+                                                            petitionDetails: "Petition Details",
+                                                            petitionStarter: "Petition Starter",
+                                                            decisionMakers: "Decision Makers",
+                                                            statistics: "Statistics",
+                                                            signatures: "Signatures List",
+                                                            comments: "Comments List",
+                                                        };
+                                                        return (
+                                                            <span
+                                                                key={field}
+                                                                className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded"
+                                                            >
+                                                                {fieldLabels[field] || field}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={handleDownloadPetition}
+                                            disabled={downloadLoading}
+                                            className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-[#3650AD] to-[#F43676] text-white rounded-lg font-semibold hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-lg disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                                        >
+                                            <Download className="w-5 h-5" />
+                                            {downloadLoading ? "Downloading..." : "Download Petition Data (PDF)"}
+                                        </button>
+                                    </div>
+                                ) : downloadStatus.hasRequest && downloadStatus.status === "pending" ? (
+                                    <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg flex items-start gap-3">
+                                        <Clock className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <p className="text-yellow-800 font-semibold">Your download request is pending</p>
+                                            <p className="text-yellow-600 text-sm">Please wait for admin approval. Check back later.</p>
+                                        </div>
+                                    </div>
+                                ) : downloadStatus.hasRequest && downloadStatus.status === "rejected" ? (
+                                    <div className="space-y-3">
+                                        <div className="bg-red-50 border border-red-200 p-4 rounded-lg flex items-start gap-3">
+                                            <XCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-red-800 font-semibold">Your previous request was rejected</p>
+                                                <p className="text-red-600 text-sm">You can submit a new request with a different reason.</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowDownloadModal(true)}
+                                            className="px-5 py-2.5 bg-[#3650AD] text-white rounded-lg font-medium hover:bg-[#2a3f8a] transition-colors"
+                                        >
+                                            Request Again
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowDownloadModal(true)}
+                                        className="px-5 py-2.5 bg-[#3650AD] text-white rounded-lg font-medium hover:bg-[#2a3f8a] transition-colors"
+                                    >
+                                        Request Download Access
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
