@@ -190,10 +190,10 @@ export default function WalletPage() {
         });
     };
 
-    const purchasablePlans = plans.filter(p => p.key !== "free");
+    const purchasablePlans = plans;
     const quickAmounts = purchasablePlans.length > 0
-        ? purchasablePlans.map(p => p.price)
-        : [999, 49000, 99000, 499999];
+        ? purchasablePlans.filter(p => p.price > 0 && !p.isCustom).map(p => p.price)
+        : [999, 49000, 99000];
 
     if (!user) {
         return null;
@@ -209,7 +209,7 @@ export default function WalletPage() {
                     className="text-center mb-8"
                 >
                     <h1 className="text-3xl font-bold text-[#302d55] mb-2">My Points Wallet</h1>
-                    <p className="text-gray-500">Manage your wallet balance in points (₹5 = 1 Point)</p>
+                    {/* <p className="text-gray-500">Manage your wallet balance in points (₹5 = 1 Point)</p> */}
                 </motion.div>
 
                 {/* Plan Status Card */}
@@ -266,7 +266,7 @@ export default function WalletPage() {
                 <div className="mb-8">
                     <h3 className="text-xl font-bold text-[#302d55] mb-2 text-center">Verification Credit Plans</h3>
                     <p className="text-sm text-gray-500 text-center mb-6">Select a plan to purchase credits. Higher-tier plans offer discounted verification rates.</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                         {purchasablePlans.length === 0 ? (
                             <div className="col-span-full text-center py-6 text-gray-400 italic">
                                 No premium subscription plans available.
@@ -276,8 +276,8 @@ export default function WalletPage() {
                                 <motion.div
                                     key={p.key}
                                     whileHover={{ y: -5 }}
-                                    className={`bg-white rounded-2xl p-5 border-2 shadow-sm flex flex-col justify-between transition-all ${
-                                        user.plan === p.key
+                                    className={`bg-white rounded-2xl p-4 border-2 shadow-sm flex flex-col justify-between transition-all ${
+                                        user.plan === p.key || (p.key === "free" && (!user.plan || user.plan === "free"))
                                             ? "border-[#F43676] ring-2 ring-pink-100"
                                             : "border-gray-100 hover:border-pink-300"
                                     }`}
@@ -285,6 +285,7 @@ export default function WalletPage() {
                                     <div className="mb-4">
                                         <div className="flex justify-between items-center mb-2">
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                                                p.key === "free" ? "bg-gray-100 text-gray-800" :
                                                 p.key === "bronze" ? "bg-amber-100 text-amber-800" :
                                                 p.key === "silver" ? "bg-slate-100 text-slate-800" :
                                                 p.key === "gold" ? "bg-yellow-100 text-yellow-800" :
@@ -293,31 +294,77 @@ export default function WalletPage() {
                                             }`}>
                                                 {p.name.replace(" Plan", "")}
                                             </span>
-                                            {user.plan === p.key && (
+                                            {(user.plan === p.key || (p.key === "free" && (!user.plan || user.plan === "free"))) && (
                                                 <span className="text-[9px] bg-pink-500 text-white font-semibold px-2 py-0.5 rounded-full">
                                                     Active
                                                 </span>
                                             )}
                                         </div>
-                                        <h4 className="text-2xl font-bold text-gray-900 mb-1">₹{p.price.toLocaleString()}</h4>
-                                        <p className="text-sm text-[#F43676] font-bold mb-2">{p.points.toLocaleString()} Points</p>
-                                        <p className="text-[11px] text-gray-500 leading-snug">{p.bestFor}</p>
+                                        <div className="flex flex-wrap items-baseline gap-1 mb-1">
+                                            {p.key === "bronze" && (
+                                                <span className="text-xs text-gray-400 line-through font-normal">₹1,999</span>
+                                            )}
+                                            <h4 className="text-xl font-bold text-gray-900">{p.isCustom ? "Custom Pricing" : `₹${p.price.toLocaleString()}`}</h4>
+                                        </div>
+                                        <p className="text-xs text-[#F43676] font-bold mb-2">
+                                            {p.isCustom ? "Higher Volume" : (
+                                                <span className="flex flex-col">
+                                                    <span>{p.points.toLocaleString()} Points</span>
+                                                    {p.key === "bronze" && <span className="text-[10px] text-gray-500 font-normal mt-0.5">(₹5 / point)</span>}
+                                                    {p.key === "silver" && <span className="text-[10px] text-gray-500 font-normal mt-0.5">(₹4.50 / point)</span>}
+                                                    {p.key === "gold" && <span className="text-[10px] text-gray-500 font-normal mt-0.5">(₹4.25 / point)</span>}
+                                                </span>
+                                            )}
+                                        </p>
+                                        <p className="text-[10px] text-gray-500 leading-snug mb-3">{p.bestFor}</p>
+
+                                        {/* Features List */}
+                                        <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+                                            <div className="flex items-start text-[10px] text-gray-600 gap-1.5">
+                                                <FaCheckCircle className="text-pink-500 text-[10px] mt-0.5 shrink-0" />
+                                                <span>SMS to Decision Maker: <strong>{p.deductions?.sms_dm ?? 1.25} pts</strong></span>
+                                            </div>
+                                            <div className="flex items-start text-[10px] text-gray-600 gap-1.5">
+                                                <FaCheckCircle className="text-pink-500 text-[10px] mt-0.5 shrink-0" />
+                                                <span>Email to Decision Maker: <strong>{p.deductions?.email_dm ?? 0.50} pts</strong></span>
+                                            </div>
+                                            <div className="flex items-start text-[10px] text-gray-600 gap-1.5">
+                                                <FaCheckCircle className="text-pink-500 text-[10px] mt-0.5 shrink-0" />
+                                                <span>WhatsApp to Decision Maker: <strong>{p.deductions?.whatsapp_dm ?? 1.50} pts</strong></span>
+                                            </div>
+                                            {p.key === "platinum" && (
+                                                <div className="flex items-start text-[10px] text-gray-600 gap-1.5 font-bold pt-1 border-t border-dashed border-gray-100">
+                                                    <FaCheckCircle className="text-purple-600 text-[10px] mt-0.5 shrink-0" />
+                                                    <span>Petition data download is available</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <button
                                         onClick={() => {
-                                            setAddAmount(p.price.toString());
-                                            setShowAddForm(true);
-                                            // Scroll to recharge input dynamically
-                                            const formElement = document.querySelector('form');
-                                            if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
+                                            if (p.key === "free") return;
+                                            if (p.isCustom) {
+                                                window.location.href = `mailto:haldarai@sosign.com?subject=Inquiry for SoSign Custom Plan (${p.name})&body=Hello Admin, I am interested in custom options for the ${p.name}. Please contact me.`;
+                                            } else {
+                                                setAddAmount(p.price.toString());
+                                                setShowAddForm(true);
+                                                // Scroll to recharge input dynamically
+                                                const formElement = document.querySelector('form');
+                                                if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
+                                            }
                                         }}
+                                        disabled={p.key === "free"}
                                         className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
-                                            user.plan === p.key
+                                            user.plan === p.key || (p.key === "free" && (!user.plan || user.plan === "free"))
                                                 ? "bg-pink-50 text-[#F43676] border border-[#F43676] hover:bg-pink-100"
+                                                : p.key === "free"
+                                                ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
                                                 : "bg-[#302d55] text-white hover:bg-[#3f3b6d]"
                                         }`}
                                     >
-                                        Buy {p.name}
+                                        {p.key === "free"
+                                            ? ((user.plan === "free" || !user.plan) ? "Active" : "Included by Default")
+                                            : user.plan === p.key ? "Active" : p.isCustom ? "Contact Admin" : `Buy ${p.name}`}
                                     </button>
                                 </motion.div>
                             ))
@@ -328,54 +375,47 @@ export default function WalletPage() {
                 {/* Rates Comparison Table */}
                 <div className="bg-white rounded-3xl p-6 mb-8 shadow-md border border-gray-100">
                     <h3 className="text-lg font-bold text-[#302d55] mb-2">Verification Point Deductions</h3>
-                    <p className="text-xs text-gray-500 mb-4 font-normal">Higher plan tiers consume fewer points per verification, giving you more value for your points balance.</p>
+                    <p className="text-xs text-gray-500 mb-4 font-normal">Points are deducted from your wallet balance per verification according to the standard rates below.</p>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-gray-500">
+                        <table className="w-full text-left text-xs text-gray-500 max-w-md">
                             <thead className="text-[10px] text-gray-700 uppercase bg-gray-50 rounded-lg">
                                 <tr>
                                     <th className="px-4 py-3">Verification Type</th>
-                                    {purchasablePlans.map((p, idx) => (
-                                        <th key={p.key} className={`px-3 py-3 ${
-                                            idx % 4 === 0 ? "text-amber-700" :
-                                            idx % 4 === 1 ? "text-slate-700" :
-                                            idx % 4 === 2 ? "text-yellow-700" :
-                                            "text-purple-700"
-                                        }`}>
-                                            {p.name.replace(" Plan", "")}
-                                        </th>
-                                    ))}
+                                    <th className="px-4 py-3 text-right">Points Cost</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 <tr className="hover:bg-gray-50/50">
                                     <td className="px-4 py-3 font-medium text-gray-900">Aadhaar Verification</td>
-                                    {purchasablePlans.map(p => (
-                                        <td key={p.key} className="px-3 py-3 font-semibold">{p.deductions?.aadhaar} pts</td>
-                                    ))}
+                                    <td className="px-4 py-3 font-bold text-gray-800 text-right">{plans[0]?.deductions?.aadhaar ?? 8} pts</td>
                                 </tr>
                                 <tr className="hover:bg-gray-50/50">
                                     <td className="px-4 py-3 font-medium text-gray-900">PAN Card Verification</td>
-                                    {purchasablePlans.map(p => (
-                                        <td key={p.key} className="px-3 py-3 font-semibold">{p.deductions?.pan} pts</td>
-                                    ))}
+                                    <td className="px-4 py-3 font-bold text-gray-800 text-right">{plans[0]?.deductions?.pan ?? 5} pts</td>
                                 </tr>
                                 <tr className="hover:bg-gray-50/50">
                                     <td className="px-4 py-3 font-medium text-gray-900">Voter ID Verification</td>
-                                    {purchasablePlans.map(p => (
-                                        <td key={p.key} className="px-3 py-3 font-semibold">{p.deductions?.voter} pts</td>
-                                    ))}
+                                    <td className="px-4 py-3 font-bold text-gray-800 text-right">{plans[0]?.deductions?.voter ?? 5} pts</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50/50">
+                                    <td className="px-4 py-3 font-medium text-gray-900">SMS to Decision Maker</td>
+                                    <td className="px-4 py-3 font-bold text-gray-800 text-right">{plans[0]?.deductions?.sms_dm ?? 1.25} pts</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50/50">
+                                    <td className="px-4 py-3 font-medium text-gray-900">Email to Decision Maker</td>
+                                    <td className="px-4 py-3 font-bold text-gray-800 text-right">{plans[0]?.deductions?.email_dm ?? 0.50} pts</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50/50">
+                                    <td className="px-4 py-3 font-medium text-gray-900">WhatsApp to Decision Maker</td>
+                                    <td className="px-4 py-3 font-bold text-gray-800 text-right">{plans[0]?.deductions?.whatsapp_dm ?? 1.50} pts</td>
                                 </tr>
                                 <tr className="hover:bg-gray-50/50 bg-pink-50/20">
                                     <td className="px-4 py-3 font-semibold text-gray-900">Aadhaar + PAN (Combined)</td>
-                                    {purchasablePlans.map(p => (
-                                        <td key={p.key} className="px-3 py-3 font-bold text-pink-700">{p.deductions?.aadhaar_pan} pts</td>
-                                    ))}
+                                    <td className="px-4 py-3 font-extrabold text-pink-700 text-right">{plans[0]?.deductions?.aadhaar_pan ?? 10} pts</td>
                                 </tr>
                                 <tr className="hover:bg-gray-50/50 bg-pink-50/20">
                                     <td className="px-4 py-3 font-semibold text-gray-900">Aadhaar + Voter (Combined)</td>
-                                    {purchasablePlans.map(p => (
-                                        <td key={p.key} className="px-3 py-3 font-bold text-pink-700">{p.deductions?.aadhaar_voter} pts</td>
-                                    ))}
+                                    <td className="px-4 py-3 font-extrabold text-pink-700 text-right">{plans[0]?.deductions?.aadhaar_voter ?? 10} pts</td>
                                 </tr>
                             </tbody>
                         </table>
