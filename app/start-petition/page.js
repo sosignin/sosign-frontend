@@ -358,6 +358,9 @@ export default function StartPetitionPage() {
 
   // ===== VALIDATION HELPER FUNCTIONS =====
   const validateField = (fieldName, value, customRules = null) => {
+    if (fieldName === "aadharNumber" && user?.aadhaarKyc?.status === "verified") {
+      return { isValid: true, error: null };
+    }
     const rules = customRules || validationRules[fieldName];
     if (!rules) return { isValid: true, error: null };
 
@@ -575,6 +578,10 @@ export default function StartPetitionPage() {
           updatedStarter.mobile = user.mobileNumber;
           changed = true;
         }
+        if (!updatedStarter.aadharNumber && user.aadhaarKyc?.status === "verified" && user.aadhaarKyc.maskedAadhaar) {
+          updatedStarter.aadharNumber = user.aadhaarKyc.maskedAadhaar;
+          changed = true;
+        }
 
         if (changed) {
           return { ...prev, starter: updatedStarter };
@@ -698,13 +705,9 @@ export default function StartPetitionPage() {
       validateField("starterLocation", formData.starter.location),
     ];
 
-    // Aadhaar requirement
-    if (!isAadhaarAlreadyVerified) {
+    // Aadhaar requirement - only checked if already verified via profile
+    if (isAadhaarAlreadyVerified && formData.starter.aadharNumber) {
       validations.push(validateField("aadharNumber", formData.starter.aadharNumber));
-    } else {
-      if (formData.starter.aadharNumber) {
-        validations.push(validateField("aadharNumber", formData.starter.aadharNumber));
-      }
     }
 
     // PAN requirement
@@ -742,7 +745,7 @@ export default function StartPetitionPage() {
     }
 
     const verificationOk =
-      (isAadhaarAlreadyVerified || aadhaarOtp.verified) &&
+      isAadhaarAlreadyVerified &&
       (isPanAlreadyVerified || panState.verified) &&
       (isVoterAlreadyVerified || voterState.verified);
 
@@ -1121,9 +1124,9 @@ export default function StartPetitionPage() {
       const isPanAlreadyVerified = user?.panKyc?.status === "verified";
       const isVoterAlreadyVerified = user?.voterKyc?.status === "verified";
 
-      if (!isAadhaarAlreadyVerified && (!aadhaarOtp.verified || !aadhaarOtp.verificationToken)) {
+      if (!isAadhaarAlreadyVerified) {
         setIsSubmitting(false);
-        alert("Please complete Aadhaar OTP verification before submitting.");
+        alert("Please complete Aadhaar KYC from your profile page before submitting.");
         return;
       }
       if (!isPanAlreadyVerified && (!panState.verified || !panState.verificationToken)) {
@@ -2585,7 +2588,7 @@ export default function StartPetitionPage() {
                           Aadhaar Card Verification
                         </h4>
                         
-                        {user?.aadhaarKyc?.status === "verified" || aadhaarOtp.verified ? (
+                        {user?.aadhaarKyc?.status === "verified" ? (
                           <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
                             <div className="bg-green-100 p-2 rounded-full">
                               <FaCircleCheck className="text-green-600 text-xl" />
@@ -2593,177 +2596,30 @@ export default function StartPetitionPage() {
                             <div>
                               <p className="font-bold text-green-800 text-sm">Aadhaar Card Verified</p>
                               <p className="text-xs text-green-700">
-                                {aadhaarOtp.verified ?
-                                  `Verified successfully: ${aadhaarOtp.maskedAadhaar || formData.starter.aadharNumber}`
-                                : `Verified via DigiLocker Aadhaar ${user.aadhaarKyc.maskedAadhaar ? `(${user.aadhaarKyc.maskedAadhaar})` : ""}`}
+                                Verified via DigiLocker Aadhaar {user.aadhaarKyc.maskedAadhaar ? `(${user.aadhaarKyc.maskedAadhaar})` : ""}
                               </p>
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Aadhaar Number <span className="text-red-500">*</span>
-                              </label>
-                              <div className="flex space-x-2">
-                                <div className="flex-1">
-                                  <input
-                                    type="text"
-                                    value={formData.starter.aadharNumber}
-                                    onChange={(e) => {
-                                      const previousDigits = normalizeAadhaarNumber(
-                                        formData.starter.aadharNumber,
-                                      );
-                                      let value = e.target.value.replace(/\D/g, "");
-                                      value = value.slice(0, 12);
-                                      if (value.length > 8) {
-                                        value =
-                                          value.slice(0, 4) +
-                                          " " +
-                                          value.slice(4, 8) +
-                                          " " +
-                                          value.slice(8);
-                                      } else if (value.length > 4) {
-                                        value = value.slice(0, 4) + " " + value.slice(4);
-                                      }
-                                      const nextDigits = normalizeAadhaarNumber(value);
-                                      if (previousDigits !== nextDigits) {
-                                        setAadhaarOtp(createInitialAadhaarOtpState());
-                                      }
-                                      handleInputChange("starter.aadharNumber", value);
-                                    }}
-                                    onBlur={() => markFieldTouched("aadharNumber")}
-                                    className={
-                                      getInputProps(
-                                        "aadharNumber",
-                                        formData.starter.aadharNumber,
-                                      ).className
-                                    }
-                                    placeholder="e.g., 2345 6789 0123 (12 digits)"
-                                    maxLength={14}
-                                  />
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={handleSendAadhaarOtp}
-                                  disabled={
-                                    aadhaarOtp.sending ||
-                                    !validateField(
-                                      "aadharNumber",
-                                      formData.starter.aadharNumber,
-                                    ).isValid
-                                  }
-                                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                                    (
-                                      aadhaarOtp.sending ||
-                                      !validateField(
-                                        "aadharNumber",
-                                        formData.starter.aadharNumber,
-                                      ).isValid
-                                    ) ?
-                                      "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                    : "bg-[#2D3A8C] text-white hover:bg-[#1e2a6c]"
-                                  }`}
-                                >
-                                  {aadhaarOtp.sending ?
-                                    "Sending..."
-                                  : aadhaarOtp.otpSent ?
-                                    "Resend OTP"
-                                  : "Send OTP"}
-                                </button>
+                          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-start gap-3">
+                              <div className="bg-amber-100 p-2 rounded-full mt-0.5 animate-pulse">
+                                <FaCircleExclamation className="text-amber-600 text-xl" />
                               </div>
-                              {getInputProps(
-                                "aadharNumber",
-                                formData.starter.aadharNumber,
-                              ).showError && (
-                                <p className="text-red-500 text-sm mt-1">
-                                  {
-                                    getInputProps(
-                                      "aadharNumber",
-                                      formData.starter.aadharNumber,
-                                    ).error
-                                  }
+                              <div>
+                                <p className="font-bold text-amber-800 text-sm">Aadhaar KYC Required</p>
+                                <p className="text-xs text-amber-700 mt-1">
+                                  Please complete Aadhaar KYC from your profile page to proceed with creating a petition.
                                 </p>
-                              )}
-                              {formData.starter.aadharNumber === "" && (
-                                <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                                  <FaCircleInfo className="text-xs text-blue-400" />
-                                  12 digits, cannot start with 0 or 1
-                                </p>
-                              )}
-                              {aadhaarOtp.success && (
-                                <p className="text-green-600 text-sm mt-2 flex items-center gap-1">
-                                  <FaCircleCheck className="text-xs" />
-                                  {aadhaarOtp.success}
-                                </p>
-                              )}
-                              {aadhaarOtp.error && (
-                                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                                  <FaCircleExclamation className="text-xs" />
-                                  {aadhaarOtp.error}
-                                </p>
-                              )}
-                              {aadhaarOtp.verified && (
-                                <p className="text-green-700 text-sm mt-2 flex items-center gap-1 font-medium">
-                                  <FaCircleCheck className="text-xs text-green-600" />
-                                  Aadhaar verified successfully
-                                  {aadhaarOtp.maskedAadhaar ?
-                                    ` (${aadhaarOtp.maskedAadhaar})`
-                                  : ""}
-                                </p>
-                              )}
-                              <div className="flex space-x-2 mt-2">
-                                <input
-                                  type="text"
-                                  value={aadhaarOtp.otp}
-                                  onChange={(e) => {
-                                    const otpValue = e.target.value
-                                      .replace(/\D/g, "")
-                                      .slice(0, 8);
-                                    setAadhaarOtp((prev) => ({
-                                      ...prev,
-                                      otp: otpValue,
-                                      error: "",
-                                    }));
-                                  }}
-                                  disabled={!aadhaarOtp.otpSent || aadhaarOtp.verified}
-                                  className={`w-full border p-3 rounded-lg shadow-sm ${
-                                    !aadhaarOtp.otpSent || aadhaarOtp.verified ?
-                                      "bg-gray-100"
-                                    : "bg-white"
-                                  }`}
-                                  placeholder={
-                                    aadhaarOtp.otpSent ? "Enter OTP" : "Send OTP first"
-                                  }
-                                />
-                                <button
-                                  type="button"
-                                  onClick={handleVerifyAadhaarOtp}
-                                  disabled={
-                                    !aadhaarOtp.otpSent ||
-                                    aadhaarOtp.verifying ||
-                                    aadhaarOtp.verified ||
-                                    aadhaarOtp.otp.trim().length < 4
-                                  }
-                                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                                    (
-                                      !aadhaarOtp.otpSent ||
-                                      aadhaarOtp.verifying ||
-                                      aadhaarOtp.verified ||
-                                      aadhaarOtp.otp.trim().length < 4
-                                    ) ?
-                                      "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                    : "bg-[#F43676] text-white hover:bg-[#d62860]"
-                                  }`}
-                                >
-                                  {aadhaarOtp.verified ?
-                                    "Verified"
-                                  : aadhaarOtp.verifying ?
-                                    "Verifying..."
-                                  : "Verify OTP"}
-                                </button>
                               </div>
                             </div>
+                            <button
+                              type="button"
+                              onClick={() => router.push("/my-profile")}
+                              className="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-colors whitespace-nowrap self-start sm:self-center shadow-sm hover:shadow"
+                            >
+                              Do Aadhaar KYC
+                            </button>
                           </div>
                         )}
                       </div>
@@ -3172,7 +3028,7 @@ export default function StartPetitionPage() {
                 <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
                   <p className="text-orange-700 text-sm flex items-center gap-2">
                     <FaCircleExclamation />
-                    Please complete all required fields (*), verify Aadhaar OTP,
+                    Please complete all required fields (*), complete Aadhaar KYC,
                     and verify the captcha before submitting.
                   </p>
                 </div>
