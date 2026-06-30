@@ -71,6 +71,9 @@ export default function StartPetitionPage() {
   const [recipients, setRecipients] = useState([
     { name: "", organization: "", email: "", phone: "" },
   ]);
+  const [requestedSigners, setRequestedSigners] = useState([
+    { name: "", email: "", designation: "" },
+  ]);
   const [selectedImages, setSelectedImages] = useState([]); // Array of up to 4 images
   const [tempImage, setTempImage] = useState(null); // Currently being cropped
   const [showCropper, setShowCropper] = useState(false);
@@ -525,6 +528,7 @@ export default function StartPetitionPage() {
           if (draft.userId === user.uid || draft.userId === user.id) {
             if (draft.formData) setFormData(draft.formData);
             if (draft.recipients) setRecipients(draft.recipients);
+            if (draft.requestedSigners) setRequestedSigners(draft.requestedSigners);
             if (draft.selectedCategories)
               setSelectedCategories(draft.selectedCategories);
             if (draft.step) setStep(draft.step);
@@ -546,6 +550,7 @@ export default function StartPetitionPage() {
         userId: user.uid || user.id,
         formData,
         recipients,
+        requestedSigners,
         selectedCategories,
         step,
         savedAt: new Date().toISOString(),
@@ -556,7 +561,7 @@ export default function StartPetitionPage() {
         console.error("Error saving draft:", error);
       }
     }
-  }, [formData, recipients, selectedCategories, step, user, draftLoaded]);
+  }, [formData, recipients, requestedSigners, selectedCategories, step, user, draftLoaded]);
 
   // Autofill starter info from user profile if fields are empty
   useEffect(() => {
@@ -625,6 +630,7 @@ export default function StartPetitionPage() {
       },
     });
     setRecipients([{ name: "", organization: "", email: "", phone: "" }]);
+    setRequestedSigners([{ name: "", email: "", designation: "" }]);
     setSelectedCategories([]);
     setStep(1);
     setSelectedImage(null);
@@ -1147,6 +1153,9 @@ export default function StartPetitionPage() {
 
       const validRecipients = recipients.filter((r) => r.name);
       submitData.append("decisionMakers", JSON.stringify(validRecipients));
+
+      const validRequestedSigners = requestedSigners.filter((s) => s.name?.trim());
+      submitData.append("requestedSigners", JSON.stringify(validRequestedSigners));
 
       const petitionDetails = {
         problem: formData.problem,
@@ -2015,12 +2024,119 @@ export default function StartPetitionPage() {
                   );
                 })}
                 <button
+                  type="button"
                   onClick={addRecipient}
-                  className="text-[#F43676] font-semibold hover:underline flex items-center gap-2"
+                  className="text-[#F43676] font-semibold hover:underline flex items-center gap-2 mb-6"
                 >
                   <FaPlus className="text-sm" /> Add another decision maker
                 </button>
-                <div className="mt-4">
+
+                {/* Requested Signers (Optional) */}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <FaCircleInfo className="text-[#2D3A8C]" />
+                    Target Signers (Optional)
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Add specific individuals (e.g. celebrities, politicians, authorities) whose signature you specifically want on this petition.
+                  </p>
+
+                  <div className="space-y-4">
+                    {requestedSigners.map((signer, signerIdx) => (
+                      <div
+                        key={signerIdx}
+                        className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-600">
+                            Target Signer #{signerIdx + 1}
+                          </span>
+                          {requestedSigners.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setRequestedSigners(
+                                  requestedSigners.filter((_, i) => i !== signerIdx),
+                                )
+                              }
+                              className="text-red-500 text-sm hover:underline"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {/* Name Field */}
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">
+                              Name
+                            </label>
+                            <input
+                              type="text"
+                              value={signer.name}
+                              onChange={(e) => {
+                                const updated = requestedSigners.map((s, i) =>
+                                  i === signerIdx ? { ...s, name: e.target.value } : s
+                                );
+                                setRequestedSigners(updated);
+                              }}
+                              className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-[#F43676] focus:outline-none transition-all bg-white text-sm"
+                              placeholder="e.g. Narendra Modi, Amitabh Bachchan"
+                            />
+                          </div>
+
+                          {/* Email Field */}
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">
+                              Email (optional)
+                            </label>
+                            <input
+                              type="email"
+                              value={signer.email}
+                              onChange={(e) => {
+                                const updated = requestedSigners.map((s, i) =>
+                                  i === signerIdx ? { ...s, email: e.target.value } : s
+                                );
+                                setRequestedSigners(updated);
+                              }}
+                              className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-[#F43676] focus:outline-none transition-all bg-white text-sm"
+                              placeholder="e.g. signer@domain.com"
+                            />
+                          </div>
+
+                          {/* Designation Field */}
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">
+                              Role/Designation (optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={signer.designation}
+                              onChange={(e) => {
+                                const updated = requestedSigners.map((s, i) =>
+                                  i === signerIdx ? { ...s, designation: e.target.value } : s
+                                );
+                                setRequestedSigners(updated);
+                              }}
+                              className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-[#F43676] focus:outline-none transition-all bg-white text-sm"
+                              placeholder="e.g. Prime Minister, Actor"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setRequestedSigners([...requestedSigners, { name: "", email: "", designation: "" }])}
+                      className="text-[#F43676] font-semibold hover:underline flex items-center gap-2 text-sm"
+                    >
+                      <FaPlus className="text-sm" /> Add another target signer
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-gray-200">
                   <label className="block font-medium mb-2">
                     Country or Region
                   </label>

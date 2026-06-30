@@ -57,6 +57,7 @@ const MyPetitionsPage = () => {
     country: "",
     categories: [],
     decisionMakers: [{ name: "", organization: "", email: "", phone: "" }],
+    requestedSigners: [{ name: "", email: "", designation: "" }],
     problem: "",
     solution: "",
     videoUrl: "",
@@ -344,6 +345,13 @@ const MyPetitionsPage = () => {
           phone: dm.phone || "",
         }))
         : [{ name: "", organization: "", email: "", phone: "" }],
+      requestedSigners: petition.requestedSigners?.length > 0
+        ? petition.requestedSigners.map(rs => ({
+          name: rs.name || "",
+          email: rs.email || "",
+          designation: rs.designation || "",
+        }))
+        : [{ name: "", email: "", designation: "" }],
       problem: petition.petitionDetails?.problem || "",
       solution: petition.petitionDetails?.solution || "",
       videoUrl: petition.petitionDetails?.videoUrl || "",
@@ -399,6 +407,7 @@ const MyPetitionsPage = () => {
           title: editFormData.title,
           country: editFormData.country,
           decisionMakers: editFormData.decisionMakers.filter(dm => dm.name && dm.email),
+          requestedSigners: editFormData.requestedSigners?.filter(rs => rs.name?.trim()) || [],
           petitionDetails: {
             problem: editFormData.problem,
             solution: editFormData.solution,
@@ -431,6 +440,7 @@ const MyPetitionsPage = () => {
               title: editFormData.title,
               country: editFormData.country,
               decisionMakers: editFormData.decisionMakers.filter(dm => dm.name && dm.email),
+              requestedSigners: editFormData.requestedSigners?.filter(rs => rs.name?.trim()) || [],
               petitionDetails: {
                 ...p.petitionDetails,
                 problem: editFormData.problem,
@@ -1035,9 +1045,80 @@ const MyPetitionsPage = () => {
                                     <button
                                       type="button"
                                       onClick={addDecisionMaker}
-                                      className="text-sm text-[#3650AD] hover:text-[#2a4085] font-medium flex items-center gap-1"
+                                      className="text-sm text-[#3650AD] hover:text-[#2a4085] font-medium flex items-center gap-1 mb-4"
                                     >
                                       <FaPlus className="text-xs" /> Add Decision Maker
+                                    </button>
+                                  </div>
+
+                                  {/* Target Signers (Optional) */}
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Target Signers (Optional)</label>
+                                    {editFormData.requestedSigners?.map((signer, index) => (
+                                      <div key={index} className="bg-white p-3 rounded-lg border border-gray-200 mb-2">
+                                        <div className="flex justify-between items-center mb-2">
+                                          <span className="text-xs font-medium text-gray-500">Target Signer {index + 1}</span>
+                                          {editFormData.requestedSigners.length > 1 && (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const updated = editFormData.requestedSigners.filter((_, i) => i !== index);
+                                                setEditFormData({ ...editFormData, requestedSigners: updated });
+                                              }}
+                                              className="text-red-500 hover:text-red-700 text-xs"
+                                            >
+                                              Remove
+                                            </button>
+                                          )}
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                          <input
+                                            type="text"
+                                            value={signer.name}
+                                            onChange={(e) => {
+                                              const updated = [...editFormData.requestedSigners];
+                                              updated[index] = { ...updated[index], name: e.target.value };
+                                              setEditFormData({ ...editFormData, requestedSigners: updated });
+                                            }}
+                                            className="p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] outline-none"
+                                            placeholder="Name *"
+                                          />
+                                          <input
+                                            type="email"
+                                            value={signer.email}
+                                            onChange={(e) => {
+                                              const updated = [...editFormData.requestedSigners];
+                                              updated[index] = { ...updated[index], email: e.target.value };
+                                              setEditFormData({ ...editFormData, requestedSigners: updated });
+                                            }}
+                                            className="p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] outline-none"
+                                            placeholder="Email"
+                                          />
+                                          <input
+                                            type="text"
+                                            value={signer.designation}
+                                            onChange={(e) => {
+                                              const updated = [...editFormData.requestedSigners];
+                                              updated[index] = { ...updated[index], designation: e.target.value };
+                                              setEditFormData({ ...editFormData, requestedSigners: updated });
+                                            }}
+                                            className="p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] outline-none"
+                                            placeholder="Role/Designation"
+                                          />
+                                        </div>
+                                      </div>
+                                    ))}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditFormData({
+                                          ...editFormData,
+                                          requestedSigners: [...(editFormData.requestedSigners || []), { name: "", email: "", designation: "" }],
+                                        });
+                                      }}
+                                      className="text-sm text-[#3650AD] hover:text-[#2a4085] font-medium flex items-center gap-1"
+                                    >
+                                      <FaPlus className="text-xs" /> Add Target Signer
                                     </button>
                                   </div>
 

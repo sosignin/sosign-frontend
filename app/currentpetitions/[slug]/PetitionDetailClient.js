@@ -1130,6 +1130,69 @@ export default function PetitionDetailClient({ initialPetition }) {
                         </div>
                     )}
 
+                    {/* Requested Signers (Optional Target Signers Status) */}
+                    {petition.requestedSignersStatus && petition.requestedSignersStatus.length > 0 && (
+                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 md:col-span-2">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#3650AD]/10 to-[#3650AD]/20 flex items-center justify-center">
+                                    <Users className="w-5 h-5 text-[#3650AD]" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-xl text-[#1a1a2e]">Requested Signatures</h3>
+                                    <p className="text-sm text-gray-500">Signatures specifically requested for this cause</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {petition.requestedSignersStatus.map((signer) => (
+                                    <div 
+                                        key={signer._id} 
+                                        className={`flex flex-col justify-between p-4 rounded-xl border transition-all duration-300 ${
+                                            signer.hasSigned 
+                                                ? "bg-green-50/50 border-green-200 hover:border-green-300 shadow-xs" 
+                                                : "bg-gray-50 border-gray-150 hover:bg-gray-100/50"
+                                        }`}
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <p className="font-bold text-gray-900 truncate text-sm md:text-base">{signer.name}</p>
+                                                {signer.designation && (
+                                                    <p className="text-xs text-gray-500 font-medium mt-0.5 truncate">{signer.designation}</p>
+                                                )}
+                                            </div>
+                                            {signer.hasSigned ? (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-green-100 text-green-800 shrink-0">
+                                                    <CheckCircle className="w-2.5 h-2.5" /> Signed
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 shrink-0">
+                                                    <Clock className="w-2.5 h-2.5 animate-pulse" /> Pending
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {signer.hasSigned && signer.signedBy && (
+                                            <div className="mt-4 pt-3 border-t border-green-100 flex items-center gap-2.5">
+                                                {signer.signedBy.profilePicture ? (
+                                                    <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-green-200 shadow-xs">
+                                                        <img src={signer.signedBy.profilePicture} alt={signer.signedBy.name} className="w-full h-full object-cover" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-xs">
+                                                        {signer.signedBy.name.charAt(0)}
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-semibold text-gray-800 truncate">Verified Signer</p>
+                                                    <p className="text-[10px] text-gray-500 truncate">@{signer.signedBy.name}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Notable Supporters Card */}
                     {petition.notableSigners && petition.notableSigners.length > 0 && (
                         <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 md:col-span-2">

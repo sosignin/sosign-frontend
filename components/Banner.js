@@ -102,11 +102,15 @@ export default function Banner({ initialPetitions = [] }) {
 
   const initializeTopStories = () => {
     if (initialPetitions.length > 0) {
-      return initialPetitions.map((petition) => ({
+      const latestPetitions = [...initialPetitions]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 4);
+      return latestPetitions.map((petition) => ({
         id: petition._id,
         title: petition.title.length > 40 ? petition.title.substring(0, 40) + "..." : petition.title,
         date: formatDate(petition.createdAt),
         image: petition.petitionDetails?.image || `https://picsum.photos/seed/${petition._id}/100/100`,
+        link: `/currentpetitions/${petition.slug || petition._id}`,
       }));
     }
     return defaultTopStories;
@@ -162,8 +166,8 @@ export default function Banner({ initialPetitions = [] }) {
           setHeroSlides(slides);
         }
 
-        // Fetch top 3 petitions by signatures for ticker bar
-        const tickerResponse = await fetch(`${config.API_BASE_URL}/api/petitions?limit=3&sort=signatures`);
+        // Fetch latest 4 petitions for ticker bar
+        const tickerResponse = await fetch(`${config.API_BASE_URL}/api/petitions?limit=4&sort=newest`);
 
         if (tickerResponse.ok) {
           const tickerData = await tickerResponse.json();
@@ -173,7 +177,7 @@ export default function Banner({ initialPetitions = [] }) {
             const stories = tickerData.petitions.map((petition) => ({
               id: petition._id,
               title: petition.title.length > 50 ? petition.title.substring(0, 50) + "..." : petition.title,
-              date: `${petition.numberOfSignatures || 0} signatures`,
+              date: formatDate(petition.createdAt),
               image: petition.petitionDetails?.image || `https://picsum.photos/seed/${petition._id}/100/100`,
               link: `/currentpetitions/${petition.slug || petition._id}`,
             }));
@@ -255,7 +259,7 @@ export default function Banner({ initialPetitions = [] }) {
             {[...topStories, ...topStories, ...topStories, ...topStories].map((story, index) => (
               <Link
                 key={`first-${story.id}-${index}`}
-                href="/currentpetitions"
+                href={story.link || "/currentpetitions"}
                 className="flex items-center gap-3 shrink-0 hover:opacity-80 transition-opacity"
               >
                 <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-200 shrink-0">
@@ -279,7 +283,7 @@ export default function Banner({ initialPetitions = [] }) {
             {[...topStories, ...topStories, ...topStories, ...topStories].map((story, index) => (
               <Link
                 key={`second-${story.id}-${index}`}
-                href="/currentpetitions"
+                href={story.link || "/currentpetitions"}
                 className="flex items-center gap-3 shrink-0 hover:opacity-80 transition-opacity"
               >
                 <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-200 shrink-0">

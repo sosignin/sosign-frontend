@@ -15,7 +15,242 @@ import {
   UploadCloud,
   Milestone,
   Target,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+
+function ImageSlider({ images }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (!images || images.length === 0) return null;
+  if (images.length === 1) {
+    return (
+      <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-900 w-full aspect-[4/3] md:aspect-[16/9] max-h-[350px] md:max-h-[450px]">
+        <Image
+          src={images[0]}
+          alt="Update image"
+          fill
+          className="object-contain hover:scale-102 transition-transform duration-500"
+        />
+      </div>
+    );
+  }
+
+  const nextSlide = (e) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevSlide = (e) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  return (
+    <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-900 w-full aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] lg:aspect-[16/9] max-h-[350px] md:max-h-[450px] group">
+      {/* Slides */}
+      <div className="w-full h-full relative">
+        <Image
+          key={currentIndex}
+          src={images[currentIndex]}
+          alt={`Update image ${currentIndex + 1}`}
+          fill
+          className="object-contain transition-all duration-500 ease-in-out"
+        />
+      </div>
+
+      {/* Navigation Arrows */}
+      <button
+        onClick={prevSlide}
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 z-20"
+        aria-label="Previous image"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      <button
+        onClick={nextSlide}
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 z-20"
+        aria-label="Next image"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+
+      {/* Slide Indicators/Dots */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 bg-black/30 px-2.5 py-1 rounded-full backdrop-blur-xs">
+        {images.map((_, i) => (
+          <button
+            key={i}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentIndex(i);
+            }}
+            className={`w-2 h-2 rounded-full transition-all ${currentIndex === i ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/80'}`}
+            aria-label={`Go to slide ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProgressUpdateCard({ update, index, currentUserId, handleReact, getYoutubeId }) {
+  const hasReacted = currentUserId && update.reactions?.some(r => r.user === currentUserId);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      key={update._id}
+      className="relative pl-12 md:pl-16 py-6 group"
+    >
+      {/* Timeline Dot */}
+      <div className="absolute left-[11px] md:left-[26px] top-8 w-[19px] h-[19px] bg-white border-4 border-[#3650AD] rounded-full z-10 shadow-[0_0_0_3px_white,0_0_8px_rgba(54,80,173,0.4)] group-hover:scale-125 group-hover:border-[#F43676] transition-all duration-300"></div>
+
+      {/* Update Card */}
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5">
+        
+        {/* Date badge - inline at top of card */}
+        <div className="flex items-center gap-2 mb-3">
+          <Clock className="w-3.5 h-3.5 text-gray-400" />
+          <span className="text-xs font-bold text-gray-500 uppercase">
+            {new Date(update.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </span>
+          <span className="text-[10px] text-gray-400">
+            {new Date(update.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+
+        {/* Header */}
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            {update.updateType === "milestone" && update.milestone && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-[10px] font-bold uppercase tracking-wider mb-2">
+                <CheckCircle className="w-3 h-3" />
+                Milestone Reached
+              </span>
+            )}
+            <h3 className="text-lg font-bold text-[#1a1a2e] leading-snug">
+              {update.title}
+            </h3>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
+                {update.author?.profilePicture ? (
+                  <img src={update.author.profilePicture} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-700 text-[10px] font-bold">
+                    {update.author?.name?.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <span className="text-xs font-medium text-gray-600">{update.author?.name}</span>
+            </div>
+          </div>
+          
+          {/* Icon based on type */}
+          <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0 text-gray-400">
+            {update.updateType === "image" && <ImageIcon className="w-4 h-4" />}
+            {update.updateType === "document" && <FileText className="w-4 h-4" />}
+            {update.updateType === "video" && <Video className="w-4 h-4" />}
+            {update.updateType === "text" && <FileText className="w-4 h-4" />}
+          </div>
+        </div>
+
+        {/* Content */}
+        <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed mb-4">
+          {update.content}
+        </p>
+
+        {/* Media content */}
+        {update.images && update.images.length > 0 && (
+          <div className="mb-4">
+            <ImageSlider images={update.images} />
+          </div>
+        )}
+
+        {/* Documents */}
+        {update.documents && update.documents.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {update.documents.map((doc, i) => {
+              const handleDownload = async (e) => {
+                e.preventDefault();
+                try {
+                  const proxyUrl = `/api/download-document?url=${encodeURIComponent(doc.url)}&filename=${encodeURIComponent(doc.filename || 'document.pdf')}`;
+                  const response = await fetch(proxyUrl);
+                  if (!response.ok) throw new Error('Download failed');
+                  const blob = await response.blob();
+                  const blobUrl = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = blobUrl;
+                  a.download = doc.filename || 'document.pdf';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  window.URL.revokeObjectURL(blobUrl);
+                } catch (err) {
+                  window.open(doc.url, '_blank');
+                }
+              };
+              
+              return (
+                <button 
+                  key={i} 
+                  onClick={handleDownload}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors group w-full text-left cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{doc.filename}</p>
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">PDF Document • Click to Download</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Video */}
+        {update.videoUrl && (
+          <div className="mb-4 rounded-xl overflow-hidden shadow-inner bg-black aspect-video">
+            {getYoutubeId(update.videoUrl) ? (
+              <iframe
+                width="100%"
+                height="100%"
+                src={`https://www.youtube.com/embed/${getYoutubeId(update.videoUrl)}`}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
+                <a href={update.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-[#F43676] transition-colors">
+                  <Video className="w-6 h-6" /> Watch Video
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
+          <button 
+            onClick={() => handleReact(update._id)}
+            className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${hasReacted ? 'text-[#F43676]' : 'text-gray-500 hover:text-[#3650AD]'}`}
+          >
+            <div className={`p-1.5 rounded-full ${hasReacted ? 'bg-pink-50' : 'bg-gray-50 group-hover:bg-gray-100'}`}>
+              <ThumbsUp className={`w-4 h-4 ${hasReacted ? 'fill-[#F43676]' : ''}`} />
+            </div>
+            {update.reactions?.length || 0}
+          </button>
+        </div>
+
+      </div>
+    </motion.div>
+  );
+}
 
 export default function CampaignProgress({ petitionId, isCreator, petition }) {
   const [updates, setUpdates] = useState([]);
@@ -504,170 +739,16 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
         ) : (
           <>
             <div className="flex flex-col-reverse">
-              {(isExpanded ? updates : updates.slice(-3)).map((update, index) => {
-                const hasReacted = currentUserId && update.reactions?.some(r => r.user === currentUserId);
-              
-              return (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+              {(isExpanded ? updates : updates.slice(-3)).map((update, index) => (
+                <ProgressUpdateCard
                   key={update._id}
-                  className="relative pl-12 md:pl-16 py-6 group"
-                >
-                  {/* Timeline Dot */}
-                  <div className="absolute left-[11px] md:left-[26px] top-8 w-[19px] h-[19px] bg-white border-4 border-[#3650AD] rounded-full z-10 shadow-[0_0_0_3px_white,0_0_8px_rgba(54,80,173,0.4)] group-hover:scale-125 group-hover:border-[#F43676] transition-all duration-300"></div>
-
-                  {/* Update Card */}
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5">
-                    
-                    {/* Date badge - inline at top of card */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <Clock className="w-3.5 h-3.5 text-gray-400" />
-                      <span className="text-xs font-bold text-gray-500 uppercase">
-                        {new Date(update.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
-                      <span className="text-[10px] text-gray-400">
-                        {new Date(update.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-
-                    {/* Header */}
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        {update.updateType === "milestone" && update.milestone && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-[10px] font-bold uppercase tracking-wider mb-2">
-                            <CheckCircle className="w-3 h-3" />
-                            Milestone Reached
-                          </span>
-                        )}
-                        <h3 className="text-lg font-bold text-[#1a1a2e] leading-snug">
-                          {update.title}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
-                            {update.author?.profilePicture ? (
-                              <img src={update.author.profilePicture} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-700 text-[10px] font-bold">
-                                {update.author?.name?.charAt(0)}
-                              </div>
-                            )}
-                          </div>
-                          <span className="text-xs font-medium text-gray-600">{update.author?.name}</span>
-                        </div>
-                      </div>
-                      
-                      {/* Icon based on type */}
-                      <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0 text-gray-400">
-                        {update.updateType === "image" && <ImageIcon className="w-4 h-4" />}
-                        {update.updateType === "document" && <FileText className="w-4 h-4" />}
-                        {update.updateType === "video" && <Video className="w-4 h-4" />}
-                        {update.updateType === "text" && <FileText className="w-4 h-4" />}
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed mb-4">
-                      {update.content}
-                    </p>
-
-                    {/* Media content */}
-                    {update.images && update.images.length > 0 && (
-                      <div className={`grid gap-2 mb-4 ${update.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                        {update.images.map((img, i) => (
-                          <div key={i} className={`relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50 ${update.images.length === 1 ? 'aspect-[16/9]' : 'aspect-[4/3]'}`}>
-                            <Image src={img} alt="Update image" fill className="object-cover hover:scale-105 transition-transform duration-500" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Documents */}
-                    {update.documents && update.documents.length > 0 && (
-                      <div className="space-y-2 mb-4">
-                        {update.documents.map((doc, i) => {
-                          const handleDownload = async (e) => {
-                            e.preventDefault();
-                            try {
-                              // Use our Next.js API proxy to avoid CORS issues with Cloudinary raw URLs
-                              const proxyUrl = `/api/download-document?url=${encodeURIComponent(doc.url)}&filename=${encodeURIComponent(doc.filename || 'document.pdf')}`;
-                              const response = await fetch(proxyUrl);
-                              if (!response.ok) throw new Error('Download failed');
-                              const blob = await response.blob();
-                              const blobUrl = window.URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = blobUrl;
-                              a.download = doc.filename || 'document.pdf';
-                              document.body.appendChild(a);
-                              a.click();
-                              document.body.removeChild(a);
-                              window.URL.revokeObjectURL(blobUrl);
-                            } catch (err) {
-                              // Fallback: open the raw URL directly
-                              window.open(doc.url, '_blank');
-                            }
-                          };
-                          
-                          return (
-                            <button 
-                              key={i} 
-                              onClick={handleDownload}
-                              className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors group w-full text-left cursor-pointer"
-                            >
-                              <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
-                                <FileText className="w-5 h-5" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-800 truncate">{doc.filename}</p>
-                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">PDF Document • Click to Download</p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Video */}
-                    {update.videoUrl && (
-                      <div className="mb-4 rounded-xl overflow-hidden shadow-inner bg-black aspect-video">
-                        {getYoutubeId(update.videoUrl) ? (
-                          <iframe
-                            width="100%"
-                            height="100%"
-                            src={`https://www.youtube.com/embed/${getYoutubeId(update.videoUrl)}`}
-                            title="YouTube video player"
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          ></iframe>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
-                            <a href={update.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-[#F43676] transition-colors">
-                              <Video className="w-6 h-6" /> Watch Video
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
-                      <button 
-                        onClick={() => handleReact(update._id)}
-                        className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${hasReacted ? 'text-[#F43676]' : 'text-gray-500 hover:text-[#3650AD]'}`}
-                      >
-                        <div className={`p-1.5 rounded-full ${hasReacted ? 'bg-pink-50' : 'bg-gray-50 group-hover:bg-gray-100'}`}>
-                          <ThumbsUp className={`w-4 h-4 ${hasReacted ? 'fill-[#F43676]' : ''}`} />
-                        </div>
-                        {update.reactions?.length || 0}
-                      </button>
-                    </div>
-
-                  </div>
-                </motion.div>
-              );
-            })}
+                  update={update}
+                  index={index}
+                  currentUserId={currentUserId}
+                  handleReact={handleReact}
+                  getYoutubeId={getYoutubeId}
+                />
+              ))}
             </div>
             
             {updates.length > 3 && (
