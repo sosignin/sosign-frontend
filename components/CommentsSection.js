@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import LoginModal from "./LoginModal";
 import config from "../config/api";
 import { Clock, ThumbsUp } from "lucide-react";
+import { checkAbusiveContent } from "../utils/abusiveWords";
 
 const CommentsSection = ({ petitionId, petitionStarterId }) => {
   const [comments, setComments] = useState([]);
@@ -130,6 +131,13 @@ const CommentsSection = ({ petitionId, petitionStarterId }) => {
         setError("Authentication error. Please log in again.");
         return;
       }
+      // Check for abusive words
+      const abusiveCheck = checkAbusiveContent(newComment);
+      if (abusiveCheck.hasAbusive) {
+        setError(abusiveCheck.warning);
+        setSubmitting(false);
+        return;
+      }
 
       console.log("Making API call to submit comment");
       const response = await fetch(`${config.API_BASE_URL}/api/comments`, {
@@ -179,6 +187,13 @@ const CommentsSection = ({ petitionId, petitionStarterId }) => {
 
       if (!userInfo?.token) {
         setError("Authentication error. Please log in again.");
+        return;
+      }
+
+      // Check for abusive words
+      const abusiveCheck = checkAbusiveContent(editContent);
+      if (abusiveCheck.hasAbusive) {
+        setError(abusiveCheck.warning);
         return;
       }
 
@@ -323,6 +338,13 @@ const CommentsSection = ({ petitionId, petitionStarterId }) => {
 
     if (!replyContent.trim()) return;
 
+    // Check for abusive words
+    const abusiveCheck = checkAbusiveContent(replyContent);
+    if (abusiveCheck.hasAbusive) {
+      setError(abusiveCheck.warning);
+      return;
+    }
+
     try {
       let userInfo = null;
       try {
@@ -414,13 +436,18 @@ const CommentsSection = ({ petitionId, petitionStarterId }) => {
             rows="4"
             maxLength="1000"
           />
+          {checkAbusiveContent(newComment).hasAbusive && (
+            <p className="text-sm font-semibold text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200">
+              {checkAbusiveContent(newComment).warning}
+            </p>
+          )}
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-500">
               {newComment.length}/1000 characters
             </span>
             <button
               type="submit"
-              disabled={submitting || !newComment.trim()}
+              disabled={submitting || !newComment.trim() || checkAbusiveContent(newComment).hasAbusive}
               className="bg-[#3650AD] text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Posting..." : "Post Comment"}

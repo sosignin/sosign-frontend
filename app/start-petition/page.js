@@ -31,6 +31,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Captcha from "../../components/Captcha";
 import ImageCropper from "../../components/ImageCropper";
+import { checkAbusiveContent } from "../../utils/abusiveWords";
 
 // Icon mapping for dynamic category icons
 const iconMap = {
@@ -380,6 +381,17 @@ export default function StartPetitionPage() {
     // Check required
     if (rules.required && trimmedValue === "") {
       return { isValid: false, error: "This field is required" };
+    }
+
+    // Check for abusive words on text fields
+    if (trimmedValue !== "") {
+      const abusiveCheck = checkAbusiveContent(trimmedValue);
+      if (abusiveCheck.hasAbusive) {
+        return {
+          isValid: false,
+          error: `⚠️ Abusive/inappropriate words detected (${abusiveCheck.foundWords.join(", ")}). Please remove them.`,
+        };
+      }
     }
 
     // If not required and empty, it's valid
