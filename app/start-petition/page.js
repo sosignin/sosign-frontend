@@ -23,6 +23,7 @@ import {
   FaSpinner,
   FaTags,
   FaXmark,
+  FaWandMagicSparkles,
 } from "react-icons/fa6";
 import { useAuth } from "../../context/AuthContext";
 import Image from "next/image";
@@ -93,6 +94,8 @@ export default function StartPetitionPage() {
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState("");
   const [aadhaarOtp, setAadhaarOtp] = useState(createInitialAadhaarOtpState);
+  const [aiOptimizing, setAiOptimizing] = useState(false);
+  const [aiError, setAiError] = useState("");
   const [verificationMethod, setVerificationMethod] = useState("aadhaar"); // "aadhaar" or "pan"
   const [panState, setPanState] = useState({
     verified: false,
@@ -1259,6 +1262,43 @@ export default function StartPetitionPage() {
     }
   };
 
+  // ===== AI TITLE OPTIMIZATION HANDLER =====
+  const handleAiOptimizeTitle = async () => {
+    if (!formData.title || formData.title.trim().length === 0) {
+      setAiError("Please enter a title first before optimizing with AI.");
+      setTimeout(() => setAiError(""), 3000);
+      return;
+    }
+
+    setAiOptimizing(true);
+    setAiError("");
+
+    try {
+      const response = await fetch("/api/ai/optimize-title", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: formData.title }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.optimizedTitle) {
+        handleInputChange("title", data.optimizedTitle);
+      } else {
+        setAiError(data.message || "Failed to optimize title. Please try again.");
+        setTimeout(() => setAiError(""), 4000);
+      }
+    } catch (error) {
+      console.error("AI Optimization Error:", error);
+      setAiError("Something went wrong. Please try again.");
+      setTimeout(() => setAiError(""), 4000);
+    } finally {
+      setAiOptimizing(false);
+    }
+  };
+
   const stepVariants = {
     initial: { opacity: 0, x: 50, scale: 0.95 },
     animate: { opacity: 1, x: 0, scale: 1 },
@@ -1418,6 +1458,47 @@ export default function StartPetitionPage() {
                   formData.title.length < 10 &&
                   " (minimum 10)"}
               </p>
+
+              {/* AI Autogenerate Button */}
+              <div className="mt-3 mb-2">
+                <button
+                  type="button"
+                  onClick={handleAiOptimizeTitle}
+                  disabled={aiOptimizing || !formData.title.trim()}
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                    aiOptimizing || !formData.title.trim()
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-purple-500 via-pink-500 to-[#F43676] text-white shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-[0.98]"
+                  }`}
+                  style={{
+                    background: aiOptimizing || !formData.title.trim()
+                      ? undefined
+                      : "linear-gradient(135deg, #8B5CF6, #EC4899, #F43676)",
+                  }}
+                >
+                  {aiOptimizing ? (
+                    <>
+                      <FaSpinner className="animate-spin text-base" />
+                      Optimizing with AI...
+                    </>
+                  ) : (
+                    <>
+                      <FaWandMagicSparkles className="text-base" />
+                      Autogenerate with AI
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-400 mt-1.5 ml-1">
+                  <FaCircleInfo className="inline text-purple-400 mr-1" />
+                  AI will fix spelling, grammar, and make your title SEO-friendly
+                </p>
+                {aiError && (
+                  <p className="text-red-500 text-sm mt-1.5 ml-1 flex items-center gap-1">
+                    <FaCircleExclamation className="text-xs" />
+                    {aiError}
+                  </p>
+                )}
+              </div>
 
               {/* Category Selection */}
               <div className="mt-8">
