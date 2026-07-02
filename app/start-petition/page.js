@@ -24,6 +24,7 @@ import {
   FaTags,
   FaXmark,
   FaWandMagicSparkles,
+  FaImage,
 } from "react-icons/fa6";
 import { useAuth } from "../../context/AuthContext";
 import Image from "next/image";
@@ -96,6 +97,10 @@ export default function StartPetitionPage() {
   const [aadhaarOtp, setAadhaarOtp] = useState(createInitialAadhaarOtpState);
   const [aiOptimizing, setAiOptimizing] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [aiGeneratingImage, setAiGeneratingImage] = useState(false);
+  const [aiImageError, setAiImageError] = useState("");
+  const [showAiImagePromptModal, setShowAiImagePromptModal] = useState(false);
+  const [customAiImagePrompt, setCustomAiImagePrompt] = useState("");
   const [verificationMethod, setVerificationMethod] = useState("aadhaar"); // "aadhaar" or "pan"
   const [panState, setPanState] = useState({
     verified: false,
@@ -1299,6 +1304,70 @@ export default function StartPetitionPage() {
     }
   };
 
+  // ===== AI IMAGE GENERATION HANDLER =====
+  const handleGenerateAiImage = async (overridePrompt = null) => {
+    if (selectedImages.length >= 4) {
+      setAiImageError("Maximum 4 images allowed. Please delete an image first.");
+      setTimeout(() => setAiImageError(""), 4000);
+      return;
+    }
+
+    const topicPrompt = overridePrompt || customAiImagePrompt || formData.title || formData.problem;
+
+    if (!topicPrompt || topicPrompt.trim().length === 0) {
+      setAiImageError("Please enter a petition title or problem description first.");
+      setTimeout(() => setAiImageError(""), 4000);
+      return;
+    }
+
+    setAiGeneratingImage(true);
+    setAiImageError("");
+
+    try {
+      const response = await fetch("/api/ai/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          problem: formData.problem,
+          solution: formData.solution,
+          prompt: overridePrompt || customAiImagePrompt,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.imageDataUrl) {
+        // Convert base64 data URL to a File object
+        const fetchRes = await fetch(data.imageDataUrl);
+        const blob = await fetchRes.blob();
+        const file = new File(
+          [blob],
+          `ai-petition-banner-${Date.now()}.jpg`,
+          { type: "image/jpeg" }
+        );
+
+        // Set as temp image and show cropper for user review & crop
+        setTempImage(file);
+        setCroppingIndex(null);
+        setShowCropper(true);
+        setShowAiImagePromptModal(false);
+        setCustomAiImagePrompt("");
+      } else {
+        setAiImageError(data.message || "Failed to generate image. Please try again.");
+        setTimeout(() => setAiImageError(""), 4000);
+      }
+    } catch (error) {
+      console.error("AI Image Generation Error:", error);
+      setAiImageError("Something went wrong while generating image. Please try again.");
+      setTimeout(() => setAiImageError(""), 4000);
+    } finally {
+      setAiGeneratingImage(false);
+    }
+  };
+
   const stepVariants = {
     initial: { opacity: 0, x: 50, scale: 0.95 },
     animate: { opacity: 1, x: 0, scale: 1 },
@@ -2405,15 +2474,70 @@ export default function StartPetitionPage() {
                   ))}
                   
                   {selectedImages.length < 4 && (
-                    <div
-                      className="aspect-video border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#F43676] hover:bg-pink-50 transition-all duration-200"
-                      onClick={() => document.getElementById("imageUpload").click()}
-                    >
-                      <FaPlus className="text-gray-400 text-2xl mb-1" />
-                      <span className="text-xs text-gray-500 font-medium">Add Photo</span>
-                    </div>
+                    <>
+                      {/* Standard File Upload Button */}
+                      <div
+                        className="aspect-video border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#F43676] hover:bg-pink-50 transition-all duration-200"
+                        onClick={() => document.getElementById("imageUpload").click()}
+                      >
+                        <FaPlus className="text-gray-400 text-xl mb-1" />
+                        <span className="text-xs text-gray-500 font-medium">Upload Photo</span>
+                      </div>
+
+                      {/* AI Image Generation Button */}
+                      <button
+                        type="button"
+                        disabled={aiGeneratingImage}
+                        onClick={() => {
+                          if (formData.title.trim()) {
+                            handleGenerateAiImage();
+                          } else {
+                            setShowAiImagePromptModal(true);
+                          }
+                        }}
+                        className={`aspect-video border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all duration-200 relative overflow-hidden group ${
+                          aiGeneratingImage
+                            ? "border-purple-300 bg-purple-50 cursor-wait opacity-80"
+                            : "border-purple-400 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 hover:border-purple-600 hover:shadow-md cursor-pointer"
+                        }`}
+                      >
+                        {aiGeneratingImage ? (
+                          <div className="flex flex-col items-center p-2 text-center">
+                            <FaSpinner className="animate-spin text-purple-600 text-xl mb-1" />
+                            <span className="text-[11px] text-purple-700 font-bold">Creating Image...</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center p-2 text-center">
+                            <FaWandMagicSparkles className="text-purple-600 text-xl mb-1 group-hover:scale-110 transition-transform" />
+                            <span className="text-xs text-purple-800 font-bold">Generate with AI</span>
+                            <span className="text-[10px] text-purple-600 font-normal">Auto-creates banner</span>
+                          </div>
+                        )}
+                      </button>
+                    </>
                   )}
                 </div>
+
+                {/* AI Image prompt options & error messages */}
+                {selectedImages.length < 4 && !aiGeneratingImage && (
+                  <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setShowAiImagePromptModal(true)}
+                      className="text-xs text-purple-600 hover:text-purple-800 font-semibold flex items-center gap-1 hover:underline"
+                    >
+                      <FaWandMagicSparkles className="text-xs text-purple-500" />
+                      Customize AI Image Prompt
+                    </button>
+                  </div>
+                )}
+
+                {aiImageError && (
+                  <p className="text-sm text-red-500 mb-3 font-semibold flex items-center gap-1.5 bg-red-50 p-2.5 rounded-lg border border-red-100">
+                    <FaCircleExclamation className="text-red-500" />
+                    {aiImageError}
+                  </p>
+                )}
 
                 {imageError && (
                   <p className="text-sm text-red-500 mb-3 font-semibold flex items-center gap-1.5 bg-red-50 p-2.5 rounded-lg border border-red-100">
@@ -2475,6 +2599,103 @@ export default function StartPetitionPage() {
                   }}
                 />
               )}
+
+              {/* AI Image Prompt Customization Modal */}
+              <AnimatePresence>
+                {showAiImagePromptModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                  >
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                      className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl relative border border-purple-100"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setShowAiImagePromptModal(false)}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-all"
+                      >
+                        <FaXmark className="text-lg" />
+                      </button>
+
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+                          <FaWandMagicSparkles className="text-xl" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-800">
+                            Generate AI Petition Image
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            Gemini AI will craft a high-impact visual banner for your petition
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">
+                          Image Prompt / Subject (Optional):
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={customAiImagePrompt}
+                          onChange={(e) => setCustomAiImagePrompt(e.target.value)}
+                          placeholder={
+                            formData.title
+                              ? `Auto-generating based on: "${formData.title}"\nOr describe custom scene (e.g. Save forests from destruction)`
+                              : "Describe the image you want AI to generate (e.g. Save stray animals)"
+                          }
+                          className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                        />
+                        <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1">
+                          <FaCircleInfo className="text-purple-400" />
+                          Leave blank to automatically generate an optimal prompt from your petition title & problem.
+                        </p>
+                      </div>
+
+                      {aiImageError && (
+                        <p className="text-xs text-red-500 mb-4 font-semibold bg-red-50 p-2.5 rounded-lg border border-red-100 flex items-center gap-1.5">
+                          <FaCircleExclamation />
+                          {aiImageError}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-end gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowAiImagePromptModal(false)}
+                          className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={aiGeneratingImage}
+                          onClick={() => handleGenerateAiImage(customAiImagePrompt)}
+                          className="px-5 py-2.5 bg-gradient-to-r from-purple-600 via-pink-600 to-[#F43676] text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
+                        >
+                          {aiGeneratingImage ? (
+                            <>
+                              <FaSpinner className="animate-spin text-sm" />
+                              Generating Image...
+                            </>
+                          ) : (
+                            <>
+                              <FaWandMagicSparkles className="text-sm" />
+                              Generate Banner
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* YouTube Video URL */}
               <div className="mb-4">
