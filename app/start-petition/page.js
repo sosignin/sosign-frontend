@@ -1133,9 +1133,13 @@ export default function StartPetitionPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const isAadhaarVerified = user?.aadhaarKyc?.status === "verified" || aadhaarOtp.verified;
-      const isPanVerified = user?.panKyc?.status === "verified" || panState.verified;
-      const isVoterVerified = user?.voterKyc?.status === "verified" || voterState.verified;
+      const isAadhaarAlreadyVerified = user?.aadhaarKyc?.status === "verified";
+      const isPanAlreadyVerified = user?.panKyc?.status === "verified";
+      const isVoterAlreadyVerified = user?.voterKyc?.status === "verified";
+
+      const isAadhaarVerified = isAadhaarAlreadyVerified || aadhaarOtp.verified;
+      const isPanVerified = isPanAlreadyVerified || panState.verified;
+      const isVoterVerified = isVoterAlreadyVerified || voterState.verified;
 
       const isAnyVerified = isAadhaarVerified || isPanVerified || isVoterVerified;
 
