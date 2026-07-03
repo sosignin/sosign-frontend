@@ -81,6 +81,10 @@ export default function WalletPage() {
                     setPlans(data);
                 }
             }
+
+            if (fetchWalletBalance) {
+                fetchWalletBalance();
+            }
         } catch (error) {
             console.error("Failed to fetch wallet data:", error);
         } finally {
