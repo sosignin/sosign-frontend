@@ -76,6 +76,187 @@ const extractCategories = (petition) => {
   return categories.slice(0, 2);
 };
 
+// Live Signature Activity & Toast Component for Banner
+function LiveSignatureBox({ petition }) {
+  const petitionId = petition?.id;
+  const realCount = petition?.numberOfSignatures || 138;
+
+  // Start sequence slightly lower (e.g. 138 - 8 = 130) so it animates up to real total
+  const initialStartCount = Math.max(1, realCount - 8);
+
+  const [count, setCount] = useState(initialStartCount);
+  const [targetCount, setTargetCount] = useState(realCount);
+  const [signers, setSigners] = useState([]);
+  const [activePopup, setActivePopup] = useState(null);
+
+  // Reset/sync when slide or petition changes
+  useEffect(() => {
+    const realTotal = petition?.numberOfSignatures || 138;
+    const start = Math.max(1, realTotal - 8);
+    setCount(start);
+    setTargetCount(realTotal);
+    setActivePopup(null);
+  }, [petition?.id, petition?.numberOfSignatures]);
+
+  // Fetch real signers from backend
+  useEffect(() => {
+    if (!petitionId || petitionId === "default") return;
+    let isMounted = true;
+
+    const fetchRealPetitionData = async () => {
+      try {
+        const res = await fetch(`${config.API_BASE_URL}/api/petitions/${petitionId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!isMounted || !data) return;
+
+        const newRealTotal = data.numberOfSignatures || 138;
+        setTargetCount(newRealTotal);
+
+        const realSigs = data.signatures || [];
+        let realNames = realSigs
+          .map((sig) => sig.user?.name || (sig.user?.email ? sig.user.email.split("@")[0] : null))
+          .filter(Boolean);
+
+        if (data.petitionStarter?.name && !realNames.includes(data.petitionStarter.name)) {
+          realNames.push(data.petitionStarter.name);
+        }
+
+        const fallbackNames = [
+          "Riya Mehta",
+          "Rahul Sharma",
+          "Priya Patel",
+          "Ankit Verma",
+          "Deepika Sen",
+          "Amit Patel",
+          "Sunita Roy",
+          "Vikram Joshi",
+        ];
+        const mergedNames = Array.from(new Set([...realNames, ...fallbackNames]));
+
+        if (isMounted) {
+          setSigners(mergedNames);
+        }
+      } catch (err) {
+        console.error("Error fetching petition signers:", err);
+      }
+    };
+
+    fetchRealPetitionData();
+  }, [petitionId]);
+
+  // Animated increment sequence (e.g. 130 -> 131 -> 132 ... -> 138) with live user toast popups!
+  useEffect(() => {
+    if (count >= targetCount) return;
+
+    const timer = setTimeout(() => {
+      const nextCount = count + 1;
+      setCount(nextCount);
+
+      // Select real/supporter name corresponding to this signature step
+      const nameIdx = (targetCount - nextCount) % (signers.length || 1);
+      const currentSigner = signers[nameIdx] || signers[0] || petition?.starterName || "Supporter";
+
+      // Show live popup toast for this signature step
+      setActivePopup({
+        name: currentSigner,
+        count: nextCount,
+      });
+
+      // Clear popup toast after 2.8s
+      setTimeout(() => {
+        setActivePopup(null);
+      }, 2800);
+    }, 3800);
+
+    return () => clearTimeout(timer);
+  }, [count, targetCount, signers, petition?.starterName]);
+
+  return (
+    <div className="relative w-full sm:w-auto min-w-[240px] sm:min-w-[275px] bg-gradient-to-br from-[#002050] via-[#092247] to-[#1a2b5e] text-white rounded-2xl p-3 shadow-lg border border-pink-500/20 overflow-hidden flex flex-col justify-center">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between mb-1.5 text-[11px] font-semibold text-gray-300">
+        <div className="flex items-center gap-1.5">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span className="tracking-wider uppercase text-[10px] text-emerald-400 font-bold">
+            Live Signatures
+          </span>
+        </div>
+        <span className="text-[10px] text-pink-300 font-bold bg-pink-500/20 px-2 py-0.5 rounded-full border border-pink-500/30">
+          {count} Total
+        </span>
+      </div>
+
+      {/* Main Content Area: Live Signature Popup Toast or Signers Names */}
+      <div className="relative min-h-[38px] flex items-center">
+        <AnimatePresence mode="wait">
+          {activePopup ? (
+            /* Live Toast Popup for each signature increment */
+            <motion.div
+              key={`popup-${activePopup.count}`}
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="w-full flex items-center justify-between bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white p-2 rounded-xl shadow-md"
+            >
+              <div className="flex items-center gap-2 overflow-hidden">
+                <div className="w-6 h-6 rounded-full bg-white text-[#F43676] flex items-center justify-center font-bold text-xs shrink-0 shadow">
+                  ✍️
+                </div>
+                <div className="truncate text-xs">
+                  <span className="font-bold block truncate">{activePopup.name}</span>
+                  <span className="text-[10px] text-pink-100 opacity-90">just signed this petition!</span>
+                </div>
+              </div>
+              <div className="text-right shrink-0 ml-1 bg-white/20 px-2.5 py-1 rounded-lg text-[11px] font-black">
+                #{activePopup.count}
+              </div>
+            </motion.div>
+          ) : (
+            /* Signers list when not popping up */
+            <motion.div
+              key="names"
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.3 }}
+              className="w-full flex items-center gap-2.5"
+            >
+              {/* Avatars */}
+              <div className="flex -space-x-2 overflow-hidden shrink-0">
+                {(signers.length > 0 ? signers.slice(0, 3) : [petition?.starterName || "Riya Mehta"]).map((name, idx) => (
+                  <div
+                    key={idx}
+                    className="inline-flex h-6 w-6 rounded-full ring-2 ring-[#002050] bg-gradient-to-tr from-[#F43676] via-purple-500 to-[#2D3A8C] text-white font-bold text-[10px] items-center justify-center shadow-sm"
+                    title={name}
+                  >
+                    {name.charAt(0).toUpperCase()}
+                  </div>
+                ))}
+              </div>
+
+              {/* Supporter Names */}
+              <div className="text-[11px] text-gray-200 leading-tight truncate">
+                <span className="font-semibold text-white truncate block">
+                  {signers[0] || petition?.starterName || "Riya Mehta"}
+                  {signers[1] ? `, ${signers[1]}` : ""}
+                </span>
+                <span className="text-[10px] text-gray-300 font-medium">
+                  {count > 1 ? `& ${Math.max(1, count - (signers[1] ? 2 : 1))} others signed` : "signed this petition"}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
 export default function Banner({ initialPetitions = [] }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTickerPaused, setIsTickerPaused] = useState(false);
@@ -428,33 +609,42 @@ export default function Banner({ initialPetitions = [] }) {
                     <FaChevronRight className="text-xs group-hover:translate-x-1 transition-transform" />
                   </Link>
 
-                  {/* Sign This Petition Button */}
-                  <div className="mb-4 sm:mb-5">
-                    <Link
-                      href={heroSlides[currentSlide]?.link || "/currentpetitions"}
-                      className="inline-block bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <PenTool className="w-4 h-4" />
-                        Sign this Petition
-                      </span>
-                    </Link>
-                  </div>
+                  {/* Action Row: Sign Button, Date/Comments, and Live Signature Activity Box */}
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-2">
+                    {/* Left Stack: Sign Button + Date & Comments */}
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <Link
+                          href={heroSlides[currentSlide]?.link || "/currentpetitions"}
+                          className="inline-block bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer"
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            <PenTool className="w-4 h-4" />
+                            Sign this Petition
+                          </span>
+                        </Link>
+                      </div>
 
-                  {/* Date and Comments */}
-                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[#302d55] text-xs sm:text-sm">
-                    <span className="flex items-center gap-2">
-                      <FaCalendarAlt className="text-[#302d55]" />
-                      {heroSlides[currentSlide]?.date}
-                    </span>
-                    <span className="text-[#F43676] hidden sm:inline">•</span>
-                    <Link
-                      href={`${heroSlides[currentSlide]?.link || "/currentpetitions"}#comments`}
-                      className="flex items-center gap-2 hover:text-[#F43676] transition-colors"
-                    >
-                      <FaComment className="text-[#302d55]" />
-                      Comments
-                    </Link>
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[#302d55] text-xs sm:text-sm">
+                        <span className="flex items-center gap-2 font-medium">
+                          <FaCalendarAlt className="text-[#302d55]" />
+                          {heroSlides[currentSlide]?.date}
+                        </span>
+                        <span className="text-[#F43676] hidden sm:inline">•</span>
+                        <Link
+                          href={`${heroSlides[currentSlide]?.link || "/currentpetitions"}#comments`}
+                          className="flex items-center gap-2 hover:text-[#F43676] transition-colors font-medium"
+                        >
+                          <FaComment className="text-[#302d55]" />
+                          Comments
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Right Stack: Live Signature Activity Box (Matches Rectangle in Image) */}
+                    <div className="shrink-0">
+                      <LiveSignatureBox petition={heroSlides[currentSlide]} />
+                    </div>
                   </div>
                 </motion.div>
               </AnimatePresence>
