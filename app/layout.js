@@ -43,9 +43,42 @@ export const metadata = {
 
 
 export default function RootLayout({ children }) {
+  const jsonLdWebsite = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "SoSign",
+    "url": "https://sosign.in",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://sosign.in/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
+  const jsonLdOrg = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "SoSign",
+    "url": "https://sosign.in",
+    "logo": "https://sosign.in/logo.png",
+    "sameAs": [
+      "https://www.facebook.com/sosign",
+      "https://twitter.com/sosign",
+      "https://www.instagram.com/sosign"
+    ]
+  };
+
   return (
     <html lang="en">
       <body className={`${beVietnamPro.variable} antialiased min-h-screen flex flex-col`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebsite) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrg) }}
+        />
         <AuthProvider>
           <QueryProvider>
             <ProfileGuard>

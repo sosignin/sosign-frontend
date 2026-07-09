@@ -88,5 +88,35 @@ export default async function PetitionDetailPage({ params }) {
     console.error("Error fetching initial petition:", error);
   }
 
-  return <PetitionDetailClient initialPetition={initialPetition} />;
+  // Generate structured Campaign JSON-LD
+  const jsonLd = initialPetition ? {
+    "@context": "https://schema.org",
+    "@type": "Campaign",
+    "name": initialPetition.title,
+    "description": initialPetition.petitionDetails?.problem?.substring(0, 200) || initialPetition.title,
+    "image": initialPetition.petitionDetails?.image || "https://sosign.in/og-image.png",
+    "creator": {
+      "@type": "Organization",
+      "name": "SoSign",
+      "url": "https://sosign.in"
+    },
+    "startDate": initialPetition.createdAt,
+    "interactionStatistic": {
+      "@type": "InteractionCounter",
+      "interactionType": "https://schema.org/LikeAction",
+      "userInteractionCount": initialPetition.numberOfSignatures || 0
+    }
+  } : null;
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <PetitionDetailClient initialPetition={initialPetition} />
+    </>
+  );
 }
