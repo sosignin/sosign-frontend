@@ -39,6 +39,9 @@ export const metadata = {
   alternates: {
     canonical: "/",
   },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
+  },
 };
 
 
@@ -47,10 +50,13 @@ export default function RootLayout({ children }) {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "SoSign",
-    "url": "https://sosign.in",
+    "url": "https://sosign.in/",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://sosign.in/search?q={search_term_string}",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://sosign.in/search?q={search_term_string}"
+      },
       "query-input": "required name=search_term_string"
     }
   };

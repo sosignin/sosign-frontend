@@ -61,5 +61,25 @@ export default async function sitemap() {
     console.error("Sitemap: Error fetching successful petitions:", error.message);
   }
 
-  return [...staticPages, ...petitionUrls, ...successfulPetitionUrls];
+  // Dynamic blog pages
+  let blogUrls = [];
+  try {
+    const res = await fetch(`${backendUrl}/api/blogs?limit=10000`, {
+      next: { revalidate: 3600 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const blogs = data.blogs || [];
+      blogUrls = blogs.map((blog) => ({
+        url: `${BASE_URL}/blog/${blog.slug}`,
+        lastModified: new Date(blog.updatedAt || blog.createdAt),
+        changeFrequency: "weekly",
+        priority: 0.7,
+      }));
+    }
+  } catch (error) {
+    console.error("Sitemap: Error fetching blogs:", error.message);
+  }
+
+  return [...staticPages, ...petitionUrls, ...successfulPetitionUrls, ...blogUrls];
 }

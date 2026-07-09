@@ -9,6 +9,14 @@ import Content from "@/components/Content";
 import YouHave from "@/components/YouHave";
 import SuccessStories from "@/components/SuccessStories";
 
+export const metadata = {
+  title: "SoSign | Start & Sign Online Petitions in India",
+  description: "SoSign is India's leading verified petition and crowdfunding website. Start a petition, sign active public campaigns with Aadhaar verification, and launch crowdfunding for social change.",
+  alternates: {
+    canonical: "https://sosign.in",
+  }
+};
+
 async function getPetitions() {
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
