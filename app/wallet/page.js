@@ -34,6 +34,7 @@ export default function WalletPage() {
     const [screenshot, setScreenshot] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [activeRequests, setActiveRequests] = useState([]);
+    const [customAmount, setCustomAmount] = useState("");
 
     // Redirect if not logged in
     useEffect(() => {
@@ -98,16 +99,14 @@ export default function WalletPage() {
         }
     }, [user]);
 
-    const handleCreateRequest = async (e) => {
-        e.preventDefault();
-        const amt = parseFloat(addAmount);
-        if (!addAmount || amt <= 0) {
+    const executeWalletRequest = async (amt) => {
+        if (!amt || amt <= 0) {
             setMessage({ type: "error", text: "Please enter a valid amount" });
             return;
         }
 
-        if (!quickAmounts.includes(amt) && amt < 99000) {
-            setMessage({ type: "error", text: "Minimum custom amount is ₹99,000" });
+        if (!quickAmounts.includes(amt) && amt < 99999) {
+            setMessage({ type: "error", text: "Minimum custom amount is ₹99,999" });
             return;
         }
 
@@ -134,6 +133,12 @@ export default function WalletPage() {
                 setCurrentRequest(data.request);
                 setUpiLink(data.upiLink);
                 setShowAddForm(false);
+                setTimeout(() => {
+                    const instructionsElement = document.getElementById("payment-instructions");
+                    if (instructionsElement) {
+                        instructionsElement.scrollIntoView({ behavior: "smooth" });
+                    }
+                }, 100);
             } else {
                 setMessage({ type: "error", text: data.message || "Failed to initiate request" });
             }
@@ -142,6 +147,11 @@ export default function WalletPage() {
         } finally {
             setIsAdding(false);
         }
+    };
+
+    const handleCreateRequest = async (e) => {
+        e.preventDefault();
+        await executeWalletRequest(parseFloat(addAmount));
     };
 
     const handleScreenshotUpload = async (e) => {
@@ -197,7 +207,7 @@ export default function WalletPage() {
     const purchasablePlans = plans;
     const quickAmounts = purchasablePlans.length > 0
         ? purchasablePlans.filter(p => p.price > 0 && !p.isCustom).map(p => p.price)
-        : [999, 49000, 99000];
+        : [999, 49999, 99999];
 
     if (!user) {
         return null;
@@ -316,7 +326,7 @@ export default function WalletPage() {
                                                     <span>{p.points.toLocaleString()} Points</span>
                                                     {p.key === "bronze" && <span className="text-[10px] text-gray-500 font-normal mt-0.5">(₹5 / point)</span>}
                                                     {p.key === "silver" && <span className="text-[10px] text-gray-500 font-normal mt-0.5">(₹4.50 / point)</span>}
-                                                    {p.key === "gold" && <span className="text-[10px] text-gray-500 font-normal mt-0.5">(₹4.25 / point)</span>}
+                                                    {p.key === "gold" && <span className="text-[10px] text-gray-500 font-normal mt-0.5">(₹4.00 / point)</span>}
                                                 </span>
                                             )}
                                         </p>
@@ -344,32 +354,81 @@ export default function WalletPage() {
                                             )}
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => {
-                                            if (p.key === "free") return;
-                                            if (p.isCustom) {
-                                                window.location.href = `mailto:haldarai@sosign.com?subject=Inquiry for SoSign Custom Plan (${p.name})&body=Hello Admin, I am interested in custom options for the ${p.name}. Please contact me.`;
-                                            } else {
+                                    {p.isCustom ? (
+                                        <div className="mt-4 pt-3 border-t border-gray-100">
+                                            <label className="block text-[9px] text-gray-500 font-bold mb-1 uppercase text-left">
+                                                Enter Custom Amount (₹)
+                                            </label>
+                                            <form
+                                                onSubmit={(e) => {
+                                                    e.preventDefault();
+                                                    setAddAmount(customAmount);
+                                                    setShowAddForm(true);
+                                                    setTimeout(() => {
+                                                        const formElement = document.getElementById("add-money-form");
+                                                        if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
+                                                    }, 50);
+                                                }}
+                                                className="flex flex-col gap-2"
+                                            >
+                                                <input
+                                                    type="number"
+                                                    placeholder="Min ₹99,999"
+                                                    value={customAmount}
+                                                    onChange={(e) => setCustomAmount(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-[#F43676] focus:outline-none text-xs font-semibold text-center"
+                                                    min="99999"
+                                                    required
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    className="w-full bg-[#302d55] text-white hover:bg-[#3f3b6d] py-2 rounded-xl text-xs font-bold transition-all"
+                                                >
+                                                    Proceed to Buy
+                                                </button>
+                                                <div className="flex flex-col gap-1.5 text-[10px] text-gray-500 text-left font-medium mt-1">
+                                                    <div className="text-center text-gray-400">Rate: <strong>₹4.00 / point</strong></div>
+                                                    {customAmount && parseFloat(customAmount) > 0 && (
+                                                        parseFloat(customAmount) < 99999 ? (
+                                                            <div className="text-red-500 text-[9px] font-bold text-center">
+                                                                * Minimum amount is ₹99,999
+                                                            </div>
+                                                        ) : (
+                                                            <div className="bg-pink-50 text-pink-700 font-bold p-2 rounded-xl border border-pink-100 text-center text-[10px]">
+                                                                <div className="text-[9px] text-gray-500 font-medium mb-0.5">Points to Credit</div>
+                                                                <div className="text-[#F43676] text-sm font-extrabold">
+                                                                    {Math.floor(parseFloat(customAmount) / 4).toLocaleString()} Pts
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    )}
+                                                </div>
+                                            </form>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                if (p.key === "free") return;
                                                 setAddAmount(p.price.toString());
                                                 setShowAddForm(true);
                                                 // Scroll to recharge input dynamically
                                                 const formElement = document.querySelector('form');
                                                 if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
-                                            }
-                                        }}
-                                        disabled={p.key === "free"}
-                                        className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
-                                            user.plan === p.key || (p.key === "free" && (!user.plan || user.plan === "free"))
-                                                ? "bg-pink-50 text-[#F43676] border border-[#F43676] hover:bg-pink-100"
-                                                : p.key === "free"
-                                                ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
-                                                : "bg-[#302d55] text-white hover:bg-[#3f3b6d]"
-                                        }`}
-                                    >
-                                        {p.key === "free"
-                                            ? ((user.plan === "free" || !user.plan) ? "Active" : "Included by Default")
-                                            : user.plan === p.key ? "Active" : p.isCustom ? "Contact Admin" : `Buy ${p.name}`}
-                                    </button>
+                                            }}
+                                            disabled={p.key === "free"}
+                                            className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                                user.plan === p.key || (p.key === "free" && (!user.plan || user.plan === "free"))
+                                                    ? "bg-pink-50 text-[#F43676] border border-[#F43676] hover:bg-pink-100"
+                                                    : p.key === "free"
+                                                    ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+                                                    : "bg-[#302d55] text-white hover:bg-[#3f3b6d]"
+                                            }`}
+                                        >
+                                            {p.key === "free"
+                                                ? ((user.plan === "free" || !user.plan) ? "Active" : "Included by Default")
+                                                : user.plan === p.key ? "Active" : `Buy ${p.name}`}
+                                        </button>
+                                    )}
                                 </motion.div>
                             ))
                         )}
@@ -429,6 +488,7 @@ export default function WalletPage() {
                 {/* Payment Instructions (Only if request exists) */}
                 {currentRequest && (
                     <motion.div
+                        id="payment-instructions"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className="bg-white rounded-3xl p-8 mb-8 shadow-xl border-2 border-[#F43676]"
@@ -500,6 +560,7 @@ export default function WalletPage() {
                 {/* Add Money Form */}
                 {showAddForm && (
                     <motion.div
+                        id="add-money-form"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
@@ -545,7 +606,7 @@ export default function WalletPage() {
                                     type="number"
                                     value={addAmount}
                                     onChange={(e) => setAddAmount(e.target.value)}
-                                    placeholder="Min ₹99,000 for custom entry"
+                                    placeholder="Min ₹99,999 for custom entry"
                                     min="1"
                                     step="0.01"
                                     className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#F43676] focus:outline-none text-lg"
@@ -561,7 +622,7 @@ export default function WalletPage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={isAdding || (!!addAmount && !quickAmounts.includes(parseFloat(addAmount)) && parseFloat(addAmount) < 99000)}
+                                    disabled={isAdding || (!!addAmount && !quickAmounts.includes(parseFloat(addAmount)) && parseFloat(addAmount) < 99999)}
                                     className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-medium hover:shadow-lg hover:shadow-pink-300/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {isAdding ? (
