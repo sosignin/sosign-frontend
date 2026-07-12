@@ -4,7 +4,7 @@ import PetitionDetailClient from "./PetitionDetailClient";
 async function getPetition(slug) {
   try {
     // Use production backend URL for server-side fetching
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://sosign-backend.onrender.com";
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.sosign.in";
     const response = await fetch(`${backendUrl}/api/petitions/${slug}`, {
       cache: "no-store",
     });

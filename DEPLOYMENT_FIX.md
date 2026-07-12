@@ -2,7 +2,7 @@
 
 ## Issue
 
-The frontend deployed on Vercel at https://sosign.vercel.app/ is getting 500 errors because it's trying to connect to localhost:8000 instead of the production backend at https://sosign-backend.onrender.com.
+The frontend deployed on Vercel at https://sosign.vercel.app/ is getting 500 errors because it's trying to connect to localhost:8000 instead of the production backend at https://api.sosign.in.
 
 ## Solution
 
@@ -17,8 +17,8 @@ Go to your Vercel dashboard for the sosign project and add these environment var
 **Production Environment Variables:**
 
 ```
-NEXT_PUBLIC_API_URL=https://sosign-backend.onrender.com
-API_URL=https://sosign-backend.onrender.com
+NEXT_PUBLIC_API_URL=https://api.sosign.in
+API_URL=https://api.sosign.in
 ```
 
 **Firebase Configuration (if needed):**
@@ -88,10 +88,10 @@ npm i -g vercel
 
 # Set environment variables
 vercel env add NEXT_PUBLIC_API_URL production
-# Enter: https://sosign-backend.onrender.com
+# Enter: https://api.sosign.in
 
 vercel env add API_URL production
-# Enter: https://sosign-backend.onrender.com
+# Enter: https://api.sosign.in
 
 # Trigger redeploy
 vercel --prod

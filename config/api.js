@@ -5,7 +5,7 @@ const config = {
     process.env.API_URL ||
     (typeof window !== "undefined" && window.location.hostname === "localhost"
       ? "http://localhost:8000"
-      : "https://sosign-backend.onrender.com"), // Production backend URL as fallback
+      : "https://api.sosign.in"), // Production backend URL as fallback
 };
 
 export default config;
