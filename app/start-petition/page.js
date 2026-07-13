@@ -389,7 +389,7 @@ export default function StartPetitionPage() {
       if (abusiveCheck.hasAbusive) {
         return {
           isValid: false,
-          error: `⚠️ Abusive/inappropriate words detected (${abusiveCheck.foundWords.join(", ")}). Please remove them.`,
+          error: `⚠️ Abusive/inappropriate words detected. Please remove them.`,
         };
       }
     }
