@@ -23,6 +23,15 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
     if (completedCalledRef.current) return;
     completedCalledRef.current = true;
 
+    // Close the popup window if open
+    if (popupRef.current && !popupRef.current.closed) {
+      try {
+        popupRef.current.close();
+      } catch (err) {
+        console.error("Failed to close popup:", err);
+      }
+    }
+
     setStatus("completing");
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -70,10 +79,25 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
             // Clean up the signal
             localStorage.removeItem("digilocker_complete");
 
-            const cid = clientIdRef.current;
-            const token = tokenRef.current;
+            // Close the popup window if open
+            if (popupRef.current && !popupRef.current.closed) {
+              try {
+                popupRef.current.close();
+              } catch (err) {
+                console.error("Failed to close popup in storage event:", err);
+              }
+            }
+
+            const cid = data.clientId || clientIdRef.current || localStorage.getItem("digilocker_client_id");
+            const token = tokenRef.current || JSON.parse(localStorage.getItem("user"))?.token;
+
+            // Clean up backup client ID
+            localStorage.removeItem("digilocker_client_id");
+
             if (cid && token) {
               handleComplete(cid, token);
+            } else {
+              console.warn("Storage completion event received, but client ID or token is missing:", { cid, token });
             }
           }
         } catch (err) {
@@ -85,10 +109,25 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
     const handleMessage = (event) => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === "DIGILOCKER_COMPLETE" && event.data?.success) {
-        const cid = clientIdRef.current;
-        const token = tokenRef.current;
+        // Close the popup window if open
+        if (popupRef.current && !popupRef.current.closed) {
+          try {
+            popupRef.current.close();
+          } catch (err) {
+            console.error("Failed to close popup in message event:", err);
+          }
+        }
+
+        const cid = event.data?.clientId || clientIdRef.current || localStorage.getItem("digilocker_client_id");
+        const token = tokenRef.current || JSON.parse(localStorage.getItem("user"))?.token;
+
+        // Clean up backup client ID
+        localStorage.removeItem("digilocker_client_id");
+
         if (cid && token) {
           handleComplete(cid, token);
+        } else {
+          console.warn("Message completion event received, but client ID or token is missing:", { cid, token });
         }
       }
     };
@@ -132,6 +171,8 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
 
       setClientId(data.clientId);
       clientIdRef.current = data.clientId;
+      // Backup client ID in localStorage
+      localStorage.setItem("digilocker_client_id", data.clientId);
       setOauthUrl(data.url);
       setStatus("linking");
 

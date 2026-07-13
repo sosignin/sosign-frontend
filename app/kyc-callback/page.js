@@ -12,12 +12,25 @@ import React, { useEffect } from "react";
  */
 const KycCallbackPage = () => {
   useEffect(() => {
+    // Extract client_id from URL query params
+    let clientId = null;
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      clientId = searchParams.get("client_id") || searchParams.get("clientId");
+    } catch (e) {
+      console.error("Failed to parse URL params:", e);
+    }
+
     // Signal completion to the parent window via localStorage
     // The `storage` event fires in ALL other same-origin tabs/windows
     try {
       localStorage.setItem(
         "digilocker_complete",
-        JSON.stringify({ success: true, timestamp: Date.now() })
+        JSON.stringify({ 
+          success: true, 
+          clientId: clientId,
+          timestamp: Date.now() 
+        })
       );
     } catch (err) {
       console.error("Failed to signal completion:", err);
@@ -27,7 +40,11 @@ const KycCallbackPage = () => {
     try {
       if (window.opener) {
         window.opener.postMessage(
-          { type: "DIGILOCKER_COMPLETE", success: true },
+          { 
+            type: "DIGILOCKER_COMPLETE", 
+            success: true,
+            clientId: clientId 
+          },
           window.location.origin
         );
       }
