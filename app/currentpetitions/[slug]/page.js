@@ -128,6 +128,7 @@ export default async function PetitionDetailPage({ params }) {
     "author": {
       "@type": "Person",
       "name": petitionStarter,
+      "url": `${baseUrl}/currentpetitions/${slug}`,
     },
     "publisher": {
       "@type": "Organization",
@@ -201,15 +202,13 @@ export default async function PetitionDetailPage({ params }) {
       <article
         className="sr-only"
         aria-hidden="true"
-        itemScope
-        itemType="https://schema.org/Article"
       >
-        <h1 itemProp="headline">{initialPetition.title}</h1>
+        <h1>{initialPetition.title}</h1>
 
         {initialPetition.petitionDetails?.problem && (
           <section>
             <h2>Problem</h2>
-            <p itemProp="description">
+            <p>
               {stripHtml(initialPetition.petitionDetails.problem)}
             </p>
           </section>
@@ -224,21 +223,18 @@ export default async function PetitionDetailPage({ params }) {
 
         {category && (
           <p>
-            Category:{" "}
-            <span itemProp="articleSection">{category}</span>
+            Category: <span>{category}</span>
           </p>
         )}
 
         <p>
-          Started by:{" "}
-          <span itemProp="author">{petitionStarter}</span>
+          Started by: <span>{petitionStarter}</span>
         </p>
 
         <p>Signatures: {initialPetition.numberOfSignatures || 0}</p>
 
         {initialPetition.createdAt && (
           <time
-            itemProp="datePublished"
             dateTime={initialPetition.createdAt}
           >
             Created: {new Date(initialPetition.createdAt).toLocaleDateString()}
