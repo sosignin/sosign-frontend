@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
 import Image from "next/image";
-import { auth, provider } from "../../utils/Firebase";
+import { auth, provider, formatAuthError } from "../../utils/Firebase";
 import { signInWithPopup } from "firebase/auth";
 import axios from "axios";
 
@@ -190,7 +190,7 @@ function LoginContent() {
       await login(loginEmail, loginPassword);
       router.push(redirectUrl);
     } catch (error) {
-      setLoginError(error?.message || String(error) || "Login failed");
+      setLoginError(formatAuthError(error));
     }
   };
 
@@ -250,7 +250,7 @@ function LoginContent() {
       await signup(name, designation, signupEmail, mobile, createPassword);
       router.push(redirectUrl);
     } catch (error) {
-      setSignupError(error?.message || String(error) || "Signup failed");
+      setSignupError(formatAuthError(error));
     } finally {
       setIsValidatingEmail(false);
     }
@@ -280,7 +280,7 @@ function LoginContent() {
       }
     } catch (error) {
       console.error("Google Sign-In Error:", error);
-      setLoginError(error?.message || "Failed to sign in with Google.");
+      setLoginError(formatAuthError(error));
     }
   };
 
@@ -311,7 +311,7 @@ function LoginContent() {
       await updateProfile(formData);
       router.push(redirectUrl);
     } catch (error) {
-      setSignupError(error?.message || "Failed to complete profile");
+      setSignupError(formatAuthError(error));
     } finally {
       setCompletingProfile(false);
     }

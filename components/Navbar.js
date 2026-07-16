@@ -304,7 +304,7 @@ export default function Navbar() {
               </a>
               {/* Twitter/X */}
               <a
-                href="https://twitter.com"
+                href="https://x.com/sosign_in"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
@@ -318,7 +318,7 @@ export default function Navbar() {
               </a>
               {/* Telegram */}
               <a
-                href="https://telegram.org"
+                href="http://t.me/sosign_in"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
@@ -332,7 +332,7 @@ export default function Navbar() {
               </a>
               {/* Instagram */}
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/sosign_in"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
@@ -658,7 +658,7 @@ export default function Navbar() {
                   </a>
                   {/* Twitter/X */}
                   <a
-                    href="https://twitter.com"
+                    href="https://x.com/sosign_in"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
@@ -672,7 +672,7 @@ export default function Navbar() {
                   </a>
                   {/* Telegram */}
                   <a
-                    href="https://telegram.org"
+                    href="http://t.me/sosign_in"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
@@ -686,7 +686,7 @@ export default function Navbar() {
                   </a>
                   {/* Instagram */}
                   <a
-                    href="https://instagram.com"
+                    href="https://www.instagram.com/sosign_in"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube, FaPinterestP, FaSearch, FaArrowUp } from "react-icons/fa";
+import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube, FaPinterestP, FaSearch, FaArrowUp, FaTelegramPlane } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
 import { useState, useEffect } from "react";
 import { FileText } from "lucide-react";
 
@@ -78,15 +79,23 @@ export default function Footer() {
               <FaFacebookF /> Facebook
             </a>
             <a
-              href="https://twitter.com"
+              href="https://x.com/sosign_in"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 px-4 py-2 bg-[#000000] rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
             >
-              <FaTwitter /> Twitter
+              <FaXTwitter /> X
             </a>
             <a
-              href="https://instagram.com"
+              href="http://t.me/sosign_in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-[#0088cc] rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              <FaTelegramPlane /> Telegram
+            </a>
+            <a
+              href="https://www.instagram.com/sosign_in"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 bg-[#E4405F] rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"

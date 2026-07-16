@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { AuthProvider } from "../context/AuthContext";
 import QueryProvider from "@/components/providers/QueryProvider";
 import ProfileGuard from "@/components/ProfileGuard";
+import Script from "next/script";
 
 // Google Fonts
 const beVietnamPro = Be_Vietnam_Pro({
@@ -36,11 +37,11 @@ export const metadata = {
     description:
       "Start a petition, gather verified signatures via Aadhaar, and launch crowdfunding campaigns to create lasting social impact on SoSign.",
   },
-  alternates: {
-    canonical: "/",
-  },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
+    other: {
+      "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || "",
+    },
   },
 };
 
@@ -76,6 +77,26 @@ export default function RootLayout({ children }) {
 
   return (
     <html lang="en">
+      <head>
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}', {
+                  page_path: window.location.pathname,
+                });
+              `}
+            </Script>
+          </>
+        )}
+      </head>
       <body className={`${beVietnamPro.variable} antialiased min-h-screen flex flex-col`}>
         <script
           type="application/ld+json"

@@ -261,6 +261,7 @@ export default function Banner({ initialPetitions = [] }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTickerPaused, setIsTickerPaused] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Initialize state with transformed initial data if available
   const initializeHeroSlides = () => {
@@ -381,15 +382,15 @@ export default function Banner({ initialPetitions = [] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-slide functionality - DISABLED
-  // useEffect(() => {
-  //   if (heroSlides.length === 0) return;
+  // Auto-slide functionality
+  useEffect(() => {
+    if (heroSlides.length === 0 || isHovered) return;
 
-  //   const interval = setInterval(() => {
-  //     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-  //   }, 5000);
-  //   return () => clearInterval(interval);
-  // }, [heroSlides.length]);
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [heroSlides.length, isHovered]);
 
   const nextSlide = () => {
     if (heroSlides.length === 0) return;
@@ -498,10 +499,14 @@ export default function Banner({ initialPetitions = [] }) {
 
       {/* Hero Slider Section */}
       <div className="py-6">
-        <div className="relative bg-white rounded-3xl shadow-lg overflow-hidden p-4 sm:p-6 lg:p-7">
+        <div 
+          className="relative bg-white rounded-3xl shadow-lg overflow-hidden p-4 sm:p-6 lg:p-7"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           <div className="flex flex-col lg:flex-row items-stretch gap-6 lg:gap-7">
             {/* Left Side - Image */}
-            <div className="lg:w-[55%] relative h-[260px] sm:h-[320px] lg:h-auto min-h-[320px] lg:min-h-[370px] overflow-hidden rounded-2xl group shadow-lg bg-gray-100 flex-shrink-0">
+            <div className="lg:w-[55%] relative h-auto min-h-[260px] sm:min-h-[320px] lg:min-h-[370px] overflow-hidden rounded-2xl group shadow-lg bg-gray-100 flex-shrink-0 flex items-center">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentSlide}
@@ -509,20 +514,20 @@ export default function Banner({ initialPetitions = [] }) {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.5, ease: "easeInOut" }}
-                  className="absolute inset-0 w-full h-full"
+                  className="w-full h-auto relative"
                 >
                   {/* Image with proper error handling */}
                   <img
                     src={heroSlides[currentSlide]?.image || "https://picsum.photos/seed/default/800/600"}
                     alt={heroSlides[currentSlide]?.title || "Petition"}
-                    className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                    className="w-full h-auto min-h-[260px] sm:min-h-[320px] lg:min-h-[370px] object-cover transition-transform duration-500 ease-out group-hover:scale-105 block rounded-2xl"
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = `https://picsum.photos/seed/${heroSlides[currentSlide]?.id || "fallback"}/800/600`;
                     }}
                   />
                   {/* Gradient overlay for better visual appeal */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none rounded-2xl"></div>
                 </motion.div>
               </AnimatePresence>
 

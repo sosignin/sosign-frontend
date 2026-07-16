@@ -158,7 +158,7 @@ export default function Captcha({ onVerify, resetTrigger }) {
 
     // Verify user input
     const handleVerify = () => {
-        if (userInput.toLowerCase() === captchaTextRef.current.toLowerCase()) {
+        if (userInput === captchaTextRef.current) {
             setIsVerified(true);
             setError("");
             onVerifyRef.current(true);
@@ -178,7 +178,7 @@ export default function Captcha({ onVerify, resetTrigger }) {
 
         // Auto-verify when length matches
         if (value.length === captchaTextRef.current.length) {
-            if (value.toLowerCase() === captchaTextRef.current.toLowerCase()) {
+            if (value === captchaTextRef.current) {
                 setIsVerified(true);
                 setError("");
                 onVerifyRef.current(true);
@@ -277,7 +277,7 @@ export default function Captcha({ onVerify, resetTrigger }) {
             )}
 
             <p className="text-xs text-gray-500 text-center">
-                Type the characters you see in the image (case-insensitive)
+                Type the characters you see in the image (case-sensitive)
             </p>
         </div>
     );

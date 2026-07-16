@@ -5,7 +5,7 @@ import { Eye, EyeOff, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import Image from "next/image";
-import { auth, provider } from "../utils/Firebase";
+import { auth, provider, formatAuthError } from "../utils/Firebase";
 import { signInWithPopup } from "firebase/auth";
 
 const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
@@ -44,7 +44,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
         window.location.reload(); // Refresh the page to fetch user's petitions
       }
     } catch (error) {
-      setLoginError(error.message);
+      setLoginError(formatAuthError(error));
     }
   };
 
@@ -67,7 +67,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
         window.location.reload(); // Refresh the page to fetch user's petitions
       }
     } catch (error) {
-      setSignupError(error.message);
+      setSignupError(formatAuthError(error));
     }
   };
 
@@ -84,7 +84,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
       }
     } catch (error) {
       console.error("Google Sign-In Error:", error);
-      setLoginError("Failed to sign in with Google.");
+      setLoginError(formatAuthError(error));
     }
   };
 
