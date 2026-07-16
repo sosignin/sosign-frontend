@@ -449,6 +449,7 @@ export default function Banner({ initialPetitions = [] }) {
                     src={story.image}
                     alt={story.title}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
                 <div className="flex flex-col">
@@ -473,6 +474,7 @@ export default function Banner({ initialPetitions = [] }) {
                     src={story.image}
                     alt={story.title}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
                 <div className="flex flex-col">
@@ -521,6 +523,7 @@ export default function Banner({ initialPetitions = [] }) {
                     src={heroSlides[currentSlide]?.image || "https://picsum.photos/seed/default/800/600"}
                     alt={heroSlides[currentSlide]?.title || "Petition"}
                     className="w-full h-auto min-h-[260px] sm:min-h-[320px] lg:min-h-[370px] object-cover transition-transform duration-500 ease-out group-hover:scale-105 block rounded-2xl"
+                    fetchPriority="high"
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = `https://picsum.photos/seed/${heroSlides[currentSlide]?.id || "fallback"}/800/600`;

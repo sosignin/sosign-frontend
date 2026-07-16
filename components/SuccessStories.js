@@ -133,6 +133,7 @@ export default function SuccessStories() {
                                             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(petition.petitionStarterName || "Anonymous")}&background=random&size=24`}
                                             alt="User"
                                             className="w-full h-full object-cover"
+                                            loading="lazy"
                                         />
                                     </div>
                                     <span className="text-gray-300 text-xs truncate">
