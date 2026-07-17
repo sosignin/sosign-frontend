@@ -831,9 +831,16 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
 
               {/* Categories */}
               <div className="bg-white rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-xl font-bold text-[#002050]">Categories</h3>
-                  <span className="w-2 h-2 bg-[#F43676] rounded-full"></span>
+                <div className="flex items-center gap-2 mb-4 justify-between">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-[#002050]">Categories</h3>
+                    <span className="w-2 h-2 bg-[#F43676] rounded-full"></span>
+                  </div>
+                  {!categoriesLoading && (
+                    <span className="text-xs font-semibold text-[#F43676] bg-pink-50 px-2 py-1 rounded-md">
+                      {categoriesData.length} Total
+                    </span>
+                  )}
                 </div>
                 {categoriesLoading ? (
                   <div className="flex items-center justify-center py-4">
@@ -842,13 +849,16 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
                 ) : (
                   <ul className="space-y-3">
                     {categoriesData.map((category, index) => (
-                      <li key={category._id || index} className="border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+                      <li key={category._id || index} className="border-b border-gray-100 pb-2 last:border-0 last:pb-0 flex items-center justify-between">
                         <Link
                           href={`/category/${category.slug}`}
-                          className="text-[#302d55] hover:text-[#F43676] transition-colors"
+                          className="text-[#302d55] hover:text-[#F43676] transition-colors font-medium text-sm"
                         >
                           {category.name}
                         </Link>
+                        <span className="text-[11px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                          {category.petitionCount || 0}
+                        </span>
                       </li>
                     ))}
                   </ul>
