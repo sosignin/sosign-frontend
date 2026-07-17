@@ -262,6 +262,18 @@ export default function Navbar() {
                         Success Stories
                       </Link>
                       <Link
+                        href="/categories"
+                        className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
+                      >
+                        Categories
+                      </Link>
+                      <Link
+                        href="/trending"
+                        className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
+                      >
+                        Trending
+                      </Link>
+                      <Link
                         href="/blog"
                         className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
                       >
@@ -612,6 +624,20 @@ export default function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Success Stories
+                </Link>
+                 <Link
+                  href="/categories"
+                  className="text-[#302d55] font-medium text-sm py-2 hover:text-[#F43676]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Categories
+                </Link>
+                <Link
+                  href="/trending"
+                  className="text-[#302d55] font-medium text-sm py-2 hover:text-[#F43676]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Trending
                 </Link>
                 <Link
                   href="/about"

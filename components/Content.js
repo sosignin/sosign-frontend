@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSpinner, FaCopy, FaPen, FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube, FaPlay, FaHandHoldingHeart, FaMapMarkerAlt, FaRupeeSign } from "react-icons/fa";
+import { FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSpinner, FaCopy, FaPen, FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube, FaPlay, FaHandHoldingHeart, FaMapMarkerAlt, FaRupeeSign, FaFire } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { PenTool, User, BadgeCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -185,6 +185,56 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
       return [];
     },
     staleTime: 5 * 60 * 1000,
+  });
+
+  // FAQ accordion state
+  const [activeFaqIndex, setActiveFaqIndex] = useState(null);
+
+  // Fetch FAQs from API
+  const { data: faqsData = [] } = useQuery({
+    queryKey: ["faqs"],
+    queryFn: async () => {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${backendUrl}/api/faqs`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.faqs || [];
+      }
+      return [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const fallbackFaqs = [
+    {
+      question: "What is SoSign?",
+      answer: "SoSign is India's leading digital platform for verified petitions and crowdfunding. We empower citizens, social workers, and organizations to start social movements, gather verified signatures via Aadhaar, and raise funds for public interest campaigns."
+    },
+    {
+      question: "How does signature verification work?",
+      answer: "Unlike traditional platforms, SoSign integrates secure identity verification (such as Aadhaar, PAN, or Voter ID checks) to ensure that every signature represents a unique, verified citizen, preventing spam signatures."
+    },
+    {
+      question: "Is it free to start a petition?",
+      answer: "Yes, starting a petition on SoSign is completely free for everyone. You can easily write your petition, add supporting images/documents, and publish it to start gathering signatures right away."
+    }
+  ];
+
+  const displayFaqs = (faqsData && faqsData.length > 0 ? faqsData : fallbackFaqs).slice(0, 4);
+
+  // Fetch trending petitions for sidebar (top 3)
+  const { data: trendingSidebarPetitions = [], isLoading: trendingLoading } = useQuery({
+    queryKey: ["trendingSidebar"],
+    queryFn: async () => {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${backendUrl}/api/petitions?sort=signatures&limit=3`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.petitions || [];
+      }
+      return [];
+    },
+    staleTime: 60 * 1000,
   });
 
   // Handle search
@@ -1097,6 +1147,95 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
                     <p className="text-sm">No ads available</p>
                   </div>
                 )}
+              </div>
+
+              {/* FAQs */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-xl font-bold text-[#002050]">FAQs</h3>
+                  <span className="w-2 h-2 bg-[#F43676] rounded-full"></span>
+                </div>
+
+                <div className="space-y-3">
+                  {displayFaqs.map((faq, index) => {
+                    const isOpen = activeFaqIndex === index;
+                    return (
+                      <div key={index} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                        <button
+                          onClick={() => setActiveFaqIndex(isOpen ? null : index)}
+                          className="flex justify-between items-center w-full text-left font-semibold text-sm text-[#302d55] hover:text-[#F43676] transition-colors py-1 focus:outline-none"
+                        >
+                          <span className="pr-2">{faq.question}</span>
+                          <span className={`transform transition-transform duration-200 text-[10px] text-gray-400 flex-shrink-0 ${isOpen ? 'rotate-180 text-[#F43676]' : ''}`}>
+                            ▼
+                          </span>
+                        </button>
+                        <div
+                          className={`text-xs text-gray-500 leading-relaxed overflow-hidden transition-all duration-300 ${
+                            isOpen ? "mt-2 max-h-40 opacity-100" : "max-h-0 opacity-0"
+                          }`}
+                        >
+                          {faq.answer}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 pt-2 border-t border-gray-50 text-center">
+                  <Link
+                    href="/faq"
+                    className="text-xs font-semibold text-[#F43676] hover:text-[#e02a60] transition-colors"
+                  >
+                    View all FAQs →
+                  </Link>
+                </div>
+              </div>
+
+              {/* Trending Petitions Sidebar Card */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-[#002050]">Trending Petitions</h3>
+                    <span className="w-2 h-2 bg-[#F43676] rounded-full"></span>
+                  </div>
+                  <FaFire className="text-amber-500 text-lg animate-pulse" />
+                </div>
+
+                {trendingLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <FaSpinner className="animate-spin text-[#F43676]" />
+                  </div>
+                ) : trendingSidebarPetitions.length > 0 ? (
+                  <div className="space-y-4">
+                    {trendingSidebarPetitions.map((pet, idx) => (
+                      <div key={pet._id || idx} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                        <Link
+                          href={`/currentpetitions/${pet.slug || pet._id}`}
+                          className="group block"
+                        >
+                          <h4 className="font-semibold text-sm text-[#302d55] group-hover:text-[#F43676] transition-colors leading-snug line-clamp-2">
+                            {pet.title}
+                          </h4>
+                          <div className="flex items-center gap-1.5 mt-1.5 text-[11px] font-bold text-[#F43676]">
+                            <PenTool className="w-3 h-3" />
+                            <span>{pet.numberOfSignatures.toLocaleString()} signatures</span>
+                          </div>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-400 text-xs text-center py-4">No trending petitions found</p>
+                )}
+
+                <div className="mt-4 pt-2 border-t border-gray-50 text-center">
+                  <Link
+                    href="/trending"
+                    className="text-xs font-semibold text-[#F43676] hover:text-[#e02a60] transition-colors"
+                  >
+                    View all Trending →
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
