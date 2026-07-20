@@ -386,92 +386,91 @@ export default function Navbar() {
                 >
                   {searchOpen ? <FaTimes className="text-xs" /> : <FaSearch className="text-xs" />}
                 </button>
-              </div>
-            </div>
 
-              {/* Search Overlay */}
-              <AnimatePresence>
-                {searchOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-[62px] sm:top-11 w-auto sm:w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
-                  >
-                    {/* Search Input */}
-                    <form onSubmit={handleSearchSubmit} className="p-3 sm:p-4 border-b border-gray-100">
-                      <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
-                        <FaSearch className="text-gray-400 text-sm flex-shrink-0" />
-                        <input
-                          type="text"
-                          placeholder="Search petitions..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          autoFocus
-                          className="flex-1 bg-transparent outline-none text-sm text-[#302d55] placeholder-gray-400 min-w-0"
-                        />
-                        {searchLoading && (
-                          <FaSpinner className="animate-spin text-[#F43676] text-sm flex-shrink-0" />
+                {/* Search Overlay */}
+                <AnimatePresence>
+                  {searchOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-[62px] sm:top-11 w-auto sm:w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
+                    >
+                      {/* Search Input */}
+                      <form onSubmit={handleSearchSubmit} className="p-3 sm:p-4 border-b border-gray-100">
+                        <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
+                          <FaSearch className="text-gray-400 text-sm flex-shrink-0" />
+                          <input
+                            type="text"
+                            placeholder="Search petitions..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            autoFocus
+                            className="flex-1 bg-transparent outline-none text-sm text-[#302d55] placeholder-gray-400 min-w-0"
+                          />
+                          {searchLoading && (
+                            <FaSpinner className="animate-spin text-[#F43676] text-sm flex-shrink-0" />
+                          )}
+                        </div>
+                      </form>
+
+                      {/* Search Results */}
+                      <div className="max-h-[60vh] sm:max-h-80 overflow-y-auto">
+                        {searchQuery.length < 2 && (
+                          <div className="p-4 text-center text-gray-400 text-sm">
+                            Type at least 2 characters to search
+                          </div>
+                        )}
+
+                        {searchQuery.length >= 2 && !searchLoading && searchResults.length === 0 && (
+                          <div className="p-4 text-center text-gray-400 text-sm">
+                            No petitions found for &quot;{searchQuery}&quot;
+                          </div>
+                        )}
+
+                        {searchResults.length > 0 && (
+                          <div className="py-2">
+                            {searchResults.map((petition) => (
+                              <button
+                                key={petition._id}
+                                onClick={() => handleResultClick(petition._id)}
+                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 hover:bg-pink-50 transition-colors text-left group"
+                              >
+                                {/* Petition Image */}
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                  <img
+                                    src={petition.petitionDetails?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(petition.title)}&background=random&size=48`}
+                                    alt={petition.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                {/* Petition Info */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-[#002050] group-hover:text-[#F43676] transition-colors line-clamp-1">
+                                    {petition.title}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                                    {petition.numberOfSignatures || 0} signatures • {petition.petitionStarter?.name || "Anonymous"}
+                                  </p>
+                                </div>
+                              </button>
+                            ))}
+
+                            {/* See All Results Link */}
+                            <button
+                              onClick={handleSearchSubmit}
+                              className="w-full px-3 sm:px-4 py-3 text-center text-sm font-medium text-[#F43676] hover:bg-pink-50 transition-colors border-t border-gray-100"
+                            >
+                              See all results for &quot;{searchQuery}&quot;
+                            </button>
+                          </div>
                         )}
                       </div>
-                    </form>
-
-                    {/* Search Results */}
-                    <div className="max-h-[60vh] sm:max-h-80 overflow-y-auto">
-                      {searchQuery.length < 2 && (
-                        <div className="p-4 text-center text-gray-400 text-sm">
-                          Type at least 2 characters to search
-                        </div>
-                      )}
-
-                      {searchQuery.length >= 2 && !searchLoading && searchResults.length === 0 && (
-                        <div className="p-4 text-center text-gray-400 text-sm">
-                          No petitions found for &quot;{searchQuery}&quot;
-                        </div>
-                      )}
-
-                      {searchResults.length > 0 && (
-                        <div className="py-2">
-                          {searchResults.map((petition) => (
-                            <button
-                              key={petition._id}
-                              onClick={() => handleResultClick(petition._id)}
-                              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 hover:bg-pink-50 transition-colors text-left group"
-                            >
-                              {/* Petition Image */}
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                <img
-                                  src={petition.petitionDetails?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(petition.title)}&background=random&size=48`}
-                                  alt={petition.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              {/* Petition Info */}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-[#002050] group-hover:text-[#F43676] transition-colors line-clamp-1">
-                                  {petition.title}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
-                                  {petition.numberOfSignatures || 0} signatures • {petition.petitionStarter?.name || "Anonymous"}
-                                </p>
-                              </div>
-                            </button>
-                          ))}
-
-                          {/* See All Results Link */}
-                          <button
-                            onClick={handleSearchSubmit}
-                            className="w-full px-3 sm:px-4 py-3 text-center text-sm font-medium text-[#F43676] hover:bg-pink-50 transition-colors border-t border-gray-100"
-                          >
-                            See all results for &quot;{searchQuery}&quot;
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
             {/* Wallet Button - Hidden on mobile, shown on lg+ (it's in the hamburger for mobile) */}
             {user && (
@@ -565,6 +564,7 @@ export default function Navbar() {
             </button>
           </div>
         </div>
+      </div>
 
         {/* Mobile Menu */}
         <AnimatePresence>

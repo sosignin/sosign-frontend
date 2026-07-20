@@ -194,8 +194,8 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
         <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-bl-full -z-0 opacity-40"></div>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-              <FaCheckCircle className="text-white text-lg" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center border border-green-200 bg-white shadow-sm p-1">
+              <img src="/digi.jpeg" alt="DigiLocker" className="w-full h-full object-contain" />
             </div>
             <div>
               <h3 className="text-xl font-bold text-[#1a1a2e]">Aadhaar KYC Verified</h3>
@@ -255,8 +255,8 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
       <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-0 opacity-50"></div>
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-6">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status === "error" ? "bg-gradient-to-r from-red-500 to-red-600" : isProcessing || status === "linking" ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-gradient-to-r from-blue-600 to-blue-700"}`}>
-            {isProcessing || status === "linking" ? <FaSpinner className="text-white text-lg animate-spin" /> : <FaLock className="text-white text-lg" />}
+          <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center border border-gray-100 bg-white shadow-sm p-1">
+            <img src="/digi.jpeg" alt="DigiLocker" className="w-full h-full object-contain" />
           </div>
           <div>
             <h3 className="text-xl font-bold text-[#1a1a2e]">Identity Verification</h3>
@@ -285,8 +285,8 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
           <div className="space-y-4">
             <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                  <img src="https://upload.wikimedia.org/wikipedia/en/thumb/1/1e/DigiLocker_logo.svg/1200px-DigiLocker_logo.svg.png" alt="DigiLocker" className="w-6 h-auto" />
+                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1 shadow-sm border border-blue-100">
+                  <img src="/digi.jpeg" alt="DigiLocker" className="w-full h-full object-contain" />
                 </div>
                 <h4 className="font-bold text-blue-900">Verify with DigiLocker</h4>
               </div>
@@ -299,7 +299,7 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
               onClick={handleInitialize}
               className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
             >
-              <FaExternalLinkAlt className="text-sm" />
+              <img src="/digi.jpeg" alt="DigiLocker" className="w-6 h-6 object-contain rounded bg-white p-0.5" />
               Proceed to DigiLocker
             </button>
           </div>
