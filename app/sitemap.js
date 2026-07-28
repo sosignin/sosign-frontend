@@ -14,6 +14,7 @@ export default async function sitemap() {
     { url: `${BASE_URL}/terms`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.4 },
     { url: `${BASE_URL}/guides`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE_URL}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
+    { url: `${BASE_URL}/newsletter`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/currentpetitions`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE_URL}/successfulpetitions`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/crowdfunding`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
@@ -81,5 +82,25 @@ export default async function sitemap() {
     console.error("Sitemap: Error fetching blogs:", error.message);
   }
 
-  return [...staticPages, ...petitionUrls, ...successfulPetitionUrls, ...blogUrls];
+  // Dynamic newsletter pages
+  let newsletterUrls = [];
+  try {
+    const res = await fetch(`${backendUrl}/api/newsletters?limit=10000`, {
+      next: { revalidate: 3600 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const newsletters = data.newsletters || [];
+      newsletterUrls = newsletters.map((item) => ({
+        url: `${BASE_URL}/newsletter/${item.slug}`,
+        lastModified: new Date(item.updatedAt || item.createdAt),
+        changeFrequency: "weekly",
+        priority: 0.7,
+      }));
+    }
+  } catch (error) {
+    console.error("Sitemap: Error fetching newsletters:", error.message);
+  }
+
+  return [...staticPages, ...petitionUrls, ...successfulPetitionUrls, ...blogUrls, ...newsletterUrls];
 }

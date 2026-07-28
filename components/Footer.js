@@ -186,6 +186,12 @@ export default function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/newsletter" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
+                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                Newsletter
+              </Link>
+            </li>
+            <li>
               <Link href="/faq" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
                 <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                 FAQs
