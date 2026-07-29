@@ -38,7 +38,7 @@ export const metadata = {
       "Start a petition, gather verified signatures via Aadhaar, and launch crowdfunding campaigns to create lasting social impact on SoSign.",
   },
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "google6dfd75c23da0a8f2",
     other: {
       "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || "",
     },
