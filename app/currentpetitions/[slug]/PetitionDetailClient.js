@@ -1,6 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import {
+    FaFacebook,
+    FaTwitter,
+    FaInstagram,
+    FaYoutube,
+    FaLinkedin,
+    FaGlobe,
+} from "react-icons/fa6";
 import { useParams, useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1336,30 +1344,115 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 {petition.petitionStarter.user.email}
                             </p>
                         )}
+
+                        {/* Petitioner Social Links & Follow Card */}
+                        {petition.socialLinks && Object.values(petition.socialLinks).some(link => Boolean(link && String(link).trim())) && (
+                            <div className="mt-4 pt-4 border-t border-gray-100">
+                                <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                    <FaGlobe className="text-purple-600" /> Follow Petitioner Pages
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {petition.socialLinks.facebook && (
+                                        <a
+                                            href={petition.socialLinks.facebook.startsWith('http') ? petition.socialLinks.facebook : `https://${petition.socialLinks.facebook}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white transition-all shadow-sm group"
+                                        >
+                                            <FaFacebook className="text-blue-600 group-hover:text-white transition-colors" />
+                                            <span>Facebook</span>
+                                        </a>
+                                    )}
+                                    {petition.socialLinks.instagram && (
+                                        <a
+                                            href={petition.socialLinks.instagram.startsWith('http') ? petition.socialLinks.instagram : `https://${petition.socialLinks.instagram}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-pink-50 text-pink-700 hover:bg-pink-600 hover:text-white transition-all shadow-sm group"
+                                        >
+                                            <FaInstagram className="text-pink-600 group-hover:text-white transition-colors" />
+                                            <span>Instagram</span>
+                                        </a>
+                                    )}
+                                    {petition.socialLinks.twitter && (
+                                        <a
+                                            href={petition.socialLinks.twitter.startsWith('http') ? petition.socialLinks.twitter : `https://${petition.socialLinks.twitter}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 hover:bg-sky-500 hover:text-white transition-all shadow-sm group"
+                                        >
+                                            <FaTwitter className="text-sky-500 group-hover:text-white transition-colors" />
+                                            <span>Twitter / X</span>
+                                        </a>
+                                    )}
+                                    {petition.socialLinks.youtube && (
+                                        <a
+                                            href={petition.socialLinks.youtube.startsWith('http') ? petition.socialLinks.youtube : `https://${petition.socialLinks.youtube}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-600 hover:text-white transition-all shadow-sm group"
+                                        >
+                                            <FaYoutube className="text-red-600 group-hover:text-white transition-colors" />
+                                            <span>YouTube</span>
+                                        </a>
+                                    )}
+                                    {petition.socialLinks.linkedin && (
+                                        <a
+                                            href={petition.socialLinks.linkedin.startsWith('http') ? petition.socialLinks.linkedin : `https://${petition.socialLinks.linkedin}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 hover:bg-blue-800 hover:text-white transition-all shadow-sm group"
+                                        >
+                                            <FaLinkedin className="text-blue-800 group-hover:text-white transition-colors" />
+                                            <span>LinkedIn</span>
+                                        </a>
+                                    )}
+                                    {petition.socialLinks.website && (
+                                        <a
+                                            href={petition.socialLinks.website.startsWith('http') ? petition.socialLinks.website : `https://${petition.socialLinks.website}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-sm group"
+                                        >
+                                            <FaGlobe className="text-emerald-600 group-hover:text-white transition-colors" />
+                                            <span>Website</span>
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Video URL & Preview */}
+                    {/* Video URL & Preview (Brick Design) */}
                     {petition.petitionDetails?.videoUrl && (
-                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 md:col-span-2">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="bg-gradient-to-br from-[#7C2525] via-[#A33232] to-[#5C1B1B] border-4 border-[#5C1B1B] rounded-2xl p-5 shadow-[8px_8px_0px_#3B0F0F] hover:shadow-[10px_10px_0px_#3B0F0F] transition-all duration-300 md:col-span-2">
+                            <div className="flex items-center justify-between mb-4 border-b border-red-400/30 pb-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500/10 to-red-500/20 flex items-center justify-center">
-                                        <Video className="w-5 h-5 text-red-500" />
+                                    <div className="w-10 h-10 rounded-xl bg-red-950/80 border border-red-500/30 flex items-center justify-center shadow-inner">
+                                        <Video className="w-5 h-5 text-red-300" />
                                     </div>
-                                    <p className="font-bold text-[#1a1a2e]">Video Preview</p>
+                                    <div>
+                                        <p className="font-extrabold text-white text-base tracking-wide flex items-center gap-2">
+                                            Petition Video Update
+                                            <span className="text-[10px] font-bold bg-red-950/90 text-red-200 uppercase px-2 py-0.5 rounded border border-red-400/30">
+                                                Brick Frame
+                                            </span>
+                                        </p>
+                                        <p className="text-xs text-red-200/80">Watch official campaign video message</p>
+                                    </div>
                                 </div>
                                 <a
                                     href={petition.petitionDetails.videoUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-sm text-[#3650AD] hover:text-[#F43676] font-medium flex items-center gap-1 transition-colors"
+                                    className="text-xs font-bold text-white bg-red-900/80 hover:bg-red-950 px-3 py-1.5 rounded-lg border border-red-400/30 flex items-center gap-1.5 transition-colors shadow-sm"
                                 >
                                     <span>Watch on YouTube</span>
-                                    <Share2 className="w-3 h-3" />
+                                    <Share2 className="w-3.5 h-3.5" />
                                 </a>
                             </div>
                             {videoId ? (
-                                <div className="w-full max-w-2xl mx-auto aspect-video rounded-xl overflow-hidden shadow-inner bg-black">
+                                <div className="w-full max-w-3xl mx-auto aspect-video rounded-xl overflow-hidden shadow-2xl bg-black border border-red-950">
                                     <iframe
                                         width="100%"
                                         height="100%"
@@ -1376,10 +1469,10 @@ export default function PetitionDetailClient({ initialPetition }) {
                                     href={petition.petitionDetails.videoUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-[#3650AD] hover:text-[#F43676] font-medium transition-colors"
+                                    className="inline-flex items-center gap-2 text-red-100 hover:text-white font-bold transition-colors bg-red-900/60 p-3 rounded-xl border border-red-500/20"
                                 >
                                     <span>Watch Video</span>
-                                    <Video className="w-4 h-4" />
+                                    <Video className="w-4 h-4 text-red-300" />
                                 </a>
                             )}
                         </div>

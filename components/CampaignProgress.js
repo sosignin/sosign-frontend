@@ -17,6 +17,7 @@ import {
   Target,
   ChevronLeft,
   ChevronRight,
+  Share2,
 } from "lucide-react";
 
 function ImageSlider({ images }) {
@@ -211,23 +212,46 @@ function ProgressUpdateCard({ update, index, currentUserId, handleReact, getYout
           </div>
         )}
 
-        {/* Video */}
+        {/* Video in Brick Design */}
         {update.videoUrl && (
-          <div className="mb-4 rounded-xl overflow-hidden shadow-inner bg-black aspect-video">
+          <div className="mb-4 rounded-2xl bg-gradient-to-br from-[#7C2525] via-[#A33232] to-[#5C1B1B] border-4 border-[#5C1B1B] p-3 shadow-[6px_6px_0px_#3B0F0F] hover:shadow-[8px_8px_0px_#3B0F0F] transition-all duration-300">
+            {/* Brick Header Bar */}
+            <div className="flex items-center justify-between px-1 pb-2 text-white border-b border-red-400/30 mb-2">
+              <div className="flex items-center gap-2">
+                <span className="bg-red-950/90 text-red-200 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider border border-red-500/30 flex items-center gap-1.5 shadow-inner">
+                  <span className="w-2 h-2 rounded-full bg-red-400 animate-ping"></span>
+                  Brick Frame Video Update
+                </span>
+              </div>
+              <a
+                href={update.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-bold text-red-100 hover:text-white flex items-center gap-1.5 bg-red-900/60 hover:bg-red-900/90 px-2 py-0.5 rounded transition-colors border border-red-500/20"
+              >
+                <span>Watch on YouTube</span>
+                <Share2 className="w-3 h-3" />
+              </a>
+            </div>
+
+            {/* Embedded Player inside Brick Frame */}
             {getYoutubeId(update.videoUrl) ? (
-              <iframe
-                width="100%"
-                height="100%"
-                src={`https://www.youtube.com/embed/${getYoutubeId(update.videoUrl)}`}
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
+              <div className="w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black border border-red-950/80">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${getYoutubeId(update.videoUrl)}`}
+                  title="YouTube update video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                ></iframe>
+              </div>
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
-                <a href={update.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-[#F43676] transition-colors">
-                  <Video className="w-6 h-6" /> Watch Video
+              <div className="w-full aspect-video rounded-xl flex items-center justify-center bg-red-950 text-white border border-red-900/60">
+                <a href={update.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-bold text-red-200 hover:text-white transition-colors">
+                  <Video className="w-6 h-6 text-red-400" /> Watch Update Video
                 </a>
               </div>
             )}

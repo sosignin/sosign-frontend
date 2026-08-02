@@ -47,6 +47,12 @@ import {
   FaPhone,
   FaBuilding,
   FaMapMarkerAlt,
+  FaGlobe,
+  FaFacebook,
+  FaTwitter,
+  FaInstagram,
+  FaYoutube,
+  FaLinkedin,
 } from "react-icons/fa6";
 import { useAuth } from "../../context/AuthContext";
 import LoginModal from "../../components/LoginModal";
@@ -705,6 +711,14 @@ const MyPetitionsPage = () => {
           required: petition.signingRequirements?.aadhar?.required || false,
         },
       },
+      socialLinks: {
+        facebook: petition.socialLinks?.facebook || "",
+        twitter: petition.socialLinks?.twitter || "",
+        instagram: petition.socialLinks?.instagram || "",
+        youtube: petition.socialLinks?.youtube || "",
+        linkedin: petition.socialLinks?.linkedin || "",
+        website: petition.socialLinks?.website || "",
+      },
     });
     setShowEditModal(petition._id);
   };
@@ -755,6 +769,7 @@ const MyPetitionsPage = () => {
 
       submitData.append("constituencySettings", JSON.stringify(editFormData.constituencySettings));
       submitData.append("signingRequirements", JSON.stringify(editFormData.signingRequirements));
+      submitData.append("socialLinks", JSON.stringify(editFormData.socialLinks || {}));
 
       // Append retained existing image URLs
       const existingUrls = (editFormData.images || [])
@@ -1967,6 +1982,126 @@ const MyPetitionsPage = () => {
                                           }
                                           className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-[#3650AD]"
                                         />
+                                      </div>
+                                    </div>
+
+                                    {/* SECTION 7: PETITIONER SOCIAL LINKS */}
+                                    <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-200 space-y-3">
+                                      <h5 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                        <FaGlobe className="text-purple-600" /> Social Media Links (Optional)
+                                      </h5>
+                                      <p className="text-xs text-gray-500">
+                                        Add your social media handles and website to collect followers and likes on your platforms.
+                                      </p>
+
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                          <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                                            <FaFacebook className="text-blue-600" /> Facebook Page
+                                          </label>
+                                          <input
+                                            type="url"
+                                            value={editFormData.socialLinks?.facebook || ""}
+                                            onChange={(e) =>
+                                              setEditFormData({
+                                                ...editFormData,
+                                                socialLinks: { ...editFormData.socialLinks, facebook: e.target.value },
+                                              })
+                                            }
+                                            placeholder="https://facebook.com/yourpage"
+                                            className="w-full p-2.5 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-500"
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                                            <FaInstagram className="text-pink-600" /> Instagram Profile
+                                          </label>
+                                          <input
+                                            type="url"
+                                            value={editFormData.socialLinks?.instagram || ""}
+                                            onChange={(e) =>
+                                              setEditFormData({
+                                                ...editFormData,
+                                                socialLinks: { ...editFormData.socialLinks, instagram: e.target.value },
+                                              })
+                                            }
+                                            placeholder="https://instagram.com/yourhandle"
+                                            className="w-full p-2.5 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-500"
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                                            <FaTwitter className="text-sky-500" /> X / Twitter Profile
+                                          </label>
+                                          <input
+                                            type="url"
+                                            value={editFormData.socialLinks?.twitter || ""}
+                                            onChange={(e) =>
+                                              setEditFormData({
+                                                ...editFormData,
+                                                socialLinks: { ...editFormData.socialLinks, twitter: e.target.value },
+                                              })
+                                            }
+                                            placeholder="https://x.com/yourhandle"
+                                            className="w-full p-2.5 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-500"
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                                            <FaYoutube className="text-red-600" /> YouTube Channel
+                                          </label>
+                                          <input
+                                            type="url"
+                                            value={editFormData.socialLinks?.youtube || ""}
+                                            onChange={(e) =>
+                                              setEditFormData({
+                                                ...editFormData,
+                                                socialLinks: { ...editFormData.socialLinks, youtube: e.target.value },
+                                              })
+                                            }
+                                            placeholder="https://youtube.com/@yourchannel"
+                                            className="w-full p-2.5 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-500"
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                                            <FaLinkedin className="text-blue-700" /> LinkedIn Profile
+                                          </label>
+                                          <input
+                                            type="url"
+                                            value={editFormData.socialLinks?.linkedin || ""}
+                                            onChange={(e) =>
+                                              setEditFormData({
+                                                ...editFormData,
+                                                socialLinks: { ...editFormData.socialLinks, linkedin: e.target.value },
+                                              })
+                                            }
+                                            placeholder="https://linkedin.com/in/yourprofile"
+                                            className="w-full p-2.5 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-500"
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                                            <FaGlobe className="text-emerald-600" /> Website / Portfolio
+                                          </label>
+                                          <input
+                                            type="url"
+                                            value={editFormData.socialLinks?.website || ""}
+                                            onChange={(e) =>
+                                              setEditFormData({
+                                                ...editFormData,
+                                                socialLinks: { ...editFormData.socialLinks, website: e.target.value },
+                                              })
+                                            }
+                                            placeholder="https://yourwebsite.com"
+                                            className="w-full p-2.5 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-500"
+                                          />
+                                        </div>
                                       </div>
                                     </div>
                                   </div>

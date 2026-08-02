@@ -25,6 +25,11 @@ import {
   FaXmark,
   FaWandMagicSparkles,
   FaImage,
+  FaFacebook,
+  FaTwitter,
+  FaInstagram,
+  FaLinkedin,
+  FaGlobe,
 } from "react-icons/fa6";
 import { useAuth } from "../../context/AuthContext";
 import Image from "next/image";
@@ -160,6 +165,14 @@ export default function StartPetitionPage() {
       pincode: "",
       mpConstituencyNumber: "",
       mlaConstituencyNumber: "",
+    },
+    socialLinks: {
+      facebook: "",
+      twitter: "",
+      instagram: "",
+      youtube: "",
+      linkedin: "",
+      website: "",
     },
   });
 
@@ -1216,6 +1229,12 @@ export default function StartPetitionPage() {
             required: signingRequirements.aadhar.required,
           },
         }),
+      );
+
+      // Add social links
+      submitData.append(
+        "socialLinks",
+        JSON.stringify(formData.socialLinks || {}),
       );
 
       // Check if user and token are available
@@ -3475,6 +3494,127 @@ export default function StartPetitionPage() {
                         Find at your state election commission
                       </p>
                     )}
+                  </div>
+
+                  {/* Petitioner Social Media Handles & Pages (Optional) */}
+                  <div className="mt-6 border border-purple-100 rounded-xl p-5 bg-gradient-to-br from-purple-50/50 to-pink-50/30">
+                    <h3 className="text-base font-bold text-gray-800 flex items-center gap-2 mb-1">
+                      <FaGlobe className="text-purple-600" />
+                      Petitioner Social Links (Optional)
+                    </h3>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Add your social media profiles & website so petition supporters can follow & like your pages across platforms.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                          <FaFacebook className="text-blue-600 text-sm" /> Facebook Page / Profile
+                        </label>
+                        <input
+                          type="url"
+                          value={formData.socialLinks?.facebook || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              socialLinks: { ...prev.socialLinks, facebook: e.target.value },
+                            }))
+                          }
+                          placeholder="https://facebook.com/yourpage"
+                          className="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                          <FaInstagram className="text-pink-600 text-sm" /> Instagram Profile
+                        </label>
+                        <input
+                          type="url"
+                          value={formData.socialLinks?.instagram || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              socialLinks: { ...prev.socialLinks, instagram: e.target.value },
+                            }))
+                          }
+                          placeholder="https://instagram.com/yourhandle"
+                          className="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                          <FaTwitter className="text-sky-500 text-sm" /> X / Twitter Profile
+                        </label>
+                        <input
+                          type="url"
+                          value={formData.socialLinks?.twitter || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              socialLinks: { ...prev.socialLinks, twitter: e.target.value },
+                            }))
+                          }
+                          placeholder="https://x.com/yourhandle"
+                          className="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                          <FaYoutube className="text-red-600 text-sm" /> YouTube Channel
+                        </label>
+                        <input
+                          type="url"
+                          value={formData.socialLinks?.youtube || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              socialLinks: { ...prev.socialLinks, youtube: e.target.value },
+                            }))
+                          }
+                          placeholder="https://youtube.com/@yourchannel"
+                          className="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                          <FaLinkedin className="text-blue-700 text-sm" /> LinkedIn Profile / Page
+                        </label>
+                        <input
+                          type="url"
+                          value={formData.socialLinks?.linkedin || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              socialLinks: { ...prev.socialLinks, linkedin: e.target.value },
+                            }))
+                          }
+                          placeholder="https://linkedin.com/in/yourprofile"
+                          className="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                          <FaGlobe className="text-emerald-600 text-sm" /> Website / Portfolio
+                        </label>
+                        <input
+                          type="url"
+                          value={formData.socialLinks?.website || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              socialLinks: { ...prev.socialLinks, website: e.target.value },
+                            }))
+                          }
+                          placeholder="https://yourwebsite.com"
+                          className="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                        />
+                      </div>
+                    </div>
                   </div>
 
               {/* Validation Summary */}

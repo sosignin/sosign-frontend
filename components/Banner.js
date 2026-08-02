@@ -266,7 +266,14 @@ export default function Banner({ initialPetitions = [] }) {
   // Initialize state with transformed initial data if available
   const initializeHeroSlides = () => {
     if (initialPetitions.length > 0) {
-      return initialPetitions.map((petition) => ({
+      const sortedInitial = [...initialPetitions].sort((a, b) => {
+        if (Boolean(b.isFeaturedInBanner) !== Boolean(a.isFeaturedInBanner)) {
+          return b.isFeaturedInBanner ? 1 : -1;
+        }
+        return (a.bannerOrder || 0) - (b.bannerOrder || 0);
+      });
+
+      return sortedInitial.map((petition) => ({
         id: petition._id,
         image: petition.petitionDetails?.image || `https://picsum.photos/seed/${petition._id}/800/600`,
         categories: extractCategories(petition),
