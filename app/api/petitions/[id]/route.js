@@ -83,26 +83,50 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const body = await request.json();
+    const contentType = request.headers.get("content-type") || "";
+    const headers = { Authorization: authHeader };
+    let body;
+
+    if (contentType.includes("multipart/form-data")) {
+      body = await request.formData();
+    } else if (contentType.includes("application/json")) {
+      body = JSON.stringify(await request.json());
+      headers["Content-Type"] = "application/json";
+    } else {
+      try {
+        body = await request.formData();
+      } catch {
+        try {
+          body = JSON.stringify(await request.json());
+          headers["Content-Type"] = "application/json";
+        } catch {
+          body = await request.text();
+        }
+      }
+    }
 
     const backendResponse = await fetch(
       `${config.API_BASE_URL}/api/petitions/${id}`,
       {
         method: "PUT",
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
+        headers,
+        body,
       }
     );
 
-    const result = await backendResponse.json();
+    const text = await backendResponse.text();
+    let result;
+    try {
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = { message: text || "" };
+    }
+
     return NextResponse.json(result, { status: backendResponse.status });
   } catch (error) {
     console.error("API Error (PUT):", error);
     return NextResponse.json(
-      { message: "Internal server error" },
+      { message: "Internal server error", error: error.message },
       { status: 500 }
     );
   }

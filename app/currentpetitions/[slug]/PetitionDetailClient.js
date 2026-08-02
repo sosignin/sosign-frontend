@@ -108,7 +108,7 @@ export default function PetitionDetailClient({ initialPetition }) {
             if (window.google?.translate) {
                 new window.google.translate.TranslateElement(
                     {
-                        pageLanguage: "en",
+                        pageLanguage: "auto",
                         includedLanguages: "hi,bn,en,mr,ta,te,gu,kn,ml,pa,or,as",
                         layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
                         autoDisplay: false,
@@ -139,8 +139,10 @@ export default function PetitionDetailClient({ initialPetition }) {
         const langCookie = getCookie("googtrans");
         if (langCookie) {
             const lang = langCookie.split("/").pop();
-            if (lang && lang !== currentLanguage) {
+            if (lang && lang !== "en" && lang !== "auto") {
                 setCurrentLanguage(lang);
+            } else if (lang === "en") {
+                setCurrentLanguage("en");
             }
         }
 
@@ -176,44 +178,52 @@ export default function PetitionDetailClient({ initialPetition }) {
     const changeLanguage = (langCode) => {
         const domain = window.location.hostname;
         
-        // 1. Clear or set the Google Translate cookie
-        if (langCode === "en") {
+        if (langCode === "default") {
             document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
             document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain};`;
-        } else {
-            const cookieValue = `/en/${langCode}`;
-            document.cookie = `googtrans=${cookieValue}; path=/;`;
-            document.cookie = `googtrans=${cookieValue}; path=/; domain=${domain};`;
+
+            const findSelect = () => document.querySelector(".goog-te-combo") || 
+                                     document.querySelector("#google_translate_element select") ||
+                                     document.querySelector("select.goog-te-combo");
+
+            const select = findSelect();
+            if (select) {
+                select.value = "";
+                select.dispatchEvent(new Event("change"));
+            }
+            setCurrentLanguage("default");
+            setIsLangOpen(false);
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
+            return;
         }
+
+        const cookieValue = `/auto/${langCode}`;
+        document.cookie = `googtrans=${cookieValue}; path=/;`;
+        document.cookie = `googtrans=${cookieValue}; path=/; domain=${domain};`;
         
-        // 2. Try to trigger the hidden select element
         const findSelect = () => document.querySelector(".goog-te-combo") || 
                                  document.querySelector("#google_translate_element select") ||
                                  document.querySelector("select.goog-te-combo");
 
-        // The target value for the google combo box (empty string restores original language)
-        const targetValue = langCode === "en" ? "" : langCode;
-
         const select = findSelect();
         if (select) {
-            select.value = targetValue;
+            select.value = langCode;
             select.dispatchEvent(new Event("change"));
             setCurrentLanguage(langCode);
         } else {
-            // If not ready, wait a bit and try multiple times
             let retries = 0;
             const interval = setInterval(() => {
                 const retrySelect = findSelect();
                 if (retrySelect) {
-                    retrySelect.value = targetValue;
+                    retrySelect.value = langCode;
                     retrySelect.dispatchEvent(new Event("change"));
                     setCurrentLanguage(langCode);
                     clearInterval(interval);
                 }
                 if (++retries > 5) {
-                    // Fallback: If still not found after retries, reload the page 
-                    // The cookie we set above will trigger the correct translation state on reload
                     window.location.reload();
                     clearInterval(interval);
                 }

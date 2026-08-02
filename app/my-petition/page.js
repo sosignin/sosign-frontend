@@ -21,10 +21,53 @@ import {
   FaCalendarAlt,
   FaArrowRight,
   FaEdit,
-  FaComments
+  FaComments,
 } from "react-icons/fa";
+import {
+  FaPaw,
+  FaGamepad,
+  FaCouch,
+  FaPersonRunning,
+  FaLaptopCode,
+  FaPlane,
+  FaGraduationCap,
+  FaHeartPulse,
+  FaHandFist,
+  FaLeaf,
+  FaLandmarkDome,
+  FaSpa,
+  FaTags,
+  FaWandMagicSparkles,
+  FaImage,
+  FaTrash,
+  FaCircleInfo,
+  FaCircleExclamation,
+  FaUser,
+  FaEnvelope,
+  FaPhone,
+  FaBuilding,
+  FaMapMarkerAlt,
+} from "react-icons/fa6";
 import { useAuth } from "../../context/AuthContext";
 import LoginModal from "../../components/LoginModal";
+import ImageCropper from "../../components/ImageCropper";
+
+// Icon mapping for dynamic category icons
+const iconMap = {
+  FaPaw: FaPaw,
+  FaGamepad: FaGamepad,
+  FaCouch: FaCouch,
+  FaSpa: FaSpa,
+  FaPersonRunning: FaPersonRunning,
+  FaLaptopCode: FaLaptopCode,
+  FaPlane: FaPlane,
+  FaLeaf: FaLeaf,
+  FaGraduationCap: FaGraduationCap,
+  FaHeartPulse: FaHeartPulse,
+  FaLandmarkDome: FaLandmarkDome,
+  FaHandFist: FaHandFist,
+  FaTags: FaTags,
+};
 
 const MyPetitionsPage = () => {
   // State for created petitions
@@ -49,18 +92,48 @@ const MyPetitionsPage = () => {
   const [allSigners, setAllSigners] = useState([]);
   const [signersLoading, setSignersLoading] = useState(false);
 
+  // Categories state for Edit Modal
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
+
+  // AI & Image State for Edit Modal
+  const [aiOptimizing, setAiOptimizing] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [showCropper, setShowCropper] = useState(false);
+  const [tempImage, setTempImage] = useState(null);
+  const [showAiImagePromptModal, setShowAiImagePromptModal] = useState(false);
+  const [customAiImagePrompt, setCustomAiImagePrompt] = useState("");
+  const [aiGeneratingImage, setAiGeneratingImage] = useState(false);
+  const [aiImageError, setAiImageError] = useState("");
+
   // Edit petition state
   const [showEditModal, setShowEditModal] = useState(null);
   const [editLoading, setEditLoading] = useState(false);
   const [editFormData, setEditFormData] = useState({
     title: "",
-    country: "",
+    country: "India",
     categories: [],
     decisionMakers: [{ name: "", organization: "", email: "", phone: "" }],
     requestedSigners: [{ name: "", email: "", designation: "" }],
     problem: "",
     solution: "",
     videoUrl: "",
+    images: [], // Array of { type: 'url', url } or { type: 'file', file, url }
+    starter: {
+      name: "",
+      age: "",
+      email: "",
+      mobile: "",
+      location: "",
+      comment: "",
+      pincode: "",
+      mpConstituencyNumber: "",
+      mlaConstituencyNumber: "",
+    },
     constituencySettings: {
       required: false,
       allowedConstituency: "",
@@ -83,6 +156,251 @@ const MyPetitionsPage = () => {
   const [approvingComments, setApprovingComments] = useState(new Set());
 
   const { user, loading: authLoading } = useAuth();
+
+  // Fetch categories list for category picker in Edit Modal
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await fetch("/api/categories");
+        if (response.ok) {
+          const data = await response.json();
+          const transformedCategories = data.categories.map((cat) => ({
+            id: cat.slug,
+            label: cat.name,
+            icon: iconMap[cat.icon] || FaTags,
+          }));
+          setCategoriesList(transformedCategories);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Handle dynamic creation of a new category inside Edit Modal
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      setCategoryError("Category name is required");
+      return;
+    }
+
+    if (newCategoryName.trim().length < 3) {
+      setCategoryError("Category name must be at least 3 characters");
+      return;
+    }
+
+    if (newCategoryName.trim().length > 15) {
+      setCategoryError("Category name can be up to 15 characters only");
+      return;
+    }
+
+    setCreatingCategory(true);
+    setCategoryError("");
+
+    try {
+      const userInfo = JSON.parse(localStorage.getItem("user"));
+      const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${userInfo?.token}`,
+        },
+        body: JSON.stringify({ name: newCategoryName.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.category) {
+        const newCategory = {
+          id: data.category.slug,
+          label: data.category.name,
+          icon: FaTags,
+        };
+        setCategoriesList((prev) => [...prev, newCategory]);
+
+        setEditFormData((prev) => {
+          if ((prev.categories || []).length < 2) {
+            return {
+              ...prev,
+              categories: [...(prev.categories || []), data.category.slug],
+            };
+          }
+          return prev;
+        });
+
+        setShowCategoryModal(false);
+        setNewCategoryName("");
+      } else {
+        setCategoryError(data.message || "Failed to create category");
+      }
+    } catch (error) {
+      console.error("Error creating category:", error);
+      setCategoryError("Failed to create category. Please try again.");
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
+  // Handle AI Title Optimization
+  const handleAiOptimizeTitle = async () => {
+    if (!editFormData.title || editFormData.title.trim().length === 0) {
+      setAiError("Please enter a title first before optimizing with AI.");
+      setTimeout(() => setAiError(""), 3000);
+      return;
+    }
+
+    setAiOptimizing(true);
+    setAiError("");
+
+    try {
+      const response = await fetch("/api/ai/optimize-title", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: editFormData.title }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.optimizedTitle) {
+        setEditFormData((prev) => ({ ...prev, title: data.optimizedTitle }));
+      } else {
+        setAiError(data.message || "Failed to optimize title. Please try again.");
+        setTimeout(() => setAiError(""), 4000);
+      }
+    } catch (error) {
+      console.error("AI Optimization Error:", error);
+      setAiError("Something went wrong. Please try again.");
+      setTimeout(() => setAiError(""), 4000);
+    } finally {
+      setAiOptimizing(false);
+    }
+  };
+
+  // Handle AI Image Generation
+  const handleGenerateAiImage = async (overridePrompt = null) => {
+    if ((editFormData.images || []).length >= 4) {
+      setAiImageError("Maximum 4 images allowed. Please delete an image first.");
+      setTimeout(() => setAiImageError(""), 4000);
+      return;
+    }
+
+    const topicPrompt =
+      overridePrompt || customAiImagePrompt || editFormData.title || editFormData.problem;
+
+    if (!topicPrompt || topicPrompt.trim().length === 0) {
+      setAiImageError("Please enter a petition title or problem description first.");
+      setTimeout(() => setAiImageError(""), 4000);
+      return;
+    }
+
+    setAiGeneratingImage(true);
+    setAiImageError("");
+
+    try {
+      const response = await fetch("/api/ai/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: editFormData.title,
+          problem: editFormData.problem,
+          solution: editFormData.solution,
+          prompt: overridePrompt || customAiImagePrompt,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.imageDataUrl) {
+        const fetchRes = await fetch(data.imageDataUrl);
+        const blob = await fetchRes.blob();
+        const file = new File(
+          [blob],
+          `ai-petition-banner-${Date.now()}.jpg`,
+          { type: "image/jpeg" }
+        );
+
+        setTempImage(file);
+        setShowCropper(true);
+        setShowAiImagePromptModal(false);
+        setCustomAiImagePrompt("");
+      } else {
+        setAiImageError(data.message || "Failed to generate image. Please try again.");
+        setTimeout(() => setAiImageError(""), 4000);
+      }
+    } catch (error) {
+      console.error("AI Image Generation Error:", error);
+      setAiImageError("Something went wrong while generating image. Please try again.");
+      setTimeout(() => setAiImageError(""), 4000);
+    } finally {
+      setAiGeneratingImage(false);
+    }
+  };
+
+  // Image Selection & Crop complete handlers
+  const handleImageFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if ((editFormData.images || []).length >= 4) {
+        alert("Maximum 4 images allowed. Please delete an existing image first.");
+        return;
+      }
+      setTempImage(file);
+      setShowCropper(true);
+    }
+    // reset input value so selecting same file again works
+    e.target.value = "";
+  };
+
+  const handleCropComplete = (croppedFile) => {
+    setShowCropper(false);
+    setTempImage(null);
+
+    const newImgObj = {
+      type: "file",
+      file: croppedFile,
+      url: URL.createObjectURL(croppedFile),
+    };
+
+    setEditFormData((prev) => ({
+      ...prev,
+      images: [...(prev.images || []), newImgObj],
+    }));
+  };
+
+  const removeImage = (index) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      images: (prev.images || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const toggleCategory = (categoryId) => {
+    setEditFormData((prev) => {
+      const current = prev.categories || [];
+      if (current.includes(categoryId)) {
+        return {
+          ...prev,
+          categories: current.filter((id) => id !== categoryId),
+        };
+      }
+      if (current.length >= 2) {
+        return prev;
+      }
+      return {
+        ...prev,
+        categories: [...current, categoryId],
+      };
+    });
+  };
 
   // Fetch hide request status for all petitions
   const fetchHideRequestStatus = async (petitionIds, token) => {
@@ -135,7 +453,7 @@ const MyPetitionsPage = () => {
         setPetitions(data.petitions);
 
         if (data.petitions.length > 0) {
-          const petitionIds = data.petitions.map(p => p._id);
+          const petitionIds = data.petitions.map((p) => p._id);
           await fetchHideRequestStatus(petitionIds, userInfo.token);
         }
       } catch (err) {
@@ -230,7 +548,7 @@ const MyPetitionsPage = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setHideRequestStatus(prev => ({
+        setHideRequestStatus((prev) => ({
           ...prev,
           [petitionId]: { hasRequest: true, status: "pending" },
         }));
@@ -333,12 +651,19 @@ const MyPetitionsPage = () => {
   };
 
   const openEditModal = (petition) => {
+    let existingImgs = [];
+    if (petition.petitionDetails?.images && petition.petitionDetails.images.length > 0) {
+      existingImgs = petition.petitionDetails.images.map((url) => ({ type: "url", url }));
+    } else if (petition.petitionDetails?.image) {
+      existingImgs = [{ type: "url", url: petition.petitionDetails.image }];
+    }
+
     setEditFormData({
       title: petition.title || "",
-      country: petition.country || "",
+      country: petition.country || "India",
       categories: petition.categories || [],
       decisionMakers: petition.decisionMakers?.length > 0
-        ? petition.decisionMakers.map(dm => ({
+        ? petition.decisionMakers.map((dm) => ({
           name: dm.name || "",
           organization: dm.organization || "",
           email: dm.email || "",
@@ -346,7 +671,7 @@ const MyPetitionsPage = () => {
         }))
         : [{ name: "", organization: "", email: "", phone: "" }],
       requestedSigners: petition.requestedSigners?.length > 0
-        ? petition.requestedSigners.map(rs => ({
+        ? petition.requestedSigners.map((rs) => ({
           name: rs.name || "",
           email: rs.email || "",
           designation: rs.designation || "",
@@ -355,6 +680,18 @@ const MyPetitionsPage = () => {
       problem: petition.petitionDetails?.problem || "",
       solution: petition.petitionDetails?.solution || "",
       videoUrl: petition.petitionDetails?.videoUrl || "",
+      images: existingImgs,
+      starter: {
+        name: petition.petitionStarter?.name || user?.name || "",
+        age: petition.petitionStarter?.age || "",
+        email: petition.petitionStarter?.email || user?.email || "",
+        mobile: petition.petitionStarter?.mobile || user?.mobileNumber || "",
+        location: petition.petitionStarter?.location || "",
+        comment: petition.petitionStarter?.comment || "",
+        pincode: petition.petitionStarter?.pincode || "",
+        mpConstituencyNumber: petition.petitionStarter?.mpConstituencyNumber || "",
+        mlaConstituencyNumber: petition.petitionStarter?.mlaConstituencyNumber || "",
+      },
       constituencySettings: {
         required: petition.constituencySettings?.required || false,
         allowedConstituency: petition.constituencySettings?.allowedConstituency || "",
@@ -397,73 +734,92 @@ const MyPetitionsPage = () => {
       setEditLoading(true);
       const userInfo = JSON.parse(localStorage.getItem("user"));
 
+      const submitData = new FormData();
+      submitData.append("title", editFormData.title);
+      submitData.append("country", editFormData.country);
+      submitData.append("categories", JSON.stringify(editFormData.categories || []));
+
+      const validDMs = editFormData.decisionMakers.filter((dm) => dm.name && dm.email);
+      submitData.append("decisionMakers", JSON.stringify(validDMs));
+
+      const validRSs = editFormData.requestedSigners.filter((rs) => rs.name?.trim());
+      submitData.append("requestedSigners", JSON.stringify(validRSs));
+
+      const petitionDetails = {
+        problem: editFormData.problem,
+        solution: editFormData.solution,
+        videoUrl: editFormData.videoUrl,
+      };
+      submitData.append("petitionDetails", JSON.stringify(petitionDetails));
+      submitData.append("petitionStarter", JSON.stringify(editFormData.starter));
+
+      submitData.append("constituencySettings", JSON.stringify(editFormData.constituencySettings));
+      submitData.append("signingRequirements", JSON.stringify(editFormData.signingRequirements));
+
+      // Append retained existing image URLs
+      const existingUrls = (editFormData.images || [])
+        .filter((img) => img.type === "url")
+        .map((img) => img.url);
+      submitData.append("existingImages", JSON.stringify(existingUrls));
+
+      // Append newly added cropped File objects
+      (editFormData.images || []).forEach((img) => {
+        if (img.type === "file" && img.file) {
+          submitData.append("images", img.file);
+        }
+      });
+
       const response = await fetch(`/api/petitions/${petitionId}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${userInfo.token}`,
         },
-        body: JSON.stringify({
-          title: editFormData.title,
-          country: editFormData.country,
-          decisionMakers: editFormData.decisionMakers.filter(dm => dm.name && dm.email),
-          requestedSigners: editFormData.requestedSigners?.filter(rs => rs.name?.trim()) || [],
-          petitionDetails: {
-            problem: editFormData.problem,
-            solution: editFormData.solution,
-            videoUrl: editFormData.videoUrl,
-          },
-          constituencySettings: {
-            required: editFormData.constituencySettings.required,
-            allowedConstituency: editFormData.constituencySettings.allowedConstituency?.trim() || undefined,
-          },
-          signingRequirements: {
-            constituency: {
-              required: editFormData.signingRequirements.constituency.required,
-              allowedConstituency: editFormData.signingRequirements.constituency.allowedConstituency?.trim() || undefined,
-            },
-            aadhar: {
-              required: editFormData.signingRequirements.aadhar.required,
-            },
-          },
-        }),
+        body: submitData,
       });
 
       const data = await response.json();
 
       if (response.ok) {
+        let updatedImagesList = [];
+        if (data.petitionDetails?.images) {
+          updatedImagesList = data.petitionDetails.images;
+        } else if (data.petitionDetails?.image) {
+          updatedImagesList = [data.petitionDetails.image];
+        } else {
+          updatedImagesList = existingUrls;
+        }
+
         // Update local state
-        setPetitions(petitions.map(p =>
-          p._id === petitionId
-            ? {
-              ...p,
-              title: editFormData.title,
-              country: editFormData.country,
-              decisionMakers: editFormData.decisionMakers.filter(dm => dm.name && dm.email),
-              requestedSigners: editFormData.requestedSigners?.filter(rs => rs.name?.trim()) || [],
-              petitionDetails: {
-                ...p.petitionDetails,
-                problem: editFormData.problem,
-                solution: editFormData.solution,
-                videoUrl: editFormData.videoUrl,
-              },
-              constituencySettings: {
-                required: editFormData.constituencySettings.required,
-                allowedConstituency: editFormData.constituencySettings.allowedConstituency?.trim() || undefined,
-              },
-              signingRequirements: {
-                constituency: {
-                  required: editFormData.signingRequirements.constituency.required,
-                  allowedConstituency: editFormData.signingRequirements.constituency.allowedConstituency?.trim() || undefined,
+        setPetitions(
+          petitions.map((p) =>
+            p._id === petitionId
+              ? {
+                ...p,
+                title: editFormData.title,
+                country: editFormData.country,
+                categories: editFormData.categories,
+                decisionMakers: validDMs,
+                requestedSigners: validRSs,
+                petitionDetails: {
+                  ...p.petitionDetails,
+                  problem: editFormData.problem,
+                  solution: editFormData.solution,
+                  videoUrl: editFormData.videoUrl,
+                  image: updatedImagesList[0] || p.petitionDetails?.image || "",
+                  images: updatedImagesList,
                 },
-                aadhar: {
-                  required: editFormData.signingRequirements.aadhar.required,
+                petitionStarter: {
+                  ...p.petitionStarter,
+                  ...editFormData.starter,
                 },
-              },
-              approved: false, // Mark as pending approval after edit
-            }
-            : p
-        ));
+                constituencySettings: editFormData.constituencySettings,
+                signingRequirements: editFormData.signingRequirements,
+                approved: false, // Mark as pending approval after edit
+                status: "pending",
+              }
+              : p
+          )
+        );
         setShowEditModal(null);
         alert("Petition updated successfully! Your changes are pending admin approval.");
       } else {
@@ -479,10 +835,9 @@ const MyPetitionsPage = () => {
 
   const fetchPendingComments = async (petitionId) => {
     try {
-      setCommentsLoading(prev => ({ ...prev, [petitionId]: true }));
+      setCommentsLoading((prev) => ({ ...prev, [petitionId]: true }));
       const userInfo = JSON.parse(localStorage.getItem("user"));
 
-      // Use the dedicated pending comments endpoint with protect middleware
       const response = await fetch(`/api/comments/petition/${petitionId}/pending`, {
         headers: {
           Authorization: `Bearer ${userInfo.token}`,
@@ -494,11 +849,9 @@ const MyPetitionsPage = () => {
       }
 
       const data = await response.json();
-      
-      // The pending endpoint returns pendingComments directly
       const pendingItems = data.pendingComments || [];
 
-      setPendingComments(prev => ({
+      setPendingComments((prev) => ({
         ...prev,
         [petitionId]: pendingItems,
       }));
@@ -506,13 +859,13 @@ const MyPetitionsPage = () => {
       console.error("Error fetching pending comments:", error);
       alert("Error fetching comments. Please try again.");
     } finally {
-      setCommentsLoading(prev => ({ ...prev, [petitionId]: false }));
+      setCommentsLoading((prev) => ({ ...prev, [petitionId]: false }));
     }
   };
 
   const approveComment = async (commentId, petitionId) => {
     try {
-      setApprovingComments(prev => new Set(prev).add(commentId));
+      setApprovingComments((prev) => new Set(prev).add(commentId));
       const userInfo = JSON.parse(localStorage.getItem("user"));
 
       const response = await fetch(`/api/comments/${commentId}/approve`, {
@@ -527,19 +880,16 @@ const MyPetitionsPage = () => {
         throw new Error(`Failed to approve comment: ${response.statusText}`);
       }
 
-      const data = await response.json();
-
-      // Remove from pending
-      setPendingComments(prev => ({
+      setPendingComments((prev) => ({
         ...prev,
-        [petitionId]: prev[petitionId]?.filter(c => c._id !== commentId) || [],
+        [petitionId]: prev[petitionId]?.filter((c) => c._id !== commentId) || [],
       }));
       alert("Comment approved successfully!");
     } catch (error) {
       console.error("Error approving comment:", error);
       alert("Error approving comment. Please try again.");
     } finally {
-      setApprovingComments(prev => {
+      setApprovingComments((prev) => {
         const newSet = new Set(prev);
         newSet.delete(commentId);
         return newSet;
@@ -549,7 +899,7 @@ const MyPetitionsPage = () => {
 
   const rejectComment = async (commentId, petitionId) => {
     try {
-      setApprovingComments(prev => new Set(prev).add(commentId));
+      setApprovingComments((prev) => new Set(prev).add(commentId));
       const userInfo = JSON.parse(localStorage.getItem("user"));
 
       const response = await fetch(`/api/comments/${commentId}/reject`, {
@@ -563,19 +913,16 @@ const MyPetitionsPage = () => {
         throw new Error(`Failed to reject comment: ${response.statusText}`);
       }
 
-      const data = await response.json();
-
-      // Remove from pending
-      setPendingComments(prev => ({
+      setPendingComments((prev) => ({
         ...prev,
-        [petitionId]: prev[petitionId]?.filter(c => c._id !== commentId) || [],
+        [petitionId]: prev[petitionId]?.filter((c) => c._id !== commentId) || [],
       }));
       alert("Comment rejected successfully!");
     } catch (error) {
       console.error("Error rejecting comment:", error);
       alert("Error rejecting comment. Please try again.");
     } finally {
-      setApprovingComments(prev => {
+      setApprovingComments((prev) => {
         const newSet = new Set(prev);
         newSet.delete(commentId);
         return newSet;
@@ -607,6 +954,165 @@ const MyPetitionsPage = () => {
 
   return (
     <>
+      {/* Image Cropper Modal */}
+      {showCropper && tempImage && (
+        <ImageCropper
+          imageFile={tempImage}
+          onCrop={handleCropComplete}
+          onCancel={() => {
+            setShowCropper(false);
+            setTempImage(null);
+          }}
+        />
+      )}
+
+      {/* AI Image Generation Prompt Modal */}
+      <AnimatePresence>
+        {showAiImagePromptModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-purple-100"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white">
+                    <FaWandMagicSparkles />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800">Generate Banner Image with AI</h3>
+                    <p className="text-xs text-gray-500">Describe the banner you want for your petition</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAiImagePromptModal(false)}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <textarea
+                  value={customAiImagePrompt}
+                  onChange={(e) => setCustomAiImagePrompt(e.target.value)}
+                  placeholder="e.g. Clean green environment with plastic free oceans, highly detailed banner..."
+                  rows={4}
+                  className="w-full p-3 text-sm border border-gray-200 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+
+              {aiImageError && (
+                <p className="text-red-500 text-xs mb-3 flex items-center gap-1">
+                  <FaCircleExclamation /> {aiImageError}
+                </p>
+              )}
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowAiImagePromptModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleGenerateAiImage(customAiImagePrompt)}
+                  disabled={aiGeneratingImage}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md hover:shadow-lg flex items-center gap-2"
+                >
+                  {aiGeneratingImage ? (
+                    <>
+                      <FaSpinner className="animate-spin" /> Generating...
+                    </>
+                  ) : (
+                    <>
+                      <FaWandMagicSparkles /> Generate Image
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Dynamic Category Creation Modal inside Edit */}
+      <AnimatePresence>
+        {showCategoryModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <FaTags className="text-[#F43676]" /> Add Custom Category
+                </h3>
+                <button
+                  onClick={() => setShowCategoryModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Category Name (3 - 15 characters)
+                </label>
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  maxLength={15}
+                  placeholder="e.g. Healthcare, Traffic"
+                  className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#F43676] focus:outline-none"
+                />
+                {categoryError && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <FaCircleExclamation /> {categoryError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateCategory}
+                  disabled={creatingCategory}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#F43676] hover:bg-[#e02a60] text-white shadow-md flex items-center gap-2"
+                >
+                  {creatingCategory ? <FaSpinner className="animate-spin" /> : <FaPlus />} Create
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Hero Banner */}
       <div className="bg-gradient-to-r from-[#1a1a2e] via-[#2D3A8C] to-[#1a1a2e] py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -660,7 +1166,7 @@ const MyPetitionsPage = () => {
                 </div>
               </div>
             </div>
-            <div 
+            <div
               onClick={fetchSigners}
               className="bg-gradient-to-br from-green-50 to-white rounded-xl p-4 border border-green-100 cursor-pointer hover:shadow-md transition-all active:scale-95"
             >
@@ -683,7 +1189,7 @@ const MyPetitionsPage = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-[#1a1a2e]">
-                    {petitions.filter(p => p.approved).length}
+                    {petitions.filter((p) => p.approved).length}
                   </p>
                   <p className="text-xs text-gray-500">Approved</p>
                 </div>
@@ -886,291 +1392,373 @@ const MyPetitionsPage = () => {
                               </Link>
                             </div>
 
-                            {/* Hide Request Rejected Info Banner */}
-                            {hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "rejected" && showHideModal !== petition._id && (
-                              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
-                                <div className="flex items-start gap-2">
-                                  <FaTimes className="text-red-500 mt-0.5 flex-shrink-0" />
-                                  <div className="flex-1">
-                                    <p className="text-sm font-semibold text-red-700">Hide request was rejected by admin</p>
-                                    {hideRequestStatus[petition._id]?.adminNote && (
-                                      <p className="text-xs text-red-600 mt-1 bg-red-100/50 p-2 rounded-lg">
-                                        <span className="font-bold">Admin note:</span> {hideRequestStatus[petition._id].adminNote}
-                                      </p>
-                                    )}
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      You can submit a new hide request by clicking the &quot;Hide Rejected&quot; button above.
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Hide Request Pending Info Banner */}
-                            {hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "pending" && (
-                              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
-                                <div className="flex items-start gap-2">
-                                  <FaClock className="text-yellow-500 mt-0.5 flex-shrink-0" />
-                                  <div>
-                                    <p className="text-sm font-semibold text-yellow-700">Hide request is pending admin review</p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      Submitted on {hideRequestStatus[petition._id]?.createdAt ? formatDate(hideRequestStatus[petition._id].createdAt) : "recently"}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Hide Modal - for new requests or re-submission after rejection */}
-                            {showHideModal === petition._id && (
-                              <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                                <h4 className="font-semibold text-gray-700 mb-2">
-                                  {hideRequestStatus[petition._id]?.status === "rejected" ? "Re-submit Hide Request" : "Request to Hide Petition"}
-                                </h4>
-                                {hideRequestStatus[petition._id]?.status === "rejected" && (
-                                  <div className="mb-3 p-2 bg-red-50 border border-red-100 rounded-lg">
-                                    <p className="text-xs text-red-600">
-                                      <span className="font-bold">Previous request was rejected.</span>
-                                      {hideRequestStatus[petition._id]?.adminNote && (
-                                        <> Admin note: {hideRequestStatus[petition._id].adminNote}</>
-                                      )}
-                                    </p>
-                                  </div>
-                                )}
-                                <textarea
-                                  value={hideReason}
-                                  onChange={(e) => setHideReason(e.target.value)}
-                                  placeholder="Reason for hiding (optional)"
-                                  className="w-full p-3 border border-gray-200 rounded-lg mb-3 text-sm"
-                                  rows={2}
-                                />
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => requestHidePetition(petition._id)}
-                                    disabled={hideRequestLoading === petition._id}
-                                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg"
-                                  >
-                                    {hideRequestLoading === petition._id ? <FaSpinner className="animate-spin mx-auto" /> : "Submit"}
-                                  </button>
-                                  <button
-                                    onClick={() => { setShowHideModal(null); setHideReason(""); }}
-                                    className="px-4 py-2 bg-gray-100 text-gray-600 font-semibold rounded-lg"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Edit Modal */}
+                            {/* Comprehensive Edit Modal */}
                             {showEditModal === petition._id && (
-                              <div className="mt-4 p-5 bg-blue-50 border border-blue-200 rounded-xl">
-                                <h4 className="font-semibold text-[#1a1a2e] mb-4 flex items-center gap-2 text-lg">
-                                  <FaEdit className="text-[#3650AD]" /> Edit Petition
-                                </h4>
-                                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                                  {/* Title */}
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-                                    <input
-                                      type="text"
-                                      value={editFormData.title}
-                                      onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3650AD] focus:border-transparent outline-none"
-                                      placeholder="Petition title"
-                                    />
-                                  </div>
+                              <div className="mt-6 p-6 bg-white border-2 border-blue-200 rounded-2xl shadow-xl">
+                                <div className="flex justify-between items-center border-b pb-3 mb-4">
+                                  <h4 className="font-extrabold text-[#1a1a2e] text-xl flex items-center gap-2">
+                                    <FaEdit className="text-[#3650AD]" /> Edit Petition Details
+                                  </h4>
+                                  <button
+                                    onClick={() => setShowEditModal(null)}
+                                    className="text-gray-400 hover:text-gray-600 p-2"
+                                  >
+                                    <FaTimes className="text-lg" />
+                                  </button>
+                                </div>
 
-                                  {/* Country */}
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
-                                    <input
-                                      type="text"
-                                      value={editFormData.country}
-                                      onChange={(e) => setEditFormData({ ...editFormData, country: e.target.value })}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3650AD] focus:border-transparent outline-none"
-                                      placeholder="Country"
-                                    />
-                                  </div>
+                                <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-3">
+                                  {/* SECTION 1: TITLE & CATEGORIES */}
+                                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                                    <h5 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                      <FaPenFancy className="text-[#3650AD]" /> Basic Campaign Information
+                                    </h5>
 
-                                  {/* Decision Makers */}
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Decision Makers</label>
-                                    {editFormData.decisionMakers.map((dm, index) => (
-                                      <div key={index} className="bg-white p-3 rounded-lg border border-gray-200 mb-2">
-                                        <div className="flex justify-between items-center mb-2">
-                                          <span className="text-xs font-medium text-gray-500">Decision Maker {index + 1}</span>
-                                          {editFormData.decisionMakers.length > 1 && (
-                                            <button
-                                              type="button"
-                                              onClick={() => removeDecisionMaker(index)}
-                                              className="text-red-500 hover:text-red-700 text-xs"
-                                            >
-                                              Remove
-                                            </button>
-                                          )}
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <input
-                                            type="text"
-                                            value={dm.name}
-                                            onChange={(e) => updateDecisionMaker(index, "name", e.target.value)}
-                                            className="p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] outline-none"
-                                            placeholder="Name *"
-                                          />
-                                          <input
-                                            type="email"
-                                            value={dm.email}
-                                            onChange={(e) => updateDecisionMaker(index, "email", e.target.value)}
-                                            className="p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] outline-none"
-                                            placeholder="Email *"
-                                          />
-                                          <input
-                                            type="text"
-                                            value={dm.organization}
-                                            onChange={(e) => updateDecisionMaker(index, "organization", e.target.value)}
-                                            className="p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] outline-none"
-                                            placeholder="Organization"
-                                          />
-                                          <input
-                                            type="text"
-                                            value={dm.phone}
-                                            onChange={(e) => updateDecisionMaker(index, "phone", e.target.value)}
-                                            className="p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] outline-none"
-                                            placeholder="Phone"
-                                          />
-                                        </div>
+                                    {/* Title */}
+                                    <div>
+                                      <div className="flex justify-between items-center mb-1">
+                                        <label className="block text-sm font-semibold text-gray-700">
+                                          Petition Title *
+                                        </label>
+                                        <button
+                                          type="button"
+                                          onClick={handleAiOptimizeTitle}
+                                          disabled={aiOptimizing || !editFormData.title.trim()}
+                                          className="text-xs font-semibold text-purple-600 hover:text-purple-800 flex items-center gap-1 disabled:opacity-50"
+                                        >
+                                          {aiOptimizing ? <FaSpinner className="animate-spin" /> : <FaWandMagicSparkles />}
+                                          Optimize with AI
+                                        </button>
                                       </div>
-                                    ))}
-                                    <button
-                                      type="button"
-                                      onClick={addDecisionMaker}
-                                      className="text-sm text-[#3650AD] hover:text-[#2a4085] font-medium flex items-center gap-1 mb-4"
-                                    >
-                                      <FaPlus className="text-xs" /> Add Decision Maker
-                                    </button>
+                                      <input
+                                        type="text"
+                                        value={editFormData.title}
+                                        onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#3650AD] outline-none text-sm bg-white"
+                                        placeholder="Enter petition title"
+                                      />
+                                      {aiError && <p className="text-xs text-red-500 mt-1">{aiError}</p>}
+                                    </div>
+
+                                    {/* Category Selection */}
+                                    <div>
+                                      <div className="flex justify-between items-center mb-2">
+                                        <label className="block text-sm font-semibold text-gray-700">
+                                          Categories * <span className="text-xs text-gray-500 font-normal">(Select 1 or 2 categories)</span>
+                                        </label>
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowCategoryModal(true)}
+                                          className="text-xs font-semibold text-[#F43676] hover:text-[#e02a60] flex items-center gap-1"
+                                        >
+                                          <FaPlus /> Custom Category
+                                        </button>
+                                      </div>
+
+                                      {categoriesLoading ? (
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                                          <FaSpinner className="animate-spin" /> Loading categories...
+                                        </div>
+                                      ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                          {categoriesList.map((cat) => {
+                                            const IconComp = cat.icon || FaTags;
+                                            const isSelected = editFormData.categories?.includes(cat.id);
+                                            return (
+                                              <button
+                                                key={cat.id}
+                                                type="button"
+                                                onClick={() => toggleCategory(cat.id)}
+                                                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border transition-all ${
+                                                  isSelected
+                                                    ? "bg-[#F43676] text-white border-[#F43676] shadow-sm"
+                                                    : "bg-white text-gray-700 border-gray-200 hover:border-pink-300"
+                                                }`}
+                                              >
+                                                <IconComp />
+                                                <span className="truncate">{cat.label}</span>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Country */}
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-1">Country *</label>
+                                      <input
+                                        type="text"
+                                        value={editFormData.country}
+                                        onChange={(e) => setEditFormData({ ...editFormData, country: e.target.value })}
+                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#3650AD] outline-none text-sm bg-white"
+                                        placeholder="Country"
+                                      />
+                                    </div>
                                   </div>
 
-                                  {/* Target Signers (Optional) */}
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Target Signers (Optional)</label>
-                                    {editFormData.requestedSigners?.map((signer, index) => (
-                                      <div key={index} className="bg-white p-3 rounded-lg border border-gray-200 mb-2">
-                                        <div className="flex justify-between items-center mb-2">
-                                          <span className="text-xs font-medium text-gray-500">Target Signer {index + 1}</span>
-                                          {editFormData.requestedSigners.length > 1 && (
+                                  {/* SECTION 2: MEDIA & IMAGES */}
+                                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                                    <h5 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                      <FaImage className="text-[#3650AD]" /> Banner Images & Video
+                                    </h5>
+
+                                    {/* Image List Preview */}
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Petition Banner Images <span className="text-xs text-gray-500 font-normal">(Up to 4 images)</span>
+                                      </label>
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                                        {(editFormData.images || []).map((img, idx) => (
+                                          <div key={idx} className="relative h-28 rounded-xl overflow-hidden border border-gray-300 group bg-black/5">
+                                            <Image
+                                              src={img.url}
+                                              alt={`Banner ${idx + 1}`}
+                                              fill
+                                              className="object-cover"
+                                            />
                                             <button
                                               type="button"
-                                              onClick={() => {
-                                                const updated = editFormData.requestedSigners.filter((_, i) => i !== index);
+                                              onClick={() => removeImage(idx)}
+                                              className="absolute top-1 right-1 bg-red-600 text-white p-1.5 rounded-full opacity-90 hover:opacity-100 transition-opacity shadow-md"
+                                              title="Remove image"
+                                            >
+                                              <FaTrash className="text-xs" />
+                                            </button>
+                                            {idx === 0 && (
+                                              <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-md font-semibold">
+                                                Primary
+                                              </span>
+                                            )}
+                                          </div>
+                                        ))}
+
+                                        {(editFormData.images || []).length < 4 && (
+                                          <label className="h-28 border-2 border-dashed border-gray-300 hover:border-[#3650AD] rounded-xl flex flex-col items-center justify-center cursor-pointer bg-white transition-colors">
+                                            <FaPlus className="text-gray-400 text-lg mb-1" />
+                                            <span className="text-xs font-semibold text-gray-600">Upload Image</span>
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              onChange={handleImageFileSelect}
+                                              className="hidden"
+                                            />
+                                          </label>
+                                        )}
+                                      </div>
+
+                                      <div className="flex gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowAiImagePromptModal(true)}
+                                          disabled={(editFormData.images || []).length >= 4}
+                                          className="text-xs font-semibold px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white flex items-center gap-1.5 shadow-sm hover:shadow disabled:opacity-50"
+                                        >
+                                          <FaWandMagicSparkles /> Generate with AI
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Video URL */}
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-1">YouTube Video URL (Optional)</label>
+                                      <input
+                                        type="url"
+                                        value={editFormData.videoUrl}
+                                        onChange={(e) => setEditFormData({ ...editFormData, videoUrl: e.target.value })}
+                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#3650AD] outline-none text-sm bg-white"
+                                        placeholder="https://www.youtube.com/watch?v=..."
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* SECTION 3: DECISION MAKERS & TARGET SIGNERS */}
+                                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                                    <h5 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                      <FaUsers className="text-[#3650AD]" /> Decision Makers & Target Signers
+                                    </h5>
+
+                                    {/* Decision Makers */}
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Decision Makers *</label>
+                                      {editFormData.decisionMakers.map((dm, index) => (
+                                        <div key={index} className="bg-white p-3 rounded-xl border border-gray-200 mb-3 space-y-2">
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-gray-500">Decision Maker #{index + 1}</span>
+                                            {editFormData.decisionMakers.length > 1 && (
+                                              <button
+                                                type="button"
+                                                onClick={() => removeDecisionMaker(index)}
+                                                className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                              >
+                                                Remove
+                                              </button>
+                                            )}
+                                          </div>
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <input
+                                              type="text"
+                                              value={dm.name}
+                                              onChange={(e) => updateDecisionMaker(index, "name", e.target.value)}
+                                              className="p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                              placeholder="Full Name *"
+                                            />
+                                            <input
+                                              type="email"
+                                              value={dm.email}
+                                              onChange={(e) => updateDecisionMaker(index, "email", e.target.value)}
+                                              className="p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                              placeholder="Email Address *"
+                                            />
+                                            <input
+                                              type="text"
+                                              value={dm.organization}
+                                              onChange={(e) => updateDecisionMaker(index, "organization", e.target.value)}
+                                              className="p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                              placeholder="Organization (Optional)"
+                                            />
+                                            <input
+                                              type="text"
+                                              value={dm.phone}
+                                              onChange={(e) => updateDecisionMaker(index, "phone", e.target.value)}
+                                              className="p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                              placeholder="Phone Number (Optional)"
+                                            />
+                                          </div>
+                                        </div>
+                                      ))}
+                                      <button
+                                        type="button"
+                                        onClick={addDecisionMaker}
+                                        className="text-xs text-[#3650AD] hover:text-[#2a4085] font-bold flex items-center gap-1"
+                                      >
+                                        <FaPlus /> Add Decision Maker
+                                      </button>
+                                    </div>
+
+                                    {/* Target Signers */}
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Target Signers (Optional VIP Signers)</label>
+                                      {editFormData.requestedSigners?.map((signer, index) => (
+                                        <div key={index} className="bg-white p-3 rounded-xl border border-gray-200 mb-3 space-y-2">
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-gray-500 font-medium">Target Signer #{index + 1}</span>
+                                            {editFormData.requestedSigners.length > 1 && (
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const updated = editFormData.requestedSigners.filter((_, i) => i !== index);
+                                                  setEditFormData({ ...editFormData, requestedSigners: updated });
+                                                }}
+                                                className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                              >
+                                                Remove
+                                              </button>
+                                            )}
+                                          </div>
+                                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            <input
+                                              type="text"
+                                              value={signer.name}
+                                              onChange={(e) => {
+                                                const updated = [...editFormData.requestedSigners];
+                                                updated[index] = { ...updated[index], name: e.target.value };
                                                 setEditFormData({ ...editFormData, requestedSigners: updated });
                                               }}
-                                              className="text-red-500 hover:text-red-700 text-xs"
-                                            >
-                                              Remove
-                                            </button>
-                                          )}
+                                              className="p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                              placeholder="Name *"
+                                            />
+                                            <input
+                                              type="email"
+                                              value={signer.email}
+                                              onChange={(e) => {
+                                                const updated = [...editFormData.requestedSigners];
+                                                updated[index] = { ...updated[index], email: e.target.value };
+                                                setEditFormData({ ...editFormData, requestedSigners: updated });
+                                              }}
+                                              className="p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                              placeholder="Email"
+                                            />
+                                            <input
+                                              type="text"
+                                              value={signer.designation}
+                                              onChange={(e) => {
+                                                const updated = [...editFormData.requestedSigners];
+                                                updated[index] = { ...updated[index], designation: e.target.value };
+                                                setEditFormData({ ...editFormData, requestedSigners: updated });
+                                              }}
+                                              className="p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                              placeholder="Role / Designation"
+                                            />
+                                          </div>
                                         </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                          <input
-                                            type="text"
-                                            value={signer.name}
-                                            onChange={(e) => {
-                                              const updated = [...editFormData.requestedSigners];
-                                              updated[index] = { ...updated[index], name: e.target.value };
-                                              setEditFormData({ ...editFormData, requestedSigners: updated });
-                                            }}
-                                            className="p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] outline-none"
-                                            placeholder="Name *"
-                                          />
-                                          <input
-                                            type="email"
-                                            value={signer.email}
-                                            onChange={(e) => {
-                                              const updated = [...editFormData.requestedSigners];
-                                              updated[index] = { ...updated[index], email: e.target.value };
-                                              setEditFormData({ ...editFormData, requestedSigners: updated });
-                                            }}
-                                            className="p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] outline-none"
-                                            placeholder="Email"
-                                          />
-                                          <input
-                                            type="text"
-                                            value={signer.designation}
-                                            onChange={(e) => {
-                                              const updated = [...editFormData.requestedSigners];
-                                              updated[index] = { ...updated[index], designation: e.target.value };
-                                              setEditFormData({ ...editFormData, requestedSigners: updated });
-                                            }}
-                                            className="p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] outline-none"
-                                            placeholder="Role/Designation"
-                                          />
-                                        </div>
-                                      </div>
-                                    ))}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setEditFormData({
-                                          ...editFormData,
-                                          requestedSigners: [...(editFormData.requestedSigners || []), { name: "", email: "", designation: "" }],
-                                        });
-                                      }}
-                                      className="text-sm text-[#3650AD] hover:text-[#2a4085] font-medium flex items-center gap-1"
-                                    >
-                                      <FaPlus className="text-xs" /> Add Target Signer
-                                    </button>
+                                      ))}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditFormData({
+                                            ...editFormData,
+                                            requestedSigners: [...(editFormData.requestedSigners || []), { name: "", email: "", designation: "" }],
+                                          });
+                                        }}
+                                        className="text-xs text-[#3650AD] hover:text-[#2a4085] font-bold flex items-center gap-1"
+                                      >
+                                        <FaPlus /> Add Target Signer
+                                      </button>
+                                    </div>
                                   </div>
 
-                                  {/* Problem Description */}
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Problem Description *</label>
-                                    <textarea
-                                      value={editFormData.problem}
-                                      onChange={(e) => setEditFormData({ ...editFormData, problem: e.target.value })}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3650AD] focus:border-transparent outline-none resize-none"
-                                      rows={4}
-                                      placeholder="Describe the problem..."
-                                    />
+                                  {/* SECTION 4: PROBLEM & SOLUTION */}
+                                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                                    <h5 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                      <FaPenFancy className="text-[#3650AD]" /> Campaign Description
+                                    </h5>
+
+                                    {/* Problem */}
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                        Problem Description *
+                                      </label>
+                                      <textarea
+                                        value={editFormData.problem}
+                                        onChange={(e) => setEditFormData({ ...editFormData, problem: e.target.value })}
+                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#3650AD] outline-none text-sm bg-white"
+                                        rows={4}
+                                        placeholder="Describe the issue in detail..."
+                                      />
+                                      <p className="text-xs text-right text-gray-400 mt-1">
+                                        {editFormData.problem.length} characters
+                                      </p>
+                                    </div>
+
+                                    {/* Solution */}
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                        Proposed Solution *
+                                      </label>
+                                      <textarea
+                                        value={editFormData.solution}
+                                        onChange={(e) => setEditFormData({ ...editFormData, solution: e.target.value })}
+                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#3650AD] outline-none text-sm bg-white"
+                                        rows={4}
+                                        placeholder="Describe what specific action should be taken..."
+                                      />
+                                      <p className="text-xs text-right text-gray-400 mt-1">
+                                        {editFormData.solution.length} characters
+                                      </p>
+                                    </div>
                                   </div>
 
-                                  {/* Proposed Solution */}
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Proposed Solution *</label>
-                                    <textarea
-                                      value={editFormData.solution}
-                                      onChange={(e) => setEditFormData({ ...editFormData, solution: e.target.value })}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3650AD] focus:border-transparent outline-none resize-none"
-                                      rows={4}
-                                      placeholder="Describe your proposed solution..."
-                                    />
-                                  </div>
+                                  {/* SECTION 5: SIGNING REQUIREMENTS */}
+                                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                                    <h5 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                      <FaCheck className="text-[#3650AD]" /> Verification & Signing Controls
+                                    </h5>
 
-                                  {/* Video URL */}
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Video URL (optional)</label>
-                                    <input
-                                      type="url"
-                                      value={editFormData.videoUrl}
-                                      onChange={(e) => setEditFormData({ ...editFormData, videoUrl: e.target.value })}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3650AD] focus:border-transparent outline-none"
-                                      placeholder="https://youtube.com/..."
-                                    />
-                                  </div>
-
-                                  {/* Signing Requirements */}
-                                  <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                    <h4 className="text-sm font-semibold text-[#1a1a2e] mb-3">Signing Requirements</h4>
-                                    <p className="text-xs text-gray-500 mb-4">
-                                      You can require signers to provide their constituency number
-                                      and/or Aadhar number. Select any or both to enhance identity
-                                      verification for your petition.
-                                    </p>
-
-                                    {/* Toggle for constituency requirement */}
-                                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 mb-3">
+                                    {/* Constituency Requirement */}
+                                    <div className="p-3 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
                                       <div>
-                                        <p className="text-sm font-medium text-gray-700">Require Constituency Number to Sign</p>
+                                        <p className="text-sm font-semibold text-gray-800">Require Constituency Number to Sign</p>
                                         <p className="text-xs text-gray-500">Signers must enter their constituency number</p>
                                       </div>
                                       <button
@@ -1181,34 +1769,30 @@ const MyPetitionsPage = () => {
                                             ...editFormData,
                                             constituencySettings: {
                                               ...editFormData.constituencySettings,
-                                              required: newValue
+                                              required: newValue,
                                             },
                                             signingRequirements: {
                                               ...editFormData.signingRequirements,
                                               constituency: {
                                                 ...editFormData.signingRequirements.constituency,
-                                                required: newValue
-                                              }
-                                            }
+                                                required: newValue,
+                                              },
+                                            },
                                           });
                                         }}
-                                        className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${editFormData.signingRequirements.constituency.required ? 'bg-[#3650AD]' : 'bg-gray-300'}`}
+                                        className={`relative w-12 h-6 rounded-full transition-colors ${editFormData.signingRequirements.constituency.required ? "bg-[#3650AD]" : "bg-gray-300"}`}
                                       >
                                         <span
-                                          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${editFormData.signingRequirements.constituency.required ? 'translate-x-6' : 'translate-x-0'}`}
+                                          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${editFormData.signingRequirements.constituency.required ? "translate-x-6" : "translate-x-0"}`}
                                         />
                                       </button>
                                     </div>
 
-                                    {/* Allowed Constituency Input */}
                                     {editFormData.signingRequirements.constituency.required && (
-                                      <div className="p-3 bg-white rounded-lg border border-gray-200 mb-3">
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                                          Restrict to Specific Constituency (Optional)
+                                      <div className="p-3 bg-white rounded-xl border border-gray-200">
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                          Restrict to Specific Constituency Number (Optional)
                                         </label>
-                                        <p className="text-xs text-gray-500 mb-2">
-                                          Leave blank to allow any constituency, or enter a specific number to restrict signing.
-                                        </p>
                                         <input
                                           type="text"
                                           value={editFormData.signingRequirements.constituency.allowedConstituency}
@@ -1218,69 +1802,190 @@ const MyPetitionsPage = () => {
                                               ...editFormData,
                                               constituencySettings: {
                                                 ...editFormData.constituencySettings,
-                                                allowedConstituency: val
+                                                allowedConstituency: val,
                                               },
                                               signingRequirements: {
                                                 ...editFormData.signingRequirements,
                                                 constituency: {
                                                   ...editFormData.signingRequirements.constituency,
-                                                  allowedConstituency: val
-                                                }
-                                              }
+                                                  allowedConstituency: val,
+                                                },
+                                              },
                                             });
                                           }}
-                                          placeholder="e.g., 123 or leave empty"
-                                          className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3650AD] focus:border-transparent outline-none"
-                                          maxLength={10}
+                                          placeholder="e.g. 123"
+                                          className="w-full p-2.5 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#3650AD]"
                                         />
-                                        {editFormData.signingRequirements.constituency.allowedConstituency && (
-                                          <p className="text-blue-600 text-xs mt-2">
-                                            Only users with constituency number &ldquo;{editFormData.signingRequirements.constituency.allowedConstituency}&rdquo; can sign this petition.
-                                          </p>
-                                        )}
                                       </div>
                                     )}
 
-                                    {/* Toggle for Aadhar requirement */}
-                                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                                    {/* Aadhaar Requirement */}
+                                    <div className="p-3 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
                                       <div>
-                                        <p className="text-sm font-medium text-gray-700">Require Aadhar Number to Sign</p>
-                                        <p className="text-xs text-gray-500">Signers must enter their Aadhar number for verification</p>
+                                        <p className="text-sm font-semibold text-gray-800">Require Aadhaar Number to Sign</p>
+                                        <p className="text-xs text-gray-500">Signers must provide Aadhaar for verification</p>
                                       </div>
                                       <button
                                         type="button"
-                                        onClick={() => setEditFormData({
-                                          ...editFormData,
-                                          signingRequirements: {
-                                            ...editFormData.signingRequirements,
-                                            aadhar: {
-                                              ...editFormData.signingRequirements.aadhar,
-                                              required: !editFormData.signingRequirements.aadhar.required
-                                            }
-                                          }
-                                        })}
-                                        className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${editFormData.signingRequirements.aadhar.required ? 'bg-[#3650AD]' : 'bg-gray-300'}`}
+                                        onClick={() =>
+                                          setEditFormData({
+                                            ...editFormData,
+                                            signingRequirements: {
+                                              ...editFormData.signingRequirements,
+                                              aadhar: {
+                                                ...editFormData.signingRequirements.aadhar,
+                                                required: !editFormData.signingRequirements.aadhar.required,
+                                              },
+                                            },
+                                          })
+                                        }
+                                        className={`relative w-12 h-6 rounded-full transition-colors ${editFormData.signingRequirements.aadhar.required ? "bg-[#3650AD]" : "bg-gray-300"}`}
                                       >
                                         <span
-                                          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${editFormData.signingRequirements.aadhar.required ? 'translate-x-6' : 'translate-x-0'}`}
+                                          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${editFormData.signingRequirements.aadhar.required ? "translate-x-6" : "translate-x-0"}`}
                                         />
                                       </button>
                                     </div>
                                   </div>
 
+                                  {/* SECTION 6: PETITION STARTER DETAILS */}
+                                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                                    <h5 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                      <FaUser className="text-[#3650AD]" /> Petition Starter Information
+                                    </h5>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name *</label>
+                                        <input
+                                          type="text"
+                                          value={editFormData.starter.name}
+                                          onChange={(e) =>
+                                            setEditFormData({
+                                              ...editFormData,
+                                              starter: { ...editFormData.starter, name: e.target.value },
+                                            })
+                                          }
+                                          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Age *</label>
+                                        <input
+                                          type="text"
+                                          value={editFormData.starter.age}
+                                          onChange={(e) =>
+                                            setEditFormData({
+                                              ...editFormData,
+                                              starter: { ...editFormData.starter, age: e.target.value },
+                                            })
+                                          }
+                                          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Email *</label>
+                                        <input
+                                          type="email"
+                                          value={editFormData.starter.email}
+                                          onChange={(e) =>
+                                            setEditFormData({
+                                              ...editFormData,
+                                              starter: { ...editFormData.starter, email: e.target.value },
+                                            })
+                                          }
+                                          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Mobile Number *</label>
+                                        <input
+                                          type="text"
+                                          value={editFormData.starter.mobile}
+                                          onChange={(e) =>
+                                            setEditFormData({
+                                              ...editFormData,
+                                              starter: { ...editFormData.starter, mobile: e.target.value },
+                                            })
+                                          }
+                                          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                        />
+                                      </div>
+                                      <div className="sm:col-span-2">
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Location / Address *</label>
+                                        <input
+                                          type="text"
+                                          value={editFormData.starter.location}
+                                          onChange={(e) =>
+                                            setEditFormData({
+                                              ...editFormData,
+                                              starter: { ...editFormData.starter, location: e.target.value },
+                                            })
+                                          }
+                                          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                          placeholder="City, State"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Pincode</label>
+                                        <input
+                                          type="text"
+                                          value={editFormData.starter.pincode}
+                                          onChange={(e) =>
+                                            setEditFormData({
+                                              ...editFormData,
+                                              starter: { ...editFormData.starter, pincode: e.target.value },
+                                            })
+                                          }
+                                          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">MP Constituency Number</label>
+                                        <input
+                                          type="text"
+                                          value={editFormData.starter.mpConstituencyNumber}
+                                          onChange={(e) =>
+                                            setEditFormData({
+                                              ...editFormData,
+                                              starter: { ...editFormData.starter, mpConstituencyNumber: e.target.value },
+                                            })
+                                          }
+                                          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                        />
+                                      </div>
+                                      <div className="sm:col-span-2">
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">MLA Constituency Number</label>
+                                        <input
+                                          type="text"
+                                          value={editFormData.starter.mlaConstituencyNumber}
+                                          onChange={(e) =>
+                                            setEditFormData({
+                                              ...editFormData,
+                                              starter: { ...editFormData.starter, mlaConstituencyNumber: e.target.value },
+                                            })
+                                          }
+                                          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-[#3650AD]"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
                                   {/* Action Buttons */}
-                                  <div className="flex gap-2 pt-2">
+                                  <div className="flex gap-3 pt-4 border-t border-gray-200">
                                     <button
+                                      type="button"
                                       onClick={() => handleUpdatePetition(petition._id)}
                                       disabled={editLoading}
-                                      className="flex-1 bg-[#3650AD] hover:bg-[#2a4085] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2"
+                                      className="flex-1 bg-[#3650AD] hover:bg-[#2a4085] text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-98"
                                     >
-                                      {editLoading ? <FaSpinner className="animate-spin" /> : <FaCheck />}
-                                      {editLoading ? "Saving..." : "Save Changes"}
+                                      {editLoading ? <FaSpinner className="animate-spin text-lg" /> : <FaCheck />}
+                                      {editLoading ? "Saving Changes..." : "Save Petition Changes"}
                                     </button>
                                     <button
+                                      type="button"
                                       onClick={() => setShowEditModal(null)}
-                                      className="px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg flex items-center gap-2 hover:bg-gray-300"
+                                      className="px-6 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl flex items-center gap-2 hover:bg-gray-200 transition-colors"
                                     >
                                       <FaTimes /> Cancel
                                     </button>
@@ -1318,8 +2023,6 @@ const MyPetitionsPage = () => {
                                             <p className="text-xs text-gray-400">
                                               Posted on {new Date(comment.createdAt).toLocaleDateString()}
                                             </p>
-
-                                            {/* Display replies if any */}
                                             {comment.replies && comment.replies.length > 0 && (
                                               <div className="mt-3 pl-4 border-l-2 border-purple-200 space-y-2">
                                                 <p className="text-xs font-semibold text-gray-600">Replies:</p>
@@ -1333,7 +2036,6 @@ const MyPetitionsPage = () => {
                                             )}
                                           </div>
 
-                                          {/* Action Buttons */}
                                           <div className="flex gap-2 flex-shrink-0">
                                             <button
                                               onClick={() => approveComment(comment._id, petition._id)}
@@ -1366,7 +2068,6 @@ const MyPetitionsPage = () => {
                                   </div>
                                 )}
 
-                                {/* Close Button */}
                                 <div className="flex gap-2 mt-4 pt-4 border-t border-purple-200">
                                   <button
                                     onClick={() => setShowCommentsModal(null)}
@@ -1417,7 +2118,6 @@ const MyPetitionsPage = () => {
                         whileHover={{ y: -4 }}
                         className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-all"
                       >
-                        {/* Image */}
                         <div className="h-40 relative bg-gray-100">
                           {petition.petitionDetails?.image ? (
                             <Image
@@ -1431,37 +2131,17 @@ const MyPetitionsPage = () => {
                               <FaFileSignature className="text-4xl text-gray-300" />
                             </div>
                           )}
-                          <div className="absolute top-3 right-3">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-500 text-white">
-                              <FaCheck className="mr-1 text-xs" /> Signed
-                            </span>
-                          </div>
                         </div>
-
-                        {/* Content */}
                         <div className="p-4">
-                          <h3 className="font-bold text-[#1a1a2e] mb-2 line-clamp-2 text-sm">
+                          <h4 className="font-bold text-[#1a1a2e] mb-2 line-clamp-1">
                             {petition.title}
-                          </h3>
-
-                          <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                            <span className="flex items-center gap-1">
-                              <FaUsers className="text-[#F43676]" />
-                              {petition.numberOfSignatures || 0} signatures
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <FaCalendarAlt />
-                              {formatDate(petition.createdAt)}
-                            </span>
-                          </div>
-
-                          <p className="text-gray-600 text-xs line-clamp-2 mb-3">
+                          </h4>
+                          <p className="text-xs text-gray-500 mb-3 line-clamp-2">
                             {petition.petitionDetails?.problem}
                           </p>
-
                           <Link href={`/currentpetitions/${petition.slug}`}>
-                            <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">
-                              View Petition <FaArrowRight className="text-xs" />
+                            <button className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors">
+                              View Petition <FaArrowRight className="text-[10px]" />
                             </button>
                           </Link>
                         </div>
@@ -1471,147 +2151,9 @@ const MyPetitionsPage = () => {
                 )}
               </motion.div>
             )}
-          </AnimatePresence >
-        </div >
-      </div >
-
-      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
-
-      {/* Signers Modal */}
-      <AnimatePresence>
-        {showSignersModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSignersModal(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
-            >
-              <div className="p-6 border-b flex items-center justify-between sticky top-0 bg-white z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center">
-                    <FaUsers className="text-green-600 text-xl" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">Recent Signers</h3>
-                    <p className="text-sm text-gray-500">Signatures across all your petitions</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowSignersModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-                >
-                  <FaTimes className="text-gray-400 text-xl" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6">
-                {signersLoading ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <FaSpinner className="animate-spin text-4xl text-[#F43676]" />
-                    <p className="text-gray-500 font-medium">Loading signers list...</p>
-                  </div>
-                ) : allSigners.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-separate border-spacing-y-3">
-                      <thead>
-                        <tr className="text-gray-400 text-xs uppercase tracking-wider">
-                          <th className="px-4 py-2 font-bold">Signer</th>
-                          <th className="px-4 py-2 font-bold">Petition</th>
-                          <th className="px-4 py-2 font-bold">Date</th>
-                          <th className="px-4 py-2 font-bold">Referral</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {allSigners.map((signer, idx) => (
-                          <motion.tr
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.03 }}
-                            key={idx}
-                            className="bg-gray-50 hover:bg-gray-100 transition-colors"
-                          >
-                            <td className="px-4 py-4 rounded-l-2xl">
-                              <div className="flex items-center gap-3">
-                                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-sm flex-shrink-0">
-                                  {signer.user?.profilePicture ? (
-                                    <Image
-                                      src={signer.user.profilePicture}
-                                      alt={signer.user.name}
-                                      fill
-                                      className="object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100 uppercase font-bold text-xs">
-                                      {signer.user?.name?.substring(0, 2) || "AN"}
-                                    </div>
-                                  )}
-                                </div>
-                                <div>
-                                  <p className="text-sm font-bold text-gray-900">{signer.user?.name || "Anonymous"}</p>
-                                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-tighter">
-                                    {signer.user?.designation || "Citizen"}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 max-w-[200px]">
-                              <p className="text-sm font-medium text-gray-700 truncate">{signer.petitionTitle}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <p className="text-sm text-gray-500">{formatDate(signer.signedAt)}</p>
-                            </td>
-                            <td className="px-4 py-4 rounded-r-2xl">
-                              {signer.referral?.code ? (
-                                <div className="flex flex-col">
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 w-fit">
-                                    {signer.referral.code}
-                                  </span>
-                                  {signer.referral.owner && (
-                                    <span className="text-[10px] text-gray-400 mt-1">
-                                      via {signer.referral.owner.name}
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-gray-400 italic">Direct</span>
-                              )}
-                            </td>
-                          </motion.tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-20">
-                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <FaUsers className="text-gray-400 text-3xl" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-700 mb-2">No Signatures Yet</h3>
-                    <p className="text-gray-500">Your petitions are waiting for support!</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-6 bg-gray-50 border-t flex justify-end">
-                <button
-                  onClick={() => setShowSignersModal(false)}
-                  className="px-8 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-sm"
-                >
-                  Close
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+          </AnimatePresence>
+        </div>
+      </div>
     </>
   );
 };
