@@ -18,6 +18,8 @@ import LoginModal from "../../../components/LoginModal";
 import CommentsSection from "../../../components/CommentsSection";
 import Captcha from "../../../components/Captcha";
 import CampaignProgress from "../../../components/CampaignProgress";
+import SchoolStallMapWidget from "../../../components/SchoolStallMapWidget";
+import SubmitStallReportModal from "../../../components/SubmitStallReportModal";
 import {
     FileText,
     Users,
@@ -79,6 +81,7 @@ export default function PetitionDetailClient({ initialPetition }) {
     // CAPTCHA state
     const [captchaVerified, setCaptchaVerified] = useState(false);
     const [captchaResetTrigger, setCaptchaResetTrigger] = useState(0);
+    const [isStallModalOpen, setIsStallModalOpen] = useState(false);
     const [signatureStatus, setSignatureStatus] = useState({
         hasSigned: false,
         isCreator: false,
@@ -1434,9 +1437,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                                     <div>
                                         <p className="font-extrabold text-white text-base tracking-wide flex items-center gap-2">
                                             Petition Video Update
-                                            <span className="text-[10px] font-bold bg-red-950/90 text-red-200 uppercase px-2 py-0.5 rounded border border-red-400/30">
+                                            {/* <span className="text-[10px] font-bold bg-red-950/90 text-red-200 uppercase px-2 py-0.5 rounded border border-red-400/30">
                                                 Brick Frame
-                                            </span>
+                                            </span> */}
                                         </p>
                                         <p className="text-xs text-red-200/80">Watch official campaign video message</p>
                                     </div>
@@ -1476,6 +1479,23 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 </a>
                             )}
                         </div>
+                    )}
+                    {/* 50m School Buffer Zone & Junk Food Stall Violation Map */}
+                    {petition.showSchoolStallMap && (
+                    <div className="md:col-span-2">
+                        <SchoolStallMapWidget
+                            petitionId={petition._id}
+                            onOpenReportModal={() => {
+                                if (!user) {
+                                    setShowLoginModal(true);
+                                } else if (!signatureStatus.hasSigned) {
+                                    alert("Please sign this petition first to submit a junk food stall report.");
+                                } else {
+                                    setIsStallModalOpen(true);
+                                }
+                            }}
+                        />
+                    </div>
                     )}
 
                     {/* Petition Updates & Supporters */}
@@ -1837,6 +1857,16 @@ export default function PetitionDetailClient({ initialPetition }) {
             {/* Login Modal */}
             {showLoginModal && (
                 <LoginModal isOpen={showLoginModal} onClose={handleLoginModalClose} />
+            )}
+
+            {/* Junk Food Stall Report Modal */}
+            {isStallModalOpen && (
+                <SubmitStallReportModal
+                    petitionId={petition._id}
+                    isOpen={isStallModalOpen}
+                    onClose={() => setIsStallModalOpen(false)}
+                    token={typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user"))?.token || "" : ""}
+                />
             )}
         </div>
     );
