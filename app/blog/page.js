@@ -49,6 +49,9 @@ export default function BlogPage() {
     return () => clearTimeout(debounceTimer);
   }, [currentPage, searchQuery]);
 
+  // Helper to strip HTML tags for clean text rendering
+  const stripHtml = (txt) => (txt ? String(txt).replace(/<[^>]*>/g, "").trim() : "");
+
   // Format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -158,12 +161,12 @@ export default function BlogPage() {
                       </span>
                     </div>
 
-                    <h3 className="text-2xl lg:text-3xl font-bold text-[#002050] mb-4 leading-tight group-hover:text-[#F43676] transition-colors">
-                      {featuredPost.title}
+                    <h3 className="text-2xl lg:text-3xl font-bold text-[#002050] mb-4 leading-tight group-hover:text-[#F43676] transition-colors" style={{ fontFamily: featuredPost.titleFont || "'Outfit', sans-serif" }}>
+                      {stripHtml(featuredPost.title)}
                     </h3>
 
                     <p className="text-[#302d55] leading-relaxed mb-6 line-clamp-3">
-                      {featuredPost.excerpt || featuredPost.content?.substring(0, 200) + "..."}
+                      {stripHtml(featuredPost.excerpt || featuredPost.content)?.substring(0, 200) + "..."}
                     </p>
 
                     <div className="flex items-center gap-2 text-[#F43676] font-semibold group-hover:gap-4 transition-all">
@@ -231,13 +234,13 @@ export default function BlogPage() {
                             <span>{post.author}</span>
                           </div>
 
-                          <h3 className="text-lg font-bold text-[#002050] mb-3 leading-tight group-hover:text-[#F43676] transition-colors line-clamp-2 flex-1">
-                            {post.title}
+                          <h3 className="text-lg font-bold text-[#002050] mb-3 leading-tight group-hover:text-[#F43676] transition-colors line-clamp-2 flex-1" style={{ fontFamily: post.titleFont || "'Outfit', sans-serif" }}>
+                            {stripHtml(post.title)}
                           </h3>
 
                           {(post.excerpt || post.content) && (
                             <p className="text-[#302d55] text-sm leading-relaxed mb-4 line-clamp-2">
-                              {post.excerpt || post.content?.substring(0, 150) + "..."}
+                              {stripHtml(post.excerpt || post.content)?.substring(0, 150) + "..."}
                             </p>
                           )}
 
@@ -383,7 +386,7 @@ export default function BlogPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-semibold text-[#002050] line-clamp-2 group-hover:text-[#F43676] transition-colors leading-tight">
-                              {post.title}
+                              {stripHtml(post.title)}
                             </h4>
                             <p className="text-xs text-gray-500 mt-1">{formatDate(post.createdAt)}</p>
                           </div>

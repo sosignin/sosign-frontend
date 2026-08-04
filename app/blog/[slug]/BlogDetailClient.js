@@ -91,6 +91,9 @@ export default function BlogDetailClient({ initialBlog }) {
     fetchRecentBlogs();
   }, []);
 
+  // Helper to strip HTML tags for clean text rendering
+  const stripHtml = (txt) => (txt ? String(txt).replace(/<[^>]*>/g, "").trim() : "");
+
   // Format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -138,10 +141,10 @@ export default function BlogDetailClient({ initialBlog }) {
               <FaChevronRight className="text-[10px]" />
               <Link href="/blog" className="hover:text-white transition-colors">Blog</Link>
               <FaChevronRight className="text-[10px]" />
-              <span className="text-[#F43676] truncate max-w-[200px] md:max-w-md">{blog.title}</span>
+              <span className="text-[#F43676] truncate max-w-[200px] md:max-w-md">{stripHtml(blog.title)}</span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
-              {blog.title}
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight" style={{ fontFamily: blog.titleFont || "'Outfit', sans-serif" }}>
+              {stripHtml(blog.title)}
             </h1>
           </div>
         </section>
@@ -239,7 +242,7 @@ export default function BlogDetailClient({ initialBlog }) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-semibold text-[#002050] line-clamp-2 group-hover:text-[#F43676] transition-colors leading-tight">
-                              {recentBlog.title}
+                              {stripHtml(recentBlog.title)}
                             </h4>
                             <p className="text-xs text-gray-500 mt-1">{formatDate(recentBlog.createdAt)}</p>
                           </div>
