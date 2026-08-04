@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import RichPetitionEditor from "@/components/RichPetitionEditor";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaYoutube,
@@ -2357,15 +2358,14 @@ export default function StartPetitionPage() {
                   const props = getInputProps("problem", formData.problem);
                   return (
                     <div className="relative">
-                      <textarea
+                      <RichPetitionEditor
                         value={formData.problem}
-                        onChange={(e) =>
-                          handleInputChange("problem", e.target.value)
-                        }
+                        onChange={(html) => handleInputChange("problem", html)}
                         onBlur={() => markFieldTouched("problem")}
-                        className={props.className}
                         placeholder="Describe who is affected, what the issue is, where it's happening, and why it matters. Be specific with facts, numbers, and real examples..."
-                        rows={5}
+                        minChars={50}
+                        maxChars={2000}
+                        error={props.showError ? props.error : null}
                       />
                       {props.showError && (
                         <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
@@ -2411,15 +2411,14 @@ export default function StartPetitionPage() {
                   const props = getInputProps("solution", formData.solution);
                   return (
                     <div className="relative">
-                      <textarea
+                      <RichPetitionEditor
                         value={formData.solution}
-                        onChange={(e) =>
-                          handleInputChange("solution", e.target.value)
-                        }
+                        onChange={(html) => handleInputChange("solution", html)}
                         onBlur={() => markFieldTouched("solution")}
-                        className={props.className}
                         placeholder="What specific action do you want the decision maker to take? Be clear about timelines, expected outcomes, and how this will help the affected people..."
-                        rows={4}
+                        minChars={30}
+                        maxChars={1500}
+                        error={props.showError ? props.error : null}
                       />
                       {props.showError && (
                         <p className="text-red-500 text-sm mt-1 flex items-center gap-1">

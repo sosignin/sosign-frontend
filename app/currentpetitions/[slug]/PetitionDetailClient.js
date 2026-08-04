@@ -1257,7 +1257,10 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 </div>
                                 <p className="font-bold text-[#1a1a2e]">Problem</p>
                             </div>
-                            <p className="text-gray-600 leading-relaxed">{petition.petitionDetails.problem}</p>
+                            <div
+                                className="prose max-w-none text-gray-600 leading-relaxed font-medium"
+                                dangerouslySetInnerHTML={{ __html: petition.petitionDetails.problem }}
+                            />
                         </div>
                     )}
 
@@ -1270,7 +1273,10 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 </div>
                                 <p className="font-bold text-[#1a1a2e]">Solution</p>
                             </div>
-                            <p className="text-gray-600 leading-relaxed">{petition.petitionDetails.solution}</p>
+                            <div
+                                className="prose max-w-none text-gray-600 leading-relaxed font-medium"
+                                dangerouslySetInnerHTML={{ __html: petition.petitionDetails.solution }}
+                            />
                         </div>
                     )}
 
