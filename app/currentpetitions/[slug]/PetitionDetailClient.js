@@ -619,7 +619,7 @@ export default function PetitionDetailClient({ initialPetition }) {
             const userInfo = JSON.parse(localStorage.getItem("user"));
             
             const response = await fetch(`/api/petitions/${petition._id}/sign`, {
-                method: "PUT",
+                method: "POST",
                 headers: {
                     Authorization: `Bearer ${userInfo?.token}`,
                     "Content-Type": "application/json",
@@ -632,7 +632,14 @@ export default function PetitionDetailClient({ initialPetition }) {
                 }),
             });
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get("content-type") || "";
+            if (contentType.includes("application/json")) {
+                data = await response.json();
+            } else {
+                const rawText = await response.text();
+                data = { message: rawText.replace(/<[^>]*>?/gm, " ").trim() || "Failed to sign petition" };
+            }
 
             if (!response.ok) {
                 throw new Error(data.message || "Failed to sign petition");
