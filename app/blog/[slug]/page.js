@@ -34,15 +34,17 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const title = blog.title || "SoSign Blog Article";
-  // Clean description from HTML tags
-  const rawDesc = blog.content ? blog.content.replace(/<[^>]*>/g, '') : '';
+  const title = blog.metaTitle || blog.title || "SoSign Blog Article";
+  const rawDesc = blog.metaDescription || blog.excerpt || (blog.content ? blog.content.replace(/<[^>]*>/g, '') : '');
   const description = rawDesc || "Read this interesting article on the SoSign petition platform blog.";
   const image = blog.image || `${baseUrl}/blog-default-og.png`;
 
+  const keywords = blog.metaKeywords || (blog.tags && blog.tags.length > 0 ? blog.tags.join(", ") : "");
+
   return {
-    title: `${title} | SoSign Blog`,
+    title: blog.metaTitle ? blog.metaTitle : `${title} | SoSign Blog`,
     description: description.substring(0, 160),
+    keywords: keywords,
     openGraph: {
       title: title,
       description: description.substring(0, 160),
