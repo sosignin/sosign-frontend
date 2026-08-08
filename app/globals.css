@@ -61,9 +61,26 @@ h6 {
   color: #302d55;
 }
 
+/* Ensure inner spans inside headings inherit heading size and weight */
+.prose h1 span,
+.prose h2 span,
+.prose h3 span,
+.prose h4 span {
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+}
+
 .prose p {
   margin-bottom: 1rem;
   line-height: 1.8;
+  color: #334155;
+}
+
+.prose strong,
+.prose b {
+  font-weight: 700 !important;
+  color: #0f172a;
 }
 
 .prose blockquote {

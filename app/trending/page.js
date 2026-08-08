@@ -245,7 +245,7 @@ export default function TrendingPage() {
 
                           {/* Problem Excerpt */}
                           <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2">
-                            {petition.petitionDetails?.problem}
+                            {petition.petitionDetails?.problem ? petition.petitionDetails.problem.replace(/<[^>]*>?/gm, "") : ""}
                           </p>
 
                           {/* Starter info */}

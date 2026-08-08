@@ -222,8 +222,8 @@ function SearchResultsContent() {
                 <h2 className="text-xl font-semibold mb-2 flex-grow">
                   {petition.title}
                 </h2>
-                <p className="text-gray-600 mb-4 text-sm">
-                  {petition.petitionDetails?.problem?.substring(0, 100)}...
+                <p className="text-gray-600 mb-4 text-sm line-clamp-2">
+                  {petition.petitionDetails?.problem ? petition.petitionDetails.problem.replace(/<[^>]*>?/gm, "").substring(0, 150) : ""}...
                 </p>
                 <div className="flex justify-between items-center text-sm text-gray-500 mt-auto">
                   <span>

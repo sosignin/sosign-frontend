@@ -20,6 +20,7 @@ import Captcha from "../../../components/Captcha";
 import CampaignProgress from "../../../components/CampaignProgress";
 import SchoolStallMapWidget from "../../../components/SchoolStallMapWidget";
 import SubmitStallReportModal from "../../../components/SubmitStallReportModal";
+import SubmitPetitionReportModal from "../../../components/SubmitPetitionReportModal";
 import {
     FileText,
     Users,
@@ -82,6 +83,7 @@ export default function PetitionDetailClient({ initialPetition }) {
     const [captchaVerified, setCaptchaVerified] = useState(false);
     const [captchaResetTrigger, setCaptchaResetTrigger] = useState(0);
     const [isStallModalOpen, setIsStallModalOpen] = useState(false);
+    const [isPetitionReportModalOpen, setIsPetitionReportModalOpen] = useState(false);
     const [signatureStatus, setSignatureStatus] = useState({
         hasSigned: false,
         isCreator: false,
@@ -1098,6 +1100,25 @@ export default function PetitionDetailClient({ initialPetition }) {
                                     </button>
                                 </div>
                             )}
+
+                            {/* Report Objection / Takedown Request Button */}
+                            <div className="pt-3 border-t border-gray-100 text-center">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!user) {
+                                            setShowLoginModal(true);
+                                        } else {
+                                            setIsPetitionReportModalOpen(true);
+                                        }
+                                    }}
+                                    className="text-xs font-semibold text-rose-600 hover:text-rose-800 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                                    title="Report objection or guideline violation for this petition"
+                                >
+                                    <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                                    <span>Report Objection / Takedown Request</span>
+                                </button>
+                            </div>
                                     </div>
                                 </motion.div>
                             </div>
@@ -1265,7 +1286,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 <p className="font-bold text-[#1a1a2e]">Problem</p>
                             </div>
                             <div
-                                className="prose max-w-none text-gray-600 leading-relaxed font-medium"
+                                className="prose max-w-none text-[#1a1a2e]"
                                 dangerouslySetInnerHTML={{ __html: petition.petitionDetails.problem }}
                             />
                         </div>
@@ -1281,7 +1302,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 <p className="font-bold text-[#1a1a2e]">Solution</p>
                             </div>
                             <div
-                                className="prose max-w-none text-gray-600 leading-relaxed font-medium"
+                                className="prose max-w-none text-[#1a1a2e]"
                                 dangerouslySetInnerHTML={{ __html: petition.petitionDetails.solution }}
                             />
                         </div>
@@ -1879,6 +1900,17 @@ export default function PetitionDetailClient({ initialPetition }) {
                     isOpen={isStallModalOpen}
                     onClose={() => setIsStallModalOpen(false)}
                     token={typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user"))?.token || "" : ""}
+                />
+            )}
+
+            {/* Petition Objection Report Modal */}
+            {isPetitionReportModalOpen && (
+                <SubmitPetitionReportModal
+                    petitionId={petition._id}
+                    petitionTitle={petition.title}
+                    isOpen={isPetitionReportModalOpen}
+                    onClose={() => setIsPetitionReportModalOpen(false)}
+                    user={user}
                 />
             )}
         </div>

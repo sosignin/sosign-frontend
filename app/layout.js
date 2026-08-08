@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { AuthProvider } from "../context/AuthContext";
 import QueryProvider from "@/components/providers/QueryProvider";
 import ProfileGuard from "@/components/ProfileGuard";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import Script from "next/script";
 
 // Google Fonts
@@ -124,6 +125,7 @@ export default function RootLayout({ children }) {
             <ProfileGuard>
               <Navbar />
               <main className="flex-grow">{children}</main>
+              <FloatingWhatsApp />
               <Footer />
             </ProfileGuard>
           </QueryProvider>
