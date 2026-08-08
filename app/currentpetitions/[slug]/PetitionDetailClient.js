@@ -21,6 +21,7 @@ import CampaignProgress from "../../../components/CampaignProgress";
 import SchoolStallMapWidget from "../../../components/SchoolStallMapWidget";
 import SubmitStallReportModal from "../../../components/SubmitStallReportModal";
 import SubmitPetitionReportModal from "../../../components/SubmitPetitionReportModal";
+import ClaimRequestedSignatureModal from "../../../components/ClaimRequestedSignatureModal";
 import {
     FileText,
     Users,
@@ -84,6 +85,8 @@ export default function PetitionDetailClient({ initialPetition }) {
     const [captchaResetTrigger, setCaptchaResetTrigger] = useState(0);
     const [isStallModalOpen, setIsStallModalOpen] = useState(false);
     const [isPetitionReportModalOpen, setIsPetitionReportModalOpen] = useState(false);
+    const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+    const [selectedClaimSigner, setSelectedClaimSigner] = useState(null);
     const [signatureStatus, setSignatureStatus] = useState({
         hasSigned: false,
         isCreator: false,
@@ -1195,15 +1198,25 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 {petition.requestedSignersStatus.map((signer) => (
                                     <div 
                                         key={signer._id} 
-                                        className={`flex flex-col justify-between p-4 rounded-xl border transition-all duration-300 ${
+                                        onClick={() => {
+                                            if (!signer.hasSigned) {
+                                                if (!user) {
+                                                    setShowLoginModal(true);
+                                                } else {
+                                                    setSelectedClaimSigner(signer);
+                                                    setIsClaimModalOpen(true);
+                                                }
+                                            }
+                                        }}
+                                        className={`flex flex-col justify-between p-4 rounded-xl border transition-all duration-300 group ${
                                             signer.hasSigned 
                                                 ? "bg-green-50/50 border-green-200 hover:border-green-300 shadow-xs" 
-                                                : "bg-gray-50 border-gray-150 hover:bg-gray-100/50"
+                                                : "bg-gradient-to-br from-slate-50 to-blue-50/30 border-gray-200 hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
                                         }`}
                                     >
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
-                                                <p className="font-bold text-gray-900 truncate text-sm md:text-base">{signer.name}</p>
+                                                <p className="font-bold text-gray-900 truncate text-sm md:text-base group-hover:text-blue-900 transition-colors">{signer.name}</p>
                                                 {signer.designation && (
                                                     <p className="text-xs text-gray-500 font-medium mt-0.5 truncate">{signer.designation}</p>
                                                 )}
@@ -1213,11 +1226,18 @@ export default function PetitionDetailClient({ initialPetition }) {
                                                     <CheckCircle className="w-2.5 h-2.5" /> Signed
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 shrink-0">
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 shrink-0 group-hover:bg-blue-100 group-hover:text-blue-800 transition-colors">
                                                     <Clock className="w-2.5 h-2.5 animate-pulse" /> Pending
                                                 </span>
                                             )}
                                         </div>
+
+                                        {!signer.hasSigned && (
+                                            <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px] font-bold text-blue-600 group-hover:text-blue-800 transition-colors">
+                                                <span>Verify & Claim Signature</span>
+                                                <span className="text-blue-500 font-extrabold group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+                                            </div>
+                                        )}
 
                                         {signer.hasSigned && signer.signedBy && (
                                             <div className="mt-4 pt-3 border-t border-green-100 flex items-center gap-2.5">
@@ -1911,6 +1931,27 @@ export default function PetitionDetailClient({ initialPetition }) {
                     isOpen={isPetitionReportModalOpen}
                     onClose={() => setIsPetitionReportModalOpen(false)}
                     user={user}
+                />
+            )}
+
+            {/* Requested Signature Claim Verification Modal */}
+            {isClaimModalOpen && selectedClaimSigner && (
+                <ClaimRequestedSignatureModal
+                    petitionId={petition._id}
+                    petitionTitle={petition.title}
+                    requestedSigner={selectedClaimSigner}
+                    isOpen={isClaimModalOpen}
+                    onClose={() => {
+                        setIsClaimModalOpen(false);
+                        setSelectedClaimSigner(null);
+                    }}
+                    user={user}
+                    onSuccess={() => {
+                        // Refresh petition status
+                        if (typeof window !== "undefined") {
+                            window.location.reload();
+                        }
+                    }}
                 />
             )}
         </div>
