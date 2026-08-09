@@ -154,10 +154,11 @@ export const AuthProvider = ({ children }) => {
       }
 
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await axios.put(`${backendUrl}/api/users/profile`, formData, {
+      const response = await axios.post(`${backendUrl}/api/users/profile`, formData, {
         headers: {
           'Authorization': `Bearer ${storedUser.token}`,
           'Content-Type': 'multipart/form-data',
+          'X-HTTP-Method-Override': 'PUT',
         },
       });
 
@@ -196,12 +197,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await axios.put(`${backendUrl}/api/users/change-password`, {
+      const response = await axios.post(`${backendUrl}/api/users/change-password`, {
         currentPassword,
         newPassword
       }, {
         headers: {
           'Authorization': `Bearer ${storedUser.token}`,
+          'X-HTTP-Method-Override': 'PUT',
         },
       });
 
