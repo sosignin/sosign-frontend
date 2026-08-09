@@ -6,6 +6,7 @@ import { AuthProvider } from "../context/AuthContext";
 import QueryProvider from "@/components/providers/QueryProvider";
 import ProfileGuard from "@/components/ProfileGuard";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import VisitorTracker from "@/components/VisitorTracker";
 import Script from "next/script";
 
 // Google Fonts
@@ -121,6 +122,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrg) }}
         />
         <AuthProvider>
+          <VisitorTracker />
           <QueryProvider>
             <ProfileGuard>
               <Navbar />
