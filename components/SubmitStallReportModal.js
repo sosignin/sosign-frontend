@@ -13,6 +13,8 @@ import {
   FaCity,
 } from "react-icons/fa";
 
+import { parseGoogleLocationString } from "../utils/parseGoogleLocation";
+
 export default function SubmitStallReportModal({
   petitionId,
   isOpen,
@@ -28,6 +30,7 @@ export default function SubmitStallReportModal({
   const [description, setDescription] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   const [imageFiles, setImageFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
@@ -36,6 +39,18 @@ export default function SubmitStallReportModal({
   const [success, setSuccess] = useState("");
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  // Handle Google Maps URL, DMS coordinates, or text Paste & Auto-Extraction
+  const handleGoogleMapsUrlChange = (val) => {
+    setGoogleMapsUrl(val);
+    if (!val) return;
+
+    const coords = parseGoogleLocationString(val);
+    if (coords) {
+      setLatitude(coords.lat.toString());
+      setLongitude(coords.lng.toString());
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -197,12 +212,12 @@ export default function SubmitStallReportModal({
   const currentSchool = schools.find((s) => s._id === selectedSchoolId);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 border border-red-100 my-8">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 border border-pink-100 my-8">
         {/* Header */}
         <div className="flex items-center justify-between border-b pb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-pink-50 text-[#F43676] flex items-center justify-center">
               <FaStore className="text-xl" />
             </div>
             <div>
@@ -212,7 +227,7 @@ export default function SubmitStallReportModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-pink-50 hover:text-[#F43676] flex items-center justify-center transition-colors"
           >
             <FaTimes />
           </button>
@@ -220,14 +235,14 @@ export default function SubmitStallReportModal({
 
         {fetchingData ? (
           <div className="py-12 text-center text-gray-500">
-            <FaSpinner className="animate-spin text-2xl mb-2 text-red-600 mx-auto" />
+            <FaSpinner className="animate-spin text-2xl mb-2 text-[#F43676] mx-auto" />
             <p className="text-xs font-semibold">Loading Maharashtra cities & schools...</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-xl flex items-center gap-2">
-                <FaExclamationTriangle className="text-red-500 shrink-0" />
+              <div className="bg-pink-50 border border-pink-200 text-pink-700 text-xs p-3 rounded-xl flex items-center gap-2">
+                <FaExclamationTriangle className="text-[#F43676] shrink-0" />
                 <span>{error}</span>
               </div>
             )}
@@ -242,12 +257,12 @@ export default function SubmitStallReportModal({
             {/* City Selection */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
-                <FaCity className="text-red-500" /> Select City (Maharashtra) *
+                <FaCity className="text-[#F43676]" /> Select City (Maharashtra) *
               </label>
               <select
                 value={selectedCity}
                 onChange={(e) => setSelectedCity(e.target.value)}
-                className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 bg-white font-medium"
+                className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#F43676] bg-white font-medium"
               >
                 {cities.map((c) => (
                   <option key={c} value={c}>
@@ -260,12 +275,12 @@ export default function SubmitStallReportModal({
             {/* School Selection */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
-                <FaSchool className="text-red-500" /> Select Nearby School *
+                <FaSchool className="text-[#F43676]" /> Select Nearby School *
               </label>
               <select
                 value={selectedSchoolId}
                 onChange={(e) => handleSchoolChange(e.target.value)}
-                className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 bg-white font-medium"
+                className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#F43676] bg-white font-medium"
               >
                 {schools.map((s) => (
                   <option key={s._id} value={s._id}>
@@ -275,7 +290,7 @@ export default function SubmitStallReportModal({
               </select>
               {currentSchool && (
                 <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
-                  <FaMapMarkerAlt className="text-red-400 text-xs" />
+                  <FaMapMarkerAlt className="text-[#F43676] text-xs" />
                   Address: {currentSchool.address || currentSchool.city}
                 </p>
               )}
@@ -291,7 +306,7 @@ export default function SubmitStallReportModal({
                   value={shopName}
                   onChange={(e) => setShopName(e.target.value)}
                   placeholder="e.g. Raju Fast Food Corner"
-                  className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#F43676] bg-white text-gray-900 font-medium"
                 />
               </div>
 
@@ -302,16 +317,32 @@ export default function SubmitStallReportModal({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="e.g. Selling fried items near gate"
-                  className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#F43676] bg-white text-gray-900 font-medium"
                 />
               </div>
             </div>
 
-            {/* Coordinates / Geolocation */}
-            <div className="bg-red-50/60 border border-red-100 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <span className="text-xs font-bold text-red-900 flex items-center gap-1.5">
-                  <FaMapMarkerAlt className="text-red-600" /> Stall GPS Coordinates (Within 50m)
+            {/* Coordinates / Geolocation & Google Maps URL Auto-Extractor */}
+            <div className="bg-pink-50/60 border border-pink-100 rounded-2xl p-4 space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <FaMapMarkerAlt className="text-[#F43676]" /> Share via Google Maps Link (Optional)
+                  </span>
+                  <span className="text-[10px] text-gray-500 font-normal">Auto-extracts Lat & Lng</span>
+                </label>
+                <input
+                  type="text"
+                  value={googleMapsUrl}
+                  onChange={(e) => handleGoogleMapsUrlChange(e.target.value)}
+                  placeholder="Paste Google Maps link e.g. https://maps.google.com/?q=19.0345,72.8398"
+                  className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#F43676] bg-white text-gray-900 font-medium placeholder:text-gray-400"
+                />
+              </div>
+
+              <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-pink-100">
+                <span className="text-xs font-bold text-pink-950 flex items-center gap-1.5">
+                  <FaMapMarkerAlt className="text-[#F43676]" /> Stall GPS Coordinates (Within 50m) (Optional)
                 </span>
                 <div className="flex items-center gap-2">
                   {latitude && longitude && (
@@ -330,7 +361,7 @@ export default function SubmitStallReportModal({
                     type="button"
                     onClick={handleGetLiveLocation}
                     disabled={gpsLoading}
-                    className="text-[11px] font-bold text-red-600 hover:text-red-800 bg-white px-2.5 py-1 rounded-lg border border-red-200 shadow-sm disabled:opacity-50"
+                    className="text-[11px] font-bold text-[#F43676] hover:text-pink-800 bg-white px-2.5 py-1 rounded-lg border border-pink-200 shadow-sm disabled:opacity-50"
                   >
                     {gpsLoading ? "Locating..." : "Use My Current GPS"}
                   </button>
@@ -339,27 +370,25 @@ export default function SubmitStallReportModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] text-gray-600 font-semibold mb-1">Latitude</label>
+                  <label className="block text-[11px] text-gray-600 font-semibold mb-1">Latitude (Optional)</label>
                   <input
                     type="number"
                     step="any"
-                    required
                     value={latitude}
                     onChange={(e) => setLatitude(e.target.value)}
                     placeholder="e.g. 19.0345"
-                    className="w-full text-xs p-2.5 border border-gray-300 rounded-lg outline-none bg-white"
+                    className="w-full text-xs p-2.5 border border-gray-300 rounded-lg outline-none bg-white text-gray-900 font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-gray-600 font-semibold mb-1">Longitude</label>
+                  <label className="block text-[11px] text-gray-600 font-semibold mb-1">Longitude (Optional)</label>
                   <input
                     type="number"
                     step="any"
-                    required
                     value={longitude}
                     onChange={(e) => setLongitude(e.target.value)}
                     placeholder="e.g. 72.8398"
-                    className="w-full text-xs p-2.5 border border-gray-300 rounded-lg outline-none bg-white"
+                    className="w-full text-xs p-2.5 border border-gray-300 rounded-lg outline-none bg-white text-gray-900 font-bold"
                   />
                 </div>
               </div>
@@ -368,11 +397,11 @@ export default function SubmitStallReportModal({
             {/* Evidence Photos Upload */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
-                <FaCamera className="text-red-500" /> Evidence Photos (Max 5)
+                <FaCamera className="text-[#F43676]" /> Evidence Photos (Max 5)
               </label>
               <div className="flex gap-2 mb-2">
                 <label className="flex-1 cursor-pointer">
-                  <div className="flex items-center justify-center gap-2 text-xs p-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-red-400 hover:text-red-500 transition-colors">
+                  <div className="flex items-center justify-center gap-2 text-xs p-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-[#F43676] hover:text-[#F43676] transition-colors">
                     <FaCamera />
                     <span>{imageFiles.length >= 5 ? "Max 5 photos reached" : "Tap to select photos"}</span>
                   </div>
@@ -394,7 +423,7 @@ export default function SubmitStallReportModal({
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(i)}
-                        className="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full p-1 text-[10px]"
+                        className="absolute -top-1.5 -right-1.5 bg-[#F43676] text-white rounded-full p-1 text-[10px]"
                       >
                         <FaTimes />
                       </button>
@@ -416,7 +445,7 @@ export default function SubmitStallReportModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs rounded-xl shadow-lg hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-bold text-xs rounded-xl shadow-lg hover:from-[#e02a60] hover:to-[#c41e50] flex items-center justify-center gap-2"
               >
                 {loading ? <FaSpinner className="animate-spin text-base" /> : "Submit Report for Verification"}
               </button>
