@@ -27,6 +27,12 @@ const categoryLabels = {
 };
 
 
+// Helper function to strip HTML tags for card excerpts
+const stripHtml = (html) => {
+  if (!html) return "";
+  return html.replace(/<[^>]*>?/gm, "").replace(/\s+/g, " ").trim();
+};
+
 // Tags - mapped to categories
 const tags = [
   "Animals",
@@ -505,8 +511,7 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
 
                           {/* Description */}
                           <p className="text-[#302d55] text-base mb-5 leading-relaxed line-clamp-3">
-                            {petition.petitionDetails?.problem?.substring(0, 200)}
-                            {petition.petitionDetails?.problem?.length > 200 ? "..." : ""}
+                            {stripHtml(petition.petitionDetails?.problem || petition.petitionDetails?.solution)}
                           </p>
 
                           {/* Author Info */}

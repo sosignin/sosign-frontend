@@ -32,6 +32,12 @@ const defaultTopStories = [
   },
 ];
 
+// Helper function to strip HTML tags for card excerpts
+const stripHtml = (html) => {
+  if (!html) return "";
+  return html.replace(/<[^>]*>?/gm, "").replace(/\s+/g, " ").trim();
+};
+
 // Helper function to format date
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -278,7 +284,7 @@ export default function Banner({ initialPetitions = [] }) {
         image: petition.petitionDetails?.image || `https://picsum.photos/seed/${petition._id}/800/600`,
         categories: extractCategories(petition),
         title: petition.title,
-        description: petition.petitionDetails?.problem || petition.petitionDetails?.solution || "Support this important cause by signing the petition.",
+        description: stripHtml(petition.petitionDetails?.problem || petition.petitionDetails?.solution || "Support this important cause by signing the petition."),
         date: formatDate(petition.createdAt),
         comments: `${petition.numberOfSignatures || 0} Signatures`,
         link: `/currentpetitions/${petition.slug || petition._id}`,
@@ -344,7 +350,7 @@ export default function Banner({ initialPetitions = [] }) {
             image: petition.petitionDetails?.image || `https://picsum.photos/seed/${petition._id}/800/600`,
             categories: extractCategories(petition),
             title: petition.title,
-            description: petition.petitionDetails?.problem || petition.petitionDetails?.solution || "Support this important cause by signing the petition.",
+            description: stripHtml(petition.petitionDetails?.problem || petition.petitionDetails?.solution || "Support this important cause by signing the petition."),
             date: formatDate(petition.createdAt),
             comments: `${petition.numberOfSignatures || 0} Signatures`,
             link: `/currentpetitions/${petition.slug || petition._id}`,
@@ -612,7 +618,7 @@ export default function Banner({ initialPetitions = [] }) {
 
                   {/* Description */}
                   <p className="text-[#302d55] text-sm sm:text-base mb-4 sm:mb-5 leading-relaxed line-clamp-3">
-                    {heroSlides[currentSlide]?.description}
+                    {stripHtml(heroSlides[currentSlide]?.description)}
                   </p>
 
                   {/* Continue Reading Link */}

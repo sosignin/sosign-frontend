@@ -226,8 +226,9 @@ export default function CurrentPetitions() {
                 <div className="p-4 md:p-6 text-center flex-1 flex flex-col">
                   <p className="text-gray-700 text-sm md:text-base mb-3 line-clamp-3 flex-1">
                     &quot;
-                    {petition.petitionDetails?.problem?.substring(0, 100) ||
-                      petition.title}
+                    {(petition.petitionDetails?.problem
+                      ? petition.petitionDetails.problem.replace(/<[^>]*>?/gm, "").replace(/\s+/g, " ").trim()
+                      : "") || petition.title}
                     &quot;
                   </p>
                   <div className="mt-auto">
