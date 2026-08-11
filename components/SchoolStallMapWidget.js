@@ -14,6 +14,8 @@ import {
   FaShieldAlt,
   FaSearch,
   FaLayerGroup,
+  FaBullhorn,
+  FaInfoCircle,
 } from "react-icons/fa";
 
 import AddSchoolModal from "./AddSchoolModal";
@@ -43,6 +45,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
   const [isAddSchoolModalOpen, setIsAddSchoolModalOpen] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // 'all', 'violated', 'clear'
 
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -264,8 +267,8 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
             color: hasViolation ? "#F43676" : "#10b981",
             fillColor: hasViolation ? "#F43676" : "#10b981",
             fillOpacity: hasViolation ? 0.25 : 0.12,
-            weight: hasViolation ? 2 : 1.5,
-            dashArray: hasViolation ? "6, 6" : null,
+            weight: hasViolation ? 2.5 : 1.5,
+            dashArray: hasViolation ? "6, 6" : undefined,
           });
           geofenceCircle.bindTooltip(
             `50m Buffer Zone: ${school.name} (${hasViolation ? "🚨 Violation Detected" : "✓ Clear"})`,
@@ -273,39 +276,37 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
           );
           markersGroupRef.current.addLayer(geofenceCircle);
 
-          // 2. Custom School Marker Icon
-          const iconHtml = hasViolation
-            ? `<div style="position:relative; width:38px; height:38px; background:#F43676; border:2px solid #ffffff; border-radius:50%; display:flex; align-items:center; justify-center; color:white; font-size:18px; box-shadow:0 0 18px rgba(244,54,118,0.9);">
+          // 2. Custom HTML Marker Pin for School
+          const schoolIconHtml = `
+            <div style="position:relative; display:flex; align-items:center; justify-content:center;">
+              <div style="width:36px; height:36px; background:${hasViolation ? "linear-gradient(135deg, #F43676, #e02a60)" : "linear-gradient(135deg, #3B82F6, #1D4ED8)"}; border:2.5px solid #ffffff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:16px; box-shadow:0 4px 12px ${hasViolation ? "rgba(244,54,118,0.5)" : "rgba(59,130,246,0.4)"}; cursor:pointer;">
                 🏫
-                <span style="position:absolute; top:-2px; right:-2px; width:12px; height:12px; background:#F43676; border-radius:50%; border:2px solid #ffffff; animation:ping 1.5s infinite;"></span>
-               </div>`
-            : `<div style="position:relative; width:32px; height:32px; background:#16a34a; border:2px solid #ffffff; border-radius:50%; display:flex; align-items:center; justify-center; color:white; font-size:14px; box-shadow:0 0 10px rgba(22,163,74,0.6);">
-                🏫
-               </div>`;
-
-          const customIcon = window.L.divIcon({
-            html: iconHtml,
-            className: "custom-school-marker",
-            iconSize: [38, 38],
-            iconAnchor: [19, 19],
-          });
-
-          const popupContent = `
-            <div style="padding:8px; font-family: system-ui, sans-serif; max-width:240px; color:#0f172a;">
-              <h4 style="margin:0 0 4px 0; font-size:13px; font-weight:800; color:#0f172a;">${school.name}</h4>
-              <p style="margin:0 0 6px 0; font-size:11px; color:#64748b;">${school.address || school.city}</p>
-              <div style="margin-bottom:6px; font-size:10px; font-weight:700; color:#F43676; background:#fdf2f8; padding:3px 6px; border-radius:6px; display:inline-block;">
-                🎯 Protected 50m Geofence Active
               </div>
               ${
                 hasViolation
-                  ? `<div style="background:#fdf2f8; border:1px solid #F43676; padding:6px 8px; border-radius:8px; font-size:11px; font-weight:700; color:#be123c;">
-                      🚨 50m Violation! Stall: <strong>${schoolReports[0].shopName}</strong> (${schoolReports[0].distanceFromSchoolMeters}m away)
-                     </div>`
-                  : `<div style="background:#dcfce7; border:1px solid #22c55e; padding:6px 8px; border-radius:8px; font-size:11px; font-weight:700; color:#15803d;">
-                      ✓ Clear (No Violation)
-                     </div>`
+                  ? `<span style="position:absolute; top:-4px; right:-4px; width:12px; height:12px; background:#F43676; border:2px solid #ffffff; border-radius:50%; animation:ping 1.5s infinite;"></span>`
+                  : ""
               }
+            </div>
+          `;
+
+          const customIcon = window.L.divIcon({
+            html: schoolIconHtml,
+            className: "custom-school-marker",
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+          });
+
+          const popupContent = `
+            <div style="padding:10px; font-family: system-ui, sans-serif; max-width:240px; color:#0f172a;">
+              <span style="background:${hasViolation ? "#ffe4e6" : "#d1fae5"}; color:${hasViolation ? "#be123c" : "#065f46"}; font-size:10px; font-weight:800; padding:2px 8px; border-radius:999px; text-transform:uppercase; display:inline-block; margin-bottom:6px;">
+                ${hasViolation ? "🚨 50m Violation Detected" : "🛡️ Clean School Zone"}
+              </span>
+              <h3 style="margin:0 0 4px 0; font-size:14px; font-weight:800; color:#0f172a; line-height:1.3;">${school.name}</h3>
+              <p style="margin:0 0 6px 0; font-size:11px; color:#64748b;">${school.address || school.city}</p>
+              <div style="font-size:11px; font-weight:700; color:#F43676; background:#fff1f2; padding:6px; border-radius:8px; border:1px solid #fecdd3;">
+                Strict 50m Buffer Zone Active
+              </div>
             </div>
           `;
 
@@ -319,7 +320,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
 
           markersGroupRef.current.addLayer(marker);
 
-          // 3. Plot Reported Food Stall Markers & Connecting Geofence Lines inside 50m zone
+          // 3. Plot Reported Food Stall Markers
           if (hasViolation) {
             schoolReports.forEach((report) => {
               if (!report.location?.coordinates) return;
@@ -327,7 +328,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
               const stallLat = report.location.coordinates[1];
 
               // Food Stall Pin Marker inside 50m Geofence
-              const stallIconHtml = `<div style="position:relative; width:32px; height:32px; background:#e02a60; border:2px solid #ffffff; border-radius:50%; display:flex; align-items:center; justify-center; color:white; font-size:15px; box-shadow:0 0 14px rgba(224,42,96,0.9); cursor:pointer;">
+              const stallIconHtml = `<div style="position:relative; width:32px; height:32px; background:#e02a60; border:2px solid #ffffff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:15px; box-shadow:0 0 14px rgba(224,42,96,0.9); cursor:pointer;">
                 🏪
               </div>`;
 
@@ -369,40 +370,52 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
             });
           }
         });
-      } else if (mapInstanceRef.current.panTo) {
-        // Mappls SDK native methods
-        mapInstanceRef.current.panTo({ lat: targetCenter[0], lng: targetCenter[1] });
-        if (mapInstanceRef.current.setZoom) mapInstanceRef.current.setZoom(targetZoom);
       }
     } catch (err) {
       console.warn("Map rendering exception:", err);
     }
   }, [mapLoaded, selectedCity, schools, approvedReports]);
 
-  // Filter schools by search query
-  const filteredSchools = schools.filter(
-    (s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.address && s.address.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Compute school stats
+  const schoolsWithViolations = schools.filter((school) =>
+    approvedReports.some(
+      (r) => r.schoolId?._id === school._id || r.schoolId === school._id
+    )
   );
+  const cleanSchoolsCount = schools.length - schoolsWithViolations.length;
+
+  // Filter schools by search query and status filter
+  const filteredSchools = schools.filter((s) => {
+    const matchesSearch =
+      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.address && s.address.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const hasViolation = approvedReports.some(
+      (r) => r.schoolId?._id === s._id || r.schoolId === s._id
+    );
+
+    if (statusFilter === "violated") return matchesSearch && hasViolation;
+    if (statusFilter === "clear") return matchesSearch && !hasViolation;
+    return matchesSearch;
+  });
 
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl text-gray-900 border border-pink-100/90 space-y-6">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-pink-100 pb-5">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-50 border border-pink-200 text-[#F43676] text-xs font-extrabold mb-2">
-            <span className="relative flex h-2 w-2">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-pink-50 border border-pink-200 text-[#F43676] text-xs font-extrabold mb-2 shadow-xs">
+            <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F43676] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F43676]"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#F43676]"></span>
             </span>
-            Live 50m School Buffer Zone Monitor (Mappls Maps SDK)
+            Official Child Protection 50m Radius Monitor &bull; Powered by Mappls Maps
           </div>
           <h2 className="text-xl md:text-2xl font-black tracking-tight text-gray-900 flex items-center gap-2">
-            <FaShieldAlt className="text-[#F43676]" /> Maharashtra School Violation Map
+            <FaShieldAlt className="text-[#F43676]" /> Maharashtra School Violation & Buffer Zone Map
           </h2>
           <p className="text-xs text-gray-500 mt-0.5 font-medium">
-            Identify and remove illegal junk food stalls within 50 meters of school entrances using Mappls Live Location Engine.
+            Enforcing COTPA & FSSAI Guidelines to eradicate illegal tobacco and junk food stalls within 50 meters of school entrances.
           </p>
         </div>
 
@@ -427,10 +440,57 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         </div>
       </div>
 
+      {/* Campaign Purpose & Motive Box */}
+      <div className="bg-gradient-to-r from-pink-50/80 via-white to-pink-50/40 p-4 sm:p-5 rounded-2xl border border-pink-100/90 text-xs text-gray-700 space-y-2.5">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2 text-pink-950 font-black text-xs md:text-sm">
+            <FaBullhorn className="text-[#F43676] text-base" />
+            <span>Why This Map Exists & Human Impact Objective</span>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-pink-100 text-[#F43676] font-extrabold text-[10px] uppercase">
+            Legal Safety Buffer: 50 Meters
+          </span>
+        </div>
+        <p className="leading-relaxed text-gray-600 font-medium">
+          Under national health regulations (COTPA & FSSAI guidelines), selling junk food, tobacco, or unhygienic snacks within <strong>50 meters of educational institution entrances</strong> is prohibited. This live interactive GIS map lets citizens, parents, and signers inspect school locations across Maharashtra, monitor active 50-meter geofenced buffer circles, and submit geo-tagged photo evidence of violations to trigger administrative enforcement actions.
+        </p>
+      </div>
+
+      {/* Campaign Stat Metric Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-pink-50/40 p-3.5 rounded-2xl border border-pink-100 text-center space-y-1">
+          <span className="text-2xl font-black text-gray-900">{schools.length}</span>
+          <span className="block text-[11px] font-bold text-gray-600 flex items-center justify-center gap-1">
+            <FaSchool className="text-[#F43676]" /> Monitored Schools
+          </span>
+        </div>
+
+        <div className="bg-rose-50/60 p-3.5 rounded-2xl border border-rose-200 text-center space-y-1">
+          <span className="text-2xl font-black text-rose-600">{approvedReports.length}</span>
+          <span className="block text-[11px] font-bold text-rose-800 flex items-center justify-center gap-1">
+            <FaExclamationTriangle className="text-rose-500" /> Active 50m Violations
+          </span>
+        </div>
+
+        <div className="bg-emerald-50/50 p-3.5 rounded-2xl border border-emerald-200 text-center space-y-1">
+          <span className="text-2xl font-black text-emerald-700">{cleanSchoolsCount}</span>
+          <span className="block text-[11px] font-bold text-emerald-800 flex items-center justify-center gap-1">
+            <FaCheckCircle className="text-emerald-600" /> Safe School Zones
+          </span>
+        </div>
+
+        <div className="bg-indigo-50/40 p-3.5 rounded-2xl border border-indigo-100 text-center space-y-1">
+          <span className="text-2xl font-black text-indigo-900">{cities.length || 7}</span>
+          <span className="block text-[11px] font-bold text-indigo-700 flex items-center justify-center gap-1">
+            <FaCity className="text-indigo-500" /> Cities Mapped
+          </span>
+        </div>
+      </div>
+
       {/* City Filter & Search Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-pink-50/50 p-3.5 rounded-2xl border border-pink-100/80">
         <div className="flex items-center gap-2 text-xs font-extrabold text-gray-700 shrink-0">
-          <FaCity className="text-[#F43676]" /> State / City:
+          <FaCity className="text-[#F43676]" /> Select City:
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 flex-1">
@@ -472,15 +532,40 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         </div>
       </div>
 
+      {/* Interactive Map Visual Legend Bar */}
+      <div className="bg-gray-50/80 p-3 rounded-2xl border border-gray-200/80 flex flex-wrap items-center justify-between gap-3 text-[11px]">
+        <div className="flex items-center gap-1.5 font-bold text-gray-800">
+          <FaInfoCircle className="text-[#F43676]" /> Map Symbol Legend:
+        </div>
+        <div className="flex flex-wrap items-center gap-4 text-gray-600 font-medium">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-blue-600 inline-block border border-white"></span>
+            <span>School Entrance</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-[#F43676] inline-block border border-white"></span>
+            <span>School with Violation</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="text-xs">🏪</span>
+            <span>Illegal Food/Tobacco Stall</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-dashed border-[#F43676] bg-pink-100/50 inline-block"></span>
+            <span>50m Geofenced Buffer Zone</span>
+          </span>
+        </div>
+      </div>
+
       {/* Mappls Interactive Canvas */}
       <div className="relative z-0 isolate rounded-2xl overflow-hidden border border-pink-200 shadow-md bg-pink-50/20 min-h-[350px]">
         {/* Map Header Status Tag */}
-        <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-pink-200 text-[11px] font-extrabold text-gray-800 flex items-center gap-2 shadow-md">
+        <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-pink-200 text-[11px] font-extrabold text-gray-800 flex items-center gap-2 shadow-md">
           <FaLayerGroup className="text-[#F43676] text-xs" />
           <span>
             {selectedCity
-              ? `Mappls View: ${selectedCity} (${filteredSchools.length} Schools)`
-              : `Mappls View: Maharashtra State Level (${filteredSchools.length} Schools)`}
+              ? `Mappls GIS View: ${selectedCity} (${filteredSchools.length} Schools)`
+              : `Mappls GIS View: Maharashtra State Level (${filteredSchools.length} Schools)`}
           </span>
         </div>
 
@@ -500,6 +585,38 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         )}
       </div>
 
+      {/* 4-Step Citizen Action Guide */}
+      <div className="bg-pink-50/30 p-4 rounded-2xl border border-pink-100 space-y-3">
+        <h4 className="text-xs font-extrabold text-gray-900 flex items-center gap-1.5 uppercase tracking-wider">
+          <FaBullhorn className="text-[#F43676]" /> How You Can Protect School Zones (4 Steps)
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="bg-white p-3 rounded-xl border border-pink-100/80 space-y-1">
+            <span className="text-[10px] font-black bg-pink-100 text-[#F43676] px-2 py-0.5 rounded-full">Step 1</span>
+            <p className="font-bold text-gray-900 text-xs">Find Your School</p>
+            <p className="text-[11px] text-gray-500">Select city or type school name in the search filter.</p>
+          </div>
+
+          <div className="bg-white p-3 rounded-xl border border-pink-100/80 space-y-1">
+            <span className="text-[10px] font-black bg-pink-100 text-[#F43676] px-2 py-0.5 rounded-full">Step 2</span>
+            <p className="font-bold text-gray-900 text-xs">Inspect 50m Radius</p>
+            <p className="text-[11px] text-gray-500">Check the enforced 50m buffer circle around the entrance.</p>
+          </div>
+
+          <div className="bg-white p-3 rounded-xl border border-pink-100/80 space-y-1">
+            <span className="text-[10px] font-black bg-pink-100 text-[#F43676] px-2 py-0.5 rounded-full">Step 3</span>
+            <p className="font-bold text-gray-900 text-xs">Submit Evidence</p>
+            <p className="text-[11px] text-gray-500">Click &apos;Report Junk Food Stall&apos; with photos or Google link.</p>
+          </div>
+
+          <div className="bg-white p-3 rounded-xl border border-pink-100/80 space-y-1">
+            <span className="text-[10px] font-black bg-pink-100 text-[#F43676] px-2 py-0.5 rounded-full">Step 4</span>
+            <p className="font-bold text-gray-900 text-xs">Legal Enforcement</p>
+            <p className="text-[11px] text-gray-500">Admin verifies report & files notice to municipal authority.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Visual School Cards & Violation List */}
       {loading ? (
         <div className="py-10 text-center text-gray-400 space-y-2">
@@ -508,10 +625,40 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         </div>
       ) : (
         <div className="space-y-4">
-          <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
-            <FaSchool className="text-[#F43676]" />
-            <span>Schools in {selectedCity || "Maharashtra"} ({filteredSchools.length})</span>
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
+              <FaSchool className="text-[#F43676]" />
+              <span>Schools in {selectedCity || "Maharashtra"} ({filteredSchools.length})</span>
+            </h3>
+
+            {/* School Filter Buttons */}
+            <div className="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-xl text-xs font-bold">
+              <button
+                onClick={() => setStatusFilter("all")}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  statusFilter === "all" ? "bg-white text-gray-900 shadow-xs" : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                All ({schools.length})
+              </button>
+              <button
+                onClick={() => setStatusFilter("violated")}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  statusFilter === "violated" ? "bg-rose-600 text-white shadow-xs" : "text-rose-600 hover:bg-rose-50"
+                }`}
+              >
+                🚨 Violations ({schoolsWithViolations.length})
+              </button>
+              <button
+                onClick={() => setStatusFilter("clear")}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  statusFilter === "clear" ? "bg-emerald-600 text-white shadow-xs" : "text-emerald-700 hover:bg-emerald-50"
+                }`}
+              >
+                🛡️ Safe ({cleanSchoolsCount})
+              </button>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredSchools.map((school) => {
@@ -566,7 +713,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                        <FaCheckCircle className="text-[10px]" /> Clear
+                        <FaCheckCircle className="text-[10px]" /> Clear Zone
                       </span>
                     )}
                   </div>
@@ -675,21 +822,17 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
           </div>
         </div>
       )}
-      {/* Add Missing City / School Modal for Signers */}
-      {isAddSchoolModalOpen && (
-        <AddSchoolModal
-          isOpen={isAddSchoolModalOpen}
-          onClose={() => setIsAddSchoolModalOpen(false)}
-          existingCities={cities}
-          onSuccess={() => {
-            // Refresh cities list after submitting request
-            fetch(`${backendUrl}/api/stall-reports/cities`)
-              .then((res) => res.json())
-              .then((data) => setCities(data.cities || []))
-              .catch((err) => console.error(err));
-          }}
-        />
-      )}
+
+      {/* Add School Modal */}
+      <AddSchoolModal
+        isOpen={isAddSchoolModalOpen}
+        onClose={() => setIsAddSchoolModalOpen(false)}
+        existingCities={cities}
+        onSuccess={() => {
+          fetchCities();
+          fetchSchools(selectedCity);
+        }}
+      />
     </div>
   );
 }
