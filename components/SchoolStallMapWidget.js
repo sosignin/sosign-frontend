@@ -47,11 +47,115 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // 'all', 'violated', 'clear'
 
+  // Location Search & Geocoding states
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersGroupRef = useRef(null);
+  const searchedMarkerRef = useRef(null);
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  // Active Location Geocoding & Map Centering Handler
+  const handleLocationSearch = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!searchQuery || !searchQuery.trim()) return;
+
+    const q = searchQuery.trim();
+    setIsSearching(true);
+    setSearchResults([]);
+
+    // 1. Check if query matches any school in local loaded data
+    const matchedSchool = schools.find(
+      (s) =>
+        s.name.toLowerCase().includes(q.toLowerCase()) ||
+        (s.address && s.address.toLowerCase().includes(q.toLowerCase()))
+    );
+
+    if (matchedSchool && matchedSchool.location?.coordinates) {
+      const lng = matchedSchool.location.coordinates[0];
+      const lat = matchedSchool.location.coordinates[1];
+      if (mapInstanceRef.current) {
+        if (mapInstanceRef.current.setView) {
+          mapInstanceRef.current.setView([lat, lng], 16);
+        } else if (mapInstanceRef.current.panTo) {
+          mapInstanceRef.current.panTo({ lat, lng });
+        }
+      }
+      setIsSearching(false);
+      return;
+    }
+
+    // 2. Perform OpenStreetMap / Nominatim Geocoding for ANY city, area or landmark in Maharashtra/India
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          q + ", Maharashtra, India"
+        )}&limit=5`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          setSearchResults(data);
+          const top = data[0];
+          const lat = parseFloat(top.lat);
+          const lon = parseFloat(top.lon);
+
+          if (mapInstanceRef.current && mapInstanceRef.current.setView) {
+            mapInstanceRef.current.setView([lat, lon], 15);
+
+            if (window.L) {
+              if (searchedMarkerRef.current) {
+                mapInstanceRef.current.removeLayer(searchedMarkerRef.current);
+              }
+              const searchIconHtml = `<div style="background:#F43676; color:white; font-size:16px; padding:6px; border-radius:50%; border:2px solid #ffffff; box-shadow:0 0 14px rgba(244,54,118,0.9); cursor:pointer;">📍</div>`;
+              const searchIcon = window.L.divIcon({
+                html: searchIconHtml,
+                className: "custom-search-pin",
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+              });
+              searchedMarkerRef.current = window.L.marker([lat, lon], { icon: searchIcon })
+                .bindPopup(`<div style="padding:6px; font-family:system-ui; font-size:11px; font-weight:700;"><b style="color:#F43676;">📍 Searched Location</b><br/>${top.display_name}</div>`)
+                .addTo(mapInstanceRef.current)
+                .openPopup();
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Geocoding search failed:", err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const selectSearchResult = (item) => {
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+    if (mapInstanceRef.current && mapInstanceRef.current.setView) {
+      mapInstanceRef.current.setView([lat, lon], 16);
+      if (window.L) {
+        if (searchedMarkerRef.current) {
+          mapInstanceRef.current.removeLayer(searchedMarkerRef.current);
+        }
+        const searchIconHtml = `<div style="background:#F43676; color:white; font-size:16px; padding:6px; border-radius:50%; border:2px solid #ffffff; box-shadow:0 0 14px rgba(244,54,118,0.9); cursor:pointer;">📍</div>`;
+        const searchIcon = window.L.divIcon({
+          html: searchIconHtml,
+          className: "custom-search-pin",
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+        searchedMarkerRef.current = window.L.marker([lat, lon], { icon: searchIcon })
+          .bindPopup(`<div style="padding:6px; font-family:system-ui; font-size:11px; font-weight:700;"><b style="color:#F43676;">📍 Selected Location</b><br/>${item.display_name}</div>`)
+          .addTo(mapInstanceRef.current)
+          .openPopup();
+      }
+    }
+    setSearchResults([]);
+  };
 
   // Load Mappls SDK and Leaflet
   useEffect(() => {
@@ -310,7 +414,16 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
             </div>
           `;
 
-          const marker = window.L.marker([lat, lng], { icon: customIcon }).bindPopup(popupContent);
+          const marker = window.L.marker([lat, lng], { icon: customIcon, title: school.name })
+            .bindPopup(popupContent)
+            .bindTooltip(
+              `<div style="font-family: system-ui, sans-serif; font-weight:800; font-size:12px; color:#0f172a; padding:2px 6px; white-space:nowrap;">🏫 ${school.name}</div>`,
+              {
+                direction: "top",
+                offset: [0, -18],
+                sticky: true,
+              }
+            );
 
           if (hasViolation) {
             marker.on("click", () => {
@@ -347,7 +460,16 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
                 </div>
               `;
 
-              const stallMarker = window.L.marker([stallLat, stallLng], { icon: stallIcon }).bindPopup(stallPopupContent);
+              const stallMarker = window.L.marker([stallLat, stallLng], { icon: stallIcon, title: report.shopName })
+                .bindPopup(stallPopupContent)
+                .bindTooltip(
+                  `<div style="font-family: system-ui, sans-serif; font-weight:800; font-size:11px; color:#be123c; padding:2px 4px; white-space:nowrap;">🏪 ${report.shopName} (${report.distanceFromSchoolMeters}m)</div>`,
+                  {
+                    direction: "top",
+                    offset: [0, -16],
+                    sticky: true,
+                  }
+                );
               stallMarker.on("click", () => {
                 setSelectedReportModal(report);
               });
@@ -520,16 +642,50 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
           ))}
         </div>
 
-        <div className="relative shrink-0 w-full md:w-56 mt-2 md:mt-0">
-          <FaSearch className="absolute left-3 top-3 text-gray-400 text-xs" />
-          <input
-            type="text"
-            placeholder="Search school name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs pl-8 pr-3 py-2 bg-white border border-gray-200/90 rounded-xl outline-none text-gray-900 font-medium focus:border-[#F43676] focus:ring-2 focus:ring-pink-100 transition-colors placeholder:text-gray-400"
-          />
-        </div>
+        <form
+          onSubmit={handleLocationSearch}
+          className="relative shrink-0 w-full md:w-72 mt-2 md:mt-0"
+        >
+          <div className="relative flex items-center">
+            <FaSearch className="absolute left-3 text-gray-400 text-xs" />
+            <input
+              type="text"
+              placeholder="Search any school, area or city..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (searchResults.length > 0) setSearchResults([]);
+              }}
+              className="w-full text-xs pl-8 pr-16 py-2.5 bg-white border border-gray-200/90 rounded-xl outline-none text-gray-900 font-medium focus:border-[#F43676] focus:ring-2 focus:ring-pink-100 transition-colors placeholder:text-gray-400 shadow-sm"
+            />
+            <button
+              type="submit"
+              disabled={isSearching || !searchQuery.trim()}
+              className="absolute right-1 px-2.5 py-1.5 bg-[#F43676] hover:bg-pink-700 text-white rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              {isSearching ? <FaSpinner className="animate-spin text-xs" /> : "Go"}
+            </button>
+          </div>
+
+          {/* Live Search Suggestions Dropdown */}
+          {searchResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-pink-100 py-1 z-50 max-h-48 overflow-y-auto">
+              <div className="px-3 py-1 text-[10px] font-black text-pink-600 uppercase tracking-wider bg-pink-50/50">
+                📍 Location Results (Click to Pan Map)
+              </div>
+              {searchResults.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => selectSearchResult(item)}
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-pink-50 text-gray-800 transition-colors border-b border-gray-100 last:border-0 truncate block font-medium"
+                >
+                  📍 {item.display_name}
+                </button>
+              ))}
+            </div>
+          )}
+        </form>
       </div>
 
       {/* Interactive Map Visual Legend Bar */}
