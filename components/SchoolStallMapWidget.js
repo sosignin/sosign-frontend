@@ -387,21 +387,21 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
   );
 
   return (
-    <div className="bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] rounded-3xl p-6 shadow-2xl text-white border border-[#F43676]/30 space-y-6">
+    <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl text-gray-900 border border-pink-100/90 space-y-6">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F43676]/20 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-pink-100 pb-5">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F43676]/20 border border-[#F43676]/40 text-pink-300 text-xs font-bold mb-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-50 border border-pink-200 text-[#F43676] text-xs font-extrabold mb-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F43676] opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F43676]"></span>
             </span>
             Live 50m School Buffer Zone Monitor (Mappls Maps SDK)
           </div>
-          <h2 className="text-xl md:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-xl md:text-2xl font-black tracking-tight text-gray-900 flex items-center gap-2">
             <FaShieldAlt className="text-[#F43676]" /> Maharashtra School Violation Map
           </h2>
-          <p className="text-xs text-slate-300 mt-0.5">
+          <p className="text-xs text-gray-500 mt-0.5 font-medium">
             Identify and remove illegal junk food stalls within 50 meters of school entrances using Mappls Live Location Engine.
           </p>
         </div>
@@ -409,7 +409,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsAddSchoolModalOpen(true)}
-            className="px-4 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-pink-300 font-bold text-xs border border-[#F43676]/40 transition-all flex items-center justify-center gap-2 shadow-md"
+            className="px-4 py-2.5 rounded-2xl bg-white hover:bg-pink-50 text-[#F43676] font-bold text-xs border border-pink-200 transition-all flex items-center justify-center gap-2 shadow-sm"
           >
             <FaSchool className="text-sm text-[#F43676]" />
             <span>+ Request Missing City / School</span>
@@ -418,7 +418,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
           {onOpenReportModal && (
             <button
               onClick={onOpenReportModal}
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] hover:to-[#c41e50] text-white font-extrabold text-xs shadow-lg hover:shadow-pink-500/30 transition-all flex items-center justify-center gap-2 border border-pink-400/30"
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] hover:to-[#c41e50] text-white font-extrabold text-xs shadow-md shadow-pink-500/20 transition-all flex items-center justify-center gap-2 border border-pink-400/30"
             >
               <FaStore className="text-sm" />
               <span>Report Junk Food Stall</span>
@@ -428,8 +428,8 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
       </div>
 
       {/* City Filter & Search Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white/5 p-3 rounded-2xl border border-white/10">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-300 shrink-0">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-pink-50/50 p-3.5 rounded-2xl border border-pink-100/80">
+        <div className="flex items-center gap-2 text-xs font-extrabold text-gray-700 shrink-0">
           <FaCity className="text-[#F43676]" /> State / City:
         </div>
 
@@ -438,8 +438,8 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
             onClick={() => setSelectedCity("")}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
               selectedCity === ""
-                ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-md shadow-pink-900/50"
-                : "bg-slate-800/80 text-slate-300 hover:bg-slate-700"
+                ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-md shadow-pink-500/20 font-extrabold"
+                : "bg-white text-gray-700 hover:text-[#F43676] hover:bg-pink-50 border border-gray-200/80"
             }`}
           >
             All Maharashtra
@@ -451,8 +451,8 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
               onClick={() => setSelectedCity(city)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 selectedCity === city
-                  ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-md shadow-pink-900/50"
-                  : "bg-slate-800/80 text-slate-300 hover:bg-slate-700"
+                  ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-md shadow-pink-500/20 font-extrabold"
+                  : "bg-white text-gray-700 hover:text-[#F43676] hover:bg-pink-50 border border-gray-200/80"
               }`}
             >
               {city}
@@ -461,21 +461,21 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         </div>
 
         <div className="relative shrink-0 w-full md:w-56 mt-2 md:mt-0">
-          <FaSearch className="absolute left-3 top-3 text-slate-400 text-xs" />
+          <FaSearch className="absolute left-3 top-3 text-gray-400 text-xs" />
           <input
             type="text"
             placeholder="Search school name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs pl-8 pr-3 py-2 bg-slate-900/90 border border-slate-700 rounded-xl outline-none text-white focus:border-[#F43676] transition-colors"
+            className="w-full text-xs pl-8 pr-3 py-2 bg-white border border-gray-200/90 rounded-xl outline-none text-gray-900 font-medium focus:border-[#F43676] focus:ring-2 focus:ring-pink-100 transition-colors placeholder:text-gray-400"
           />
         </div>
       </div>
 
       {/* Mappls Interactive Canvas */}
-      <div className="relative z-0 isolate rounded-2xl overflow-hidden border border-[#F43676]/30 shadow-2xl bg-slate-900 min-h-[350px]">
+      <div className="relative z-0 isolate rounded-2xl overflow-hidden border border-pink-200 shadow-md bg-pink-50/20 min-h-[350px]">
         {/* Map Header Status Tag */}
-        <div className="absolute top-3 left-3 z-10 bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#F43676]/40 text-[11px] font-bold text-pink-200 flex items-center gap-2 shadow-lg">
+        <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-pink-200 text-[11px] font-extrabold text-gray-800 flex items-center gap-2 shadow-md">
           <FaLayerGroup className="text-[#F43676] text-xs" />
           <span>
             {selectedCity
@@ -488,12 +488,12 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         <div
           ref={mapRef}
           id="mappls-map-canvas"
-          className="w-full h-80 md:h-[420px] bg-slate-950 rounded-2xl"
+          className="w-full h-80 md:h-[420px] bg-slate-100 rounded-2xl"
         />
 
         {/* Fallback Overlay if SDK load is pending or in progress */}
         {!mapLoaded && (
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center text-slate-300 p-4 text-center">
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-gray-700 p-4 text-center">
             <FaSpinner className="animate-spin text-3xl text-[#F43676] mb-2" />
             <p className="text-xs font-bold">Initializing Mappls Web Maps API & State Vector Tiles...</p>
           </div>
@@ -502,13 +502,13 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
 
       {/* Visual School Cards & Violation List */}
       {loading ? (
-        <div className="py-10 text-center text-slate-400 space-y-2">
+        <div className="py-10 text-center text-gray-400 space-y-2">
           <FaSpinner className="animate-spin text-2xl text-[#F43676] mx-auto" />
           <p className="text-xs font-semibold">Fetching schools and 50m radius violation data...</p>
         </div>
       ) : (
         <div className="space-y-4">
-          <h3 className="text-sm font-extrabold text-slate-200 flex items-center gap-2">
+          <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
             <FaSchool className="text-[#F43676]" />
             <span>Schools in {selectedCity || "Maharashtra"} ({filteredSchools.length})</span>
           </h3>
@@ -523,35 +523,37 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
               return (
                 <div
                   key={school._id}
-                  className={`relative p-4 rounded-2xl border transition-all duration-300 ${
+                  className={`relative p-4.5 rounded-2xl border transition-all duration-300 ${
                     hasViolation
-                      ? "bg-gradient-to-br from-pink-950/40 via-slate-900 to-indigo-950/60 border-[#F43676]/50 shadow-lg shadow-pink-950/30"
-                      : "bg-slate-900/60 border-slate-800"
+                      ? "bg-gradient-to-br from-pink-50/90 via-white to-pink-50/40 border-pink-300 shadow-md"
+                      : "bg-white border-gray-200/80 hover:border-pink-200 shadow-sm"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <div className="relative mt-1">
+                      <div className="relative mt-0.5">
                         <div
                           className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                            hasViolation ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white" : "bg-slate-800 text-slate-300"
+                            hasViolation
+                              ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-sm shadow-pink-500/30"
+                              : "bg-emerald-50 text-emerald-600 border border-emerald-200"
                           }`}
                         >
                           <FaSchool className="text-lg" />
                         </div>
                         {hasViolation && (
-                          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F43676] opacity-90"></span>
-                            <span className="relative inline-flex rounded-full h-4 w-4 bg-[#F43676] border-2 border-slate-900"></span>
+                            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#F43676] border-2 border-white"></span>
                           </span>
                         )}
                       </div>
 
                       <div>
-                        <h4 className="font-extrabold text-white text-sm leading-snug">
+                        <h4 className="font-extrabold text-gray-900 text-sm leading-snug">
                           {school.name}
                         </h4>
-                        <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                        <p className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1 font-medium">
                           <FaMapMarkerAlt className="text-[#F43676] text-[10px]" />
                           {school.address || school.city}
                         </p>
@@ -559,27 +561,27 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
                     </div>
 
                     {hasViolation ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white uppercase tracking-wider animate-pulse shadow-md shadow-pink-900/50 shrink-0">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white uppercase tracking-wider animate-pulse shadow-sm shadow-pink-500/20 shrink-0">
                         🚨 50m Violation!
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 shrink-0">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                         <FaCheckCircle className="text-[10px]" /> Clear
                       </span>
                     )}
                   </div>
 
                   {hasViolation && (
-                    <div className="mt-3 pt-3 border-t border-[#F43676]/20 space-y-2">
-                      <p className="text-xs font-bold text-pink-200 flex items-center justify-between">
+                    <div className="mt-3 pt-3 border-t border-pink-200/60 space-y-2">
+                      <p className="text-xs font-extrabold text-gray-900 flex items-center justify-between">
                         <span>Reported Stall: {schoolReports[0].shopName}</span>
-                        <span className="text-[10px] font-extrabold bg-[#F43676] px-2 py-0.5 rounded text-white">
+                        <span className="text-[10px] font-extrabold bg-[#F43676] px-2 py-0.5 rounded-full text-white">
                           {schoolReports[0].distanceFromSchoolMeters}m Away
                         </span>
                       </p>
                       <button
                         onClick={() => setSelectedReportModal(schoolReports[0])}
-                        className="w-full text-xs font-bold bg-[#F43676]/20 hover:bg-[#F43676]/40 text-pink-200 py-1.5 rounded-xl border border-[#F43676]/40 transition-colors flex items-center justify-center gap-1"
+                        className="w-full text-xs font-bold bg-pink-50 hover:bg-pink-100 text-[#F43676] py-2 rounded-xl border border-pink-200 transition-colors flex items-center justify-center gap-1.5"
                       >
                         <span>View Verified Photos & Evidence</span>
                         <FaChevronRight className="text-[10px]" />
@@ -595,44 +597,44 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
 
       {/* Report Modal Popup for Evidence */}
       {selectedReportModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-[#F43676]/40 rounded-3xl max-w-lg w-full p-6 text-white shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+          <div className="bg-white border border-pink-100 rounded-3xl max-w-lg w-full p-6 text-gray-900 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2.5">
                 <span className="text-xl">🚨</span>
                 <div>
-                  <h3 className="font-extrabold text-white text-base">
+                  <h3 className="font-extrabold text-gray-900 text-base">
                     {selectedReportModal.shopName}
                   </h3>
-                  <p className="text-xs text-pink-300">
+                  <p className="text-xs font-bold text-[#F43676]">
                     50m School Buffer Zone Violation Verified
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedReportModal(null)}
-                className="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-pink-50 hover:text-[#F43676] flex items-center justify-center transition-colors"
               >
                 <FaTimes />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="bg-slate-800/80 p-3 rounded-2xl border border-[#F43676]/30 flex justify-between items-center">
+              <div className="bg-pink-50/60 p-3.5 rounded-2xl border border-pink-100 flex justify-between items-center">
                 <div>
-                  <span className="text-[10px] text-pink-300 uppercase font-bold">Target School</span>
-                  <p className="font-bold text-white text-sm">{selectedReportModal.schoolId?.name}</p>
+                  <span className="text-[10px] text-pink-900 uppercase font-bold">Target School</span>
+                  <p className="font-bold text-gray-900 text-sm">{selectedReportModal.schoolId?.name}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-pink-300 uppercase font-bold">Measured Distance</span>
+                  <span className="text-[10px] text-pink-900 uppercase font-bold">Measured Distance</span>
                   <p className="font-extrabold text-[#F43676] text-sm">{selectedReportModal.distanceFromSchoolMeters} Meters</p>
                 </div>
               </div>
 
               {selectedReportModal.description && (
                 <div>
-                  <span className="text-slate-400 font-semibold">Report Description:</span>
-                  <p className="text-slate-200 bg-slate-800 p-2.5 rounded-xl mt-1 italic">
+                  <span className="text-gray-600 font-semibold">Report Description:</span>
+                  <p className="text-gray-800 bg-gray-50 p-3 rounded-xl mt-1 italic border border-gray-200/80">
                     &quot;{selectedReportModal.description}&quot;
                   </p>
                 </div>
@@ -640,11 +642,11 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
 
               {selectedReportModal.images && selectedReportModal.images.length > 0 && (
                 <div>
-                  <span className="text-slate-400 font-semibold block mb-1">Evidence Photos:</span>
+                  <span className="text-gray-600 font-semibold block mb-1">Evidence Photos:</span>
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {selectedReportModal.images.map((img, i) => (
                       <a key={i} href={img} target="_blank" rel="noreferrer">
-                        <img src={img} alt="Evidence" className="w-24 h-20 object-cover rounded-xl border border-slate-700" />
+                        <img src={img} alt="Evidence" className="w-24 h-20 object-cover rounded-xl border border-gray-200 shadow-sm" />
                       </a>
                     ))}
                   </div>
@@ -656,7 +658,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
                   href={`https://www.google.com/maps?q=${selectedReportModal.location.coordinates[1]},${selectedReportModal.location.coordinates[0]}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-2.5 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] hover:to-[#c41e50] text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-pink-900/40 border border-pink-400/30"
+                  className="w-full py-3 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] hover:to-[#c41e50] text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-md shadow-pink-500/20 border border-pink-400/30"
                 >
                   <FaMapMarkerAlt className="text-sm" />
                   <span>View Stall Location on Google Maps</span>
@@ -666,7 +668,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
 
             <button
               onClick={() => setSelectedReportModal(null)}
-              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-colors"
+              className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-colors"
             >
               Close Details
             </button>

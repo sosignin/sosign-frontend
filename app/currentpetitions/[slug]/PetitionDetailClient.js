@@ -1131,8 +1131,26 @@ export default function PetitionDetailClient({ initialPetition }) {
             </div>
 
             <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
+                {/* 50m School Buffer Zone & Junk Food Stall Violation Map (Placed right below Image & Sign Box) */}
+                {petition.showSchoolStallMap && (
+                    <div className="mt-6 mb-4">
+                        <SchoolStallMapWidget
+                            petitionId={petition._id}
+                            onOpenReportModal={() => {
+                                if (!user) {
+                                    setShowLoginModal(true);
+                                } else if (!signatureStatus.hasSigned) {
+                                    alert("Please sign this petition first to submit a junk food stall report.");
+                                } else {
+                                    setIsStallModalOpen(true);
+                                }
+                            }}
+                        />
+                    </div>
+                )}
+
                 {/* Back Link & Language Switcher */}
-                <div className="flex justify-between items-center mt-6 mb-2">
+                <div className="flex justify-between items-center mt-4 mb-2">
                     {/* <Link href="/currentpetitions" className="text-gray-600 hover:text-[#F43676] transition-colors flex items-center gap-2 text-sm font-medium">
                         <ChevronLeft className="w-4 h-4" />
                         Back to Petitions
@@ -1533,23 +1551,6 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 </a>
                             )}
                         </div>
-                    )}
-                    {/* 50m School Buffer Zone & Junk Food Stall Violation Map */}
-                    {petition.showSchoolStallMap && (
-                    <div className="md:col-span-2">
-                        <SchoolStallMapWidget
-                            petitionId={petition._id}
-                            onOpenReportModal={() => {
-                                if (!user) {
-                                    setShowLoginModal(true);
-                                } else if (!signatureStatus.hasSigned) {
-                                    alert("Please sign this petition first to submit a junk food stall report.");
-                                } else {
-                                    setIsStallModalOpen(true);
-                                }
-                            }}
-                        />
-                    </div>
                     )}
 
                     {/* Petition Updates & Supporters */}
