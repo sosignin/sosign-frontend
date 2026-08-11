@@ -19,6 +19,7 @@ import {
 } from "react-icons/fa";
 
 import AddSchoolModal from "./AddSchoolModal";
+import DefendStallModal from "./DefendStallModal";
 
 const MAPPLS_ACCESS_TOKEN = "ekeihvwrzenomhffqxfvrokparwlzwkkmhjl";
 
@@ -42,6 +43,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedReportModal, setSelectedReportModal] = useState(null);
+  const [defendModalReport, setDefendModalReport] = useState(null);
   const [isAddSchoolModalOpen, setIsAddSchoolModalOpen] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -967,6 +969,18 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
                   <span>View Stall Location on Google Maps</span>
                 </a>
               )}
+
+              {/* Vendor Dispute / Defend Button */}
+              <button
+                onClick={() => {
+                  setDefendModalReport(selectedReportModal);
+                  setSelectedReportModal(null);
+                }}
+                className="w-full py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs"
+              >
+                <FaShieldAlt className="text-amber-600" />
+                <span>Stall Owner? Defend / Dispute This Report</span>
+              </button>
             </div>
 
             <button
@@ -984,6 +998,17 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         isOpen={isAddSchoolModalOpen}
         onClose={() => setIsAddSchoolModalOpen(false)}
         existingCities={cities}
+        onSuccess={() => {
+          fetchCities();
+          fetchSchools(selectedCity);
+        }}
+      />
+
+      {/* Stall Defense & Dispute Modal */}
+      <DefendStallModal
+        isOpen={!!defendModalReport}
+        onClose={() => setDefendModalReport(null)}
+        report={defendModalReport}
         onSuccess={() => {
           fetchCities();
           fetchSchools(selectedCity);
