@@ -514,8 +514,22 @@ export default function RichPetitionEditor({
         setShowLinkModal(false);
     };
 
+export const getPlainText = (html) => {
+    if (!html || typeof html !== "string") return "";
+    return html
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/<[^>]*>/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+};
+
     // Clean text calculations
-    const cleanText = htmlContent.replace(/<[^>]*>/g, "").trim();
+    const cleanText = getPlainText(htmlContent);
     const charCount = cleanText.length;
 
     // Color palettes

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import RichPetitionEditor from "@/components/RichPetitionEditor";
+import RichPetitionEditor, { getPlainText } from "@/components/RichPetitionEditor";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaYoutube,
@@ -391,8 +391,8 @@ export default function StartPetitionPage() {
     if (!rules) return { isValid: true, error: null };
 
     const rawValue = value?.toString().trim() || "";
-    const plainTextValue = (rawValue.includes("<") && rawValue.includes(">"))
-      ? rawValue.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim()
+    const plainTextValue = (rawValue.includes("<") && rawValue.includes(">")) || rawValue.includes("&")
+      ? getPlainText(rawValue)
       : rawValue;
 
     // Check required
@@ -2385,7 +2385,7 @@ export default function StartPetitionPage() {
                           </p>
                         )}
                       {(() => {
-                        const plainText = formData.problem ? formData.problem.replace(/<[^>]*>/g, "").trim() : "";
+                        const plainText = formData.problem ? getPlainText(formData.problem) : "";
                         return (
                           <p
                             className={`text-xs mt-1 text-right ${
@@ -2443,7 +2443,7 @@ export default function StartPetitionPage() {
                           </p>
                         )}
                       {(() => {
-                        const plainText = formData.solution ? formData.solution.replace(/<[^>]*>/g, "").trim() : "";
+                        const plainText = formData.solution ? getPlainText(formData.solution) : "";
                         return (
                           <p
                             className={`text-xs mt-1 text-right ${
