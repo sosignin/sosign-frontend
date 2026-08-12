@@ -390,16 +390,19 @@ export default function StartPetitionPage() {
     const rules = customRules || validationRules[fieldName];
     if (!rules) return { isValid: true, error: null };
 
-    const trimmedValue = value?.toString().trim() || "";
+    const rawValue = value?.toString().trim() || "";
+    const plainTextValue = (rawValue.includes("<") && rawValue.includes(">"))
+      ? rawValue.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim()
+      : rawValue;
 
     // Check required
-    if (rules.required && trimmedValue === "") {
+    if (rules.required && plainTextValue === "") {
       return { isValid: false, error: "This field is required" };
     }
 
     // Check for abusive words on text fields
-    if (trimmedValue !== "") {
-      const abusiveCheck = checkAbusiveContent(trimmedValue);
+    if (plainTextValue !== "") {
+      const abusiveCheck = checkAbusiveContent(plainTextValue);
       if (abusiveCheck.hasAbusive) {
         return {
           isValid: false,
@@ -409,17 +412,17 @@ export default function StartPetitionPage() {
     }
 
     // If not required and empty, it's valid
-    if (!rules.required && trimmedValue === "") {
+    if (!rules.required && plainTextValue === "") {
       return { isValid: true, error: null };
     }
 
     // Use custom validator if provided (takes priority over pattern and length checks)
     if (rules.customValidator) {
-      return rules.customValidator(trimmedValue);
+      return rules.customValidator(plainTextValue);
     }
 
     // Check min length
-    if (rules.minLength && trimmedValue.length < rules.minLength) {
+    if (rules.minLength && plainTextValue.length < rules.minLength) {
       return {
         isValid: false,
         error: `Must be at least ${rules.minLength} characters`,
@@ -427,7 +430,7 @@ export default function StartPetitionPage() {
     }
 
     // Check max length
-    if (rules.maxLength && trimmedValue.length > rules.maxLength) {
+    if (rules.maxLength && plainTextValue.length > rules.maxLength) {
       return {
         isValid: false,
         error: `Must be no more than ${rules.maxLength} characters`,
@@ -435,7 +438,7 @@ export default function StartPetitionPage() {
     }
 
     // Check pattern
-    if (rules.pattern && !rules.pattern.test(trimmedValue)) {
+    if (rules.pattern && !rules.pattern.test(plainTextValue)) {
       return { isValid: false, error: rules.message };
     }
 
@@ -2381,18 +2384,23 @@ export default function StartPetitionPage() {
                             {props.rules.example}
                           </p>
                         )}
-                      <p
-                        className={`text-xs mt-1 text-right ${
-                          formData.problem.length < 50 ? "text-orange-500"
-                          : formData.problem.length > 2000 ? "text-red-500"
-                          : "text-gray-400"
-                        }`}
-                      >
-                        {formData.problem.length}/2000 characters
-                        {formData.problem.length > 0 &&
-                          formData.problem.length < 50 &&
-                          " (minimum 50)"}
-                      </p>
+                      {(() => {
+                        const plainText = formData.problem ? formData.problem.replace(/<[^>]*>/g, "").trim() : "";
+                        return (
+                          <p
+                            className={`text-xs mt-1 text-right ${
+                              plainText.length < 50 ? "text-orange-500"
+                              : plainText.length > 2000 ? "text-red-500"
+                              : "text-gray-400"
+                            }`}
+                          >
+                            {plainText.length}/2000 characters
+                            {plainText.length > 0 &&
+                              plainText.length < 50 &&
+                              " (minimum 50)"}
+                          </p>
+                        );
+                      })()}
                     </div>
                   );
                 })()}
@@ -2434,18 +2442,23 @@ export default function StartPetitionPage() {
                             {props.rules.example}
                           </p>
                         )}
-                      <p
-                        className={`text-xs mt-1 text-right ${
-                          formData.solution.length < 30 ? "text-orange-500"
-                          : formData.solution.length > 1500 ? "text-red-500"
-                          : "text-gray-400"
-                        }`}
-                      >
-                        {formData.solution.length}/1500 characters
-                        {formData.solution.length > 0 &&
-                          formData.solution.length < 30 &&
-                          " (minimum 30)"}
-                      </p>
+                      {(() => {
+                        const plainText = formData.solution ? formData.solution.replace(/<[^>]*>/g, "").trim() : "";
+                        return (
+                          <p
+                            className={`text-xs mt-1 text-right ${
+                              plainText.length < 30 ? "text-orange-500"
+                              : plainText.length > 1500 ? "text-red-500"
+                              : "text-gray-400"
+                            }`}
+                          >
+                            {plainText.length}/1500 characters
+                            {plainText.length > 0 &&
+                              plainText.length < 30 &&
+                              " (minimum 30)"}
+                          </p>
+                        );
+                      })()}
                     </div>
                   );
                 })()}
@@ -2498,8 +2511,8 @@ export default function StartPetitionPage() {
                         <span className="text-xs text-gray-500 font-medium">Upload Photo</span>
                       </div>
 
-                      {/* AI Image Generation Button */}
-                      <button
+                      {/* AI Image Generation Button (Commented Out) */}
+                      {/* <button
                         type="button"
                         disabled={aiGeneratingImage}
                         onClick={() => {
@@ -2527,13 +2540,13 @@ export default function StartPetitionPage() {
                             <span className="text-[10px] text-purple-600 font-normal">Auto-creates banner</span>
                           </div>
                         )}
-                      </button>
+                      </button> */}
                     </>
                   )}
                 </div>
 
-                {/* AI Image prompt options & error messages */}
-                {selectedImages.length < 4 && !aiGeneratingImage && (
+                {/* AI Image prompt options & error messages (Commented Out) */}
+                {/* {selectedImages.length < 4 && !aiGeneratingImage && (
                   <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
                     <button
                       type="button"
@@ -2544,7 +2557,7 @@ export default function StartPetitionPage() {
                       Customize AI Image Prompt
                     </button>
                   </div>
-                )}
+                )} */}
 
                 {aiImageError && (
                   <p className="text-sm text-red-500 mb-3 font-semibold flex items-center gap-1.5 bg-red-50 p-2.5 rounded-lg border border-red-100">

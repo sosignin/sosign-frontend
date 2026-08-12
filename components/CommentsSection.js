@@ -200,10 +200,11 @@ const CommentsSection = ({ petitionId, petitionStarterId }) => {
       const response = await fetch(
         `${config.API_BASE_URL}/api/comments/${commentId}`,
         {
-          method: "PUT",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${userInfo.token}`,
+            "X-HTTP-Method-Override": "PUT",
           },
           body: JSON.stringify({
             content: editContent.trim(),
@@ -248,9 +249,11 @@ const CommentsSection = ({ petitionId, petitionStarterId }) => {
       const response = await fetch(
         `${config.API_BASE_URL}/api/comments/${commentId}`,
         {
-          method: "DELETE",
+          method: "POST",
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${userInfo.token}`,
+            "X-HTTP-Method-Override": "DELETE",
           },
         }
       );
@@ -293,9 +296,10 @@ const CommentsSection = ({ petitionId, petitionStarterId }) => {
       const response = await fetch(
         `${config.API_BASE_URL}/api/comments/${commentId}/like`,
         {
-          method: "PUT",
+          method: "POST",
           headers: {
             Authorization: `Bearer ${userInfo.token}`,
+            "X-HTTP-Method-Override": "PUT",
           },
         }
       );

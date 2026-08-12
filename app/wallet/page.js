@@ -36,6 +36,25 @@ export default function WalletPage() {
     const [activeRequests, setActiveRequests] = useState([]);
     const [customAmount, setCustomAmount] = useState("");
 
+    const handleOpenAddForm = (amount = null) => {
+        if (amount !== null && amount !== undefined) {
+            setAddAmount(amount.toString());
+        }
+        setShowAddForm(true);
+        setTimeout(() => {
+            const inputElement = document.getElementById("points-input") || document.getElementById("add-money-form");
+            if (inputElement) {
+                inputElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                if (inputElement.tagName === "INPUT") {
+                    inputElement.focus();
+                } else {
+                    const childInput = inputElement.querySelector("input");
+                    if (childInput) childInput.focus();
+                }
+            }
+        }, 100);
+    };
+
     // Redirect if not logged in
     useEffect(() => {
         if (!user) {
@@ -268,7 +287,7 @@ export default function WalletPage() {
                         </div>
                     </div>
                     <button
-                        onClick={() => setShowAddForm(!showAddForm)}
+                        onClick={() => handleOpenAddForm()}
                         className="w-full bg-white text-[#F43676] font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
                     >
                         <FaPlus className="text-sm" />
@@ -362,12 +381,7 @@ export default function WalletPage() {
                                             <form
                                                 onSubmit={(e) => {
                                                     e.preventDefault();
-                                                    setAddAmount(customAmount);
-                                                    setShowAddForm(true);
-                                                    setTimeout(() => {
-                                                        const formElement = document.getElementById("add-money-form");
-                                                        if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
-                                                    }, 50);
+                                                    handleOpenAddForm(customAmount);
                                                 }}
                                                 className="flex flex-col gap-2"
                                             >
@@ -409,11 +423,7 @@ export default function WalletPage() {
                                         <button
                                             onClick={() => {
                                                 if (p.key === "free") return;
-                                                setAddAmount(p.price.toString());
-                                                setShowAddForm(true);
-                                                // Scroll to recharge input dynamically
-                                                const formElement = document.querySelector('form');
-                                                if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
+                                                handleOpenAddForm(p.price);
                                             }}
                                             disabled={p.key === "free"}
                                             className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
@@ -603,6 +613,7 @@ export default function WalletPage() {
                                     ₹
                                 </span>
                                 <input
+                                    id="points-input"
                                     type="number"
                                     value={addAmount}
                                     onChange={(e) => setAddAmount(e.target.value)}

@@ -27,10 +27,11 @@ export async function PUT(request, { params }) {
     }
 
     const response = await fetch(`${API_BASE_URL}/api/comments/${id}`, {
-      method: "PUT",
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: authHeader,
+        "X-HTTP-Method-Override": "PUT",
       },
       body: JSON.stringify({ content }),
     });
@@ -70,10 +71,11 @@ export async function DELETE(request, { params }) {
     }
 
     const response = await fetch(`${API_BASE_URL}/api/comments/${id}`, {
-      method: "DELETE",
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: authHeader,
+        "X-HTTP-Method-Override": "DELETE",
       },
     });
 
