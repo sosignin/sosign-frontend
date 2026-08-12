@@ -502,6 +502,75 @@ export default function RichPetitionEditor({
         handleInput();
     };
 
+    // Custom Clear Formatting Handler
+    const clearFormatting = () => {
+        if (activeTab !== "visual" || !editorRef.current) return;
+
+        editorRef.current.focus();
+        let sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+            sel = restoreSelection();
+        }
+
+        const isSelectionValid = sel && sel.rangeCount > 0 && editorRef.current.contains(sel.getRangeAt(0).commonAncestorContainer);
+
+        if (!isSelectionValid || sel.isCollapsed) {
+            // No selection: clear inline styles from whole editor or current block
+            const currentBlock = sel && sel.rangeCount > 0 ? getParentBlock(sel.getRangeAt(0).commonAncestorContainer) : null;
+            if (currentBlock && currentBlock !== editorRef.current) {
+                currentBlock.removeAttribute("style");
+                currentBlock.querySelectorAll("*").forEach((el) => el.removeAttribute("style"));
+            } else {
+                editorRef.current.removeAttribute("style");
+                editorRef.current.querySelectorAll("*").forEach((el) => el.removeAttribute("style"));
+            }
+        } else {
+            const range = sel.getRangeAt(0);
+
+            // Execute native removeFormat first
+            document.execCommand("removeFormat", false, null);
+
+            // Process selected container to strip style attributes
+            const container = range.commonAncestorContainer.nodeType === 1 
+                ? range.commonAncestorContainer 
+                : range.commonAncestorContainer.parentNode;
+
+            const styledElems = container.querySelectorAll("[style]");
+            styledElems.forEach((el) => {
+                if (sel.containsNode(el, true)) {
+                    el.removeAttribute("style");
+                }
+            });
+
+            let parent = container;
+            while (parent && parent !== editorRef.current) {
+                if (parent.tagName === "SPAN" && parent.hasAttribute("style")) {
+                    parent.removeAttribute("style");
+                }
+                parent = parent.parentNode;
+            }
+
+            // Convert selected heading/quote blocks back to standard <p> paragraphs
+            const blocks = container.querySelectorAll("h1, h2, h3, h4, h5, h6, blockquote");
+            blocks.forEach((block) => {
+                if (sel.containsNode(block, true)) {
+                    const p = document.createElement("p");
+                    p.innerHTML = block.innerHTML;
+                    block.parentNode.replaceChild(p, block);
+                }
+            });
+        }
+
+        // Reset toolbar state indicators
+        setSelectedFont("Outfit");
+        setSelectedSize("16px");
+        setTextColor("#0f172a");
+        setBgColor("#ffffff");
+
+        saveSelection();
+        handleInput();
+    };
+
     // Insert Callout Box
     const insertCallout = () => {
         if (activeTab !== "visual") return;
@@ -840,7 +909,8 @@ export default function RichPetitionEditor({
                     {/* Clear Formatting */}
                     <button
                         type="button"
-                        onClick={() => exec("removeFormat")}
+                        onMouseDown={saveSelection}
+                        onClick={clearFormatting}
                         className="w-6 h-6 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center text-red-500 ml-auto cursor-pointer"
                         title="Clear Formatting"
                     >
