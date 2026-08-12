@@ -45,9 +45,10 @@ export async function DELETE(request, { params }) {
     const backendResponse = await fetch(
       `${config.API_BASE_URL}/api/petitions/${id}`,
       {
-        method: "DELETE",
+        method: "POST",
         headers: {
           Authorization: authHeader,
+          "X-HTTP-Method-Override": "DELETE",
         },
       }
     );
@@ -84,7 +85,11 @@ export async function PUT(request, { params }) {
     }
 
     const contentType = request.headers.get("content-type") || "";
-    const headers = { Authorization: authHeader };
+    const methodOverride = request.headers.get("x-http-method-override") || "PUT";
+    const headers = { 
+      Authorization: authHeader,
+      "X-HTTP-Method-Override": methodOverride,
+    };
     let body;
 
     if (contentType.includes("multipart/form-data")) {
@@ -108,7 +113,7 @@ export async function PUT(request, { params }) {
     const backendResponse = await fetch(
       `${config.API_BASE_URL}/api/petitions/${id}`,
       {
-        method: "PUT",
+        method: "POST",
         headers,
         body,
       }
@@ -130,4 +135,8 @@ export async function PUT(request, { params }) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request, context) {
+  return PUT(request, context);
 }

@@ -614,8 +614,11 @@ const MyPetitionsPage = () => {
       if (!successResponse.ok) throw new Error("Failed to create successful petition");
 
       await fetch(`/api/petitions/${petitionId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${userInfo.token}` },
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+          "X-HTTP-Method-Override": "DELETE",
+        },
       });
 
       setPetitions(petitions.filter((p) => p._id !== petitionId));
@@ -785,9 +788,10 @@ const MyPetitionsPage = () => {
       });
 
       const response = await fetch(`/api/petitions/${petitionId}`, {
-        method: "PUT",
+        method: "POST",
         headers: {
           Authorization: `Bearer ${userInfo.token}`,
+          "X-HTTP-Method-Override": "PUT",
         },
         body: submitData,
       });
@@ -884,10 +888,11 @@ const MyPetitionsPage = () => {
       const userInfo = JSON.parse(localStorage.getItem("user"));
 
       const response = await fetch(`/api/comments/${commentId}/approve`, {
-        method: "PUT",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${userInfo.token}`,
+          "X-HTTP-Method-Override": "PUT",
         },
       });
 
@@ -918,9 +923,10 @@ const MyPetitionsPage = () => {
       const userInfo = JSON.parse(localStorage.getItem("user"));
 
       const response = await fetch(`/api/comments/${commentId}/reject`, {
-        method: "DELETE",
+        method: "POST",
         headers: {
           Authorization: `Bearer ${userInfo.token}`,
+          "X-HTTP-Method-Override": "DELETE",
         },
       });
 

@@ -23,6 +23,76 @@ export default function RichPetitionEditor({
     const [selectedFont, setSelectedFont] = useState("Outfit");
     const [selectedSize, setSelectedSize] = useState("16px");
 
+    const savedRangeRef = useRef(null);
+
+    const findStyleSpan = (node, styleProp) => {
+        if (!node) return null;
+        let current = node.nodeType === 1 ? node : node.parentNode;
+        while (current && current !== editorRef.current) {
+            if (current.tagName === "SPAN" && current.style && current.style[styleProp]) {
+                return current;
+            }
+            current = current.parentNode;
+        }
+        return null;
+    };
+
+    const updateToolbarStateFromSelection = (range) => {
+        if (!range) return;
+        let node = range.commonAncestorContainer;
+        if (node.nodeType !== 1) node = node.parentNode;
+
+        if (node && editorRef.current && editorRef.current.contains(node)) {
+            const fontSpan = findStyleSpan(node, "fontSize");
+            if (fontSpan && fontSpan.style.fontSize) {
+                setSelectedSize(fontSpan.style.fontSize);
+            }
+            const familySpan = findStyleSpan(node, "fontFamily");
+            if (familySpan && familySpan.style.fontFamily) {
+                setSelectedFont(familySpan.style.fontFamily);
+            }
+        }
+    };
+
+    const saveSelection = () => {
+        if (typeof window === "undefined") return;
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+                savedRangeRef.current = range.cloneRange();
+                updateToolbarStateFromSelection(range);
+            }
+        }
+    };
+
+    const restoreSelection = () => {
+        if (typeof window === "undefined" || !savedRangeRef.current) return null;
+        const sel = window.getSelection();
+        if (sel) {
+            try {
+                sel.removeAllRanges();
+                sel.addRange(savedRangeRef.current);
+                return sel;
+            } catch (e) {
+                console.error("Failed to restore selection:", e);
+            }
+        }
+        return null;
+    };
+
+    const getParentBlock = (node) => {
+        if (!node) return null;
+        let current = node.nodeType === 1 ? node : node.parentNode;
+        while (current && current !== editorRef.current) {
+            if (["P", "DIV", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "LI"].includes(current.tagName)) {
+                return current;
+            }
+            current = current.parentNode;
+        }
+        return null;
+    };
+
     // Colors
     const [textColor, setTextColor] = useState("#0f172a");
     const [bgColor, setBgColor] = useState("#ffffff");
@@ -217,106 +287,205 @@ export default function RichPetitionEditor({
 
     // Rich Text Formatting Commands using document.execCommand
     const exec = (command, val = null) => {
-        if (activeTab !== "visual") return;
+        if (activeTab !== "visual" || !editorRef.current) return;
+        editorRef.current.focus();
+        restoreSelection();
         document.execCommand(command, false, val);
+        saveSelection();
         handleInput();
-        if (editorRef.current) editorRef.current.focus();
+    };
+
+    // Robust Inline Styling Applicator (Font Family, Font Size, Text Color, Background Color)
+    const applyInlineStyle = (styleProp, styleValue, stateSetter) => {
+        if (stateSetter) stateSetter(styleValue);
+        if (activeTab !== "visual" || !editorRef.current) return;
+
+        editorRef.current.focus();
+        let sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+            sel = restoreSelection();
+        }
+
+        const isSelectionValid = sel && sel.rangeCount > 0 && editorRef.current.contains(sel.getRangeAt(0).commonAncestorContainer);
+
+        if (!isSelectionValid || sel.isCollapsed) {
+            // Apply style to current block or whole editor if no text highlighted
+            const targetNode = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).commonAncestorContainer : null;
+            const existingSpan = targetNode ? findStyleSpan(targetNode, styleProp) : null;
+            
+            if (existingSpan) {
+                existingSpan.style[styleProp] = styleValue;
+            } else {
+                const currentBlock = targetNode ? getParentBlock(targetNode) : null;
+                if (currentBlock && currentBlock !== editorRef.current) {
+                    currentBlock.style[styleProp] = styleValue;
+                } else {
+                    editorRef.current.style[styleProp] = styleValue;
+                }
+            }
+            saveSelection();
+            handleInput();
+            return;
+        }
+
+        const range = sel.getRangeAt(0);
+
+        // Check if selection is already inside an existing style span
+        const parentSpan = findStyleSpan(range.commonAncestorContainer, styleProp);
+        const selectedText = range.toString().trim();
+        const parentSpanText = parentSpan ? parentSpan.textContent.trim() : "";
+
+        if (parentSpan && (selectedText === parentSpanText || parentSpan.contains(range.commonAncestorContainer))) {
+            // Directly update the style on the existing span!
+            parentSpan.style[styleProp] = styleValue;
+
+            // Clear any child spans with this style prop to prevent conflicting overrides
+            const childSpans = parentSpan.querySelectorAll("span");
+            childSpans.forEach((child) => {
+                if (child.style && child.style[styleProp]) {
+                    child.style.removeProperty(styleProp);
+                }
+            });
+
+            // Reselect parent span
+            const newRange = document.createRange();
+            newRange.selectNodeContents(parentSpan);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            saveSelection();
+            handleInput();
+            return;
+        }
+
+        // Check if range spans block-level elements
+        const fragment = range.cloneContents();
+        const hasBlocks = fragment.querySelector("p, div, h1, h2, h3, h4, blockquote, li, ul, ol");
+
+        if (hasBlocks) {
+            const container = range.commonAncestorContainer.nodeType === 1 
+                ? range.commonAncestorContainer 
+                : range.commonAncestorContainer.parentNode;
+            
+            const blocks = container.querySelectorAll("p, div, h1, h2, h3, h4, blockquote, li");
+            let modified = false;
+            blocks.forEach((block) => {
+                if (sel.containsNode(block, true)) {
+                    block.style[styleProp] = styleValue;
+                    const childSpans = block.querySelectorAll("span");
+                    childSpans.forEach((child) => {
+                        if (child.style && child.style[styleProp]) {
+                            child.style.removeProperty(styleProp);
+                        }
+                    });
+                    modified = true;
+                }
+            });
+
+            if (!modified && container.style) {
+                container.style[styleProp] = styleValue;
+            }
+        } else {
+            // Standard inline text selection: wrap selection in <span style="...">
+            try {
+                const contents = range.extractContents();
+                const span = document.createElement("span");
+                span.style[styleProp] = styleValue;
+                span.appendChild(contents);
+
+                // Clean up nested inner spans with same style property to prevent conflict
+                const innerSpans = span.querySelectorAll("span");
+                innerSpans.forEach((child) => {
+                    if (child.style && child.style[styleProp]) {
+                        child.style.removeProperty(styleProp);
+                    }
+                });
+
+                range.insertNode(span);
+
+                // Select newly wrapped span
+                const newRange = document.createRange();
+                newRange.selectNodeContents(span);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+                saveSelection();
+            } catch (e) {
+                console.error("Inline style extract error:", e);
+                const command = styleProp === "fontFamily" ? "fontName" : styleProp === "fontSize" ? "fontSize" : styleProp === "color" ? "foreColor" : "hiliteColor";
+                document.execCommand(command, false, styleValue);
+            }
+        }
+
+        handleInput();
     };
 
     // Custom Font Family change
     const applyFontFamily = (fontName) => {
-        setSelectedFont(fontName);
-        if (activeTab !== "visual" || !editorRef.current) return;
-
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-            const range = selection.getRangeAt(0);
-            const span = document.createElement("span");
-            span.style.fontFamily = fontName;
-            span.appendChild(range.extractContents());
-            range.insertNode(span);
-        } else {
-            const currentHtml = editorRef.current.innerHTML;
-            if (currentHtml.trim()) {
-                editorRef.current.innerHTML = `<div style="font-family: ${fontName}">${currentHtml}</div>`;
-            } else {
-                exec("fontName", fontName);
-            }
-        }
-        handleInput();
+        applyInlineStyle("fontFamily", fontName, setSelectedFont);
     };
 
     // Custom Font Size change
     const applyFontSize = (sizePx) => {
-        setSelectedSize(sizePx);
-        if (activeTab !== "visual" || !editorRef.current) return;
-
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-            const range = selection.getRangeAt(0);
-            const span = document.createElement("span");
-            span.style.fontSize = sizePx;
-            span.appendChild(range.extractContents());
-            range.insertNode(span);
-        } else {
-            const currentHtml = editorRef.current.innerHTML;
-            if (currentHtml.trim()) {
-                editorRef.current.innerHTML = `<div style="font-size: ${sizePx}">${currentHtml}</div>`;
-            }
-        }
-        handleInput();
+        applyInlineStyle("fontSize", sizePx, setSelectedSize);
     };
 
     // Apply Text Color
     const applyTextColor = (color) => {
-        setTextColor(color);
         setShowTextColorPicker(false);
-        if (activeTab !== "visual" || !editorRef.current) return;
-
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-            const range = selection.getRangeAt(0);
-            const span = document.createElement("span");
-            span.style.color = color;
-            span.appendChild(range.extractContents());
-            range.insertNode(span);
-        } else {
-            exec("foreColor", color);
-        }
-        handleInput();
+        applyInlineStyle("color", color, setTextColor);
     };
 
     // Apply Background / Highlight Color
     const applyBgColor = (color) => {
-        setBgColor(color);
         setShowBgColorPicker(false);
-        if (activeTab !== "visual" || !editorRef.current) return;
-
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-            const range = selection.getRangeAt(0);
-            const span = document.createElement("span");
-            span.style.backgroundColor = color;
-            span.style.padding = "2px 4px";
-            span.style.borderRadius = "4px";
-            span.appendChild(range.extractContents());
-            range.insertNode(span);
-        } else {
-            exec("hiliteColor", color);
-        }
-        handleInput();
+        applyInlineStyle("backgroundColor", color, setBgColor);
     };
 
     // Block formatting (Heading 1..4, p, blockquote)
     const applyBlockFormat = (tag) => {
-        if (activeTab !== "visual") return;
-        if (tag === "blockquote") {
-            exec("formatBlock", "blockquote");
-        } else if (tag.startsWith("h")) {
-            exec("formatBlock", tag);
-        } else {
-            exec("formatBlock", "p");
+        if (activeTab !== "visual" || !editorRef.current) return;
+
+        editorRef.current.focus();
+        let sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) {
+            sel = restoreSelection();
         }
+
+        const targetTag = tag === "paragraph" ? "p" : tag.toLowerCase();
+
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+            exec("formatBlock", targetTag);
+            return;
+        }
+
+        const range = sel.getRangeAt(0);
+        const parentBlock = getParentBlock(range.commonAncestorContainer);
+
+        const selectedText = range.toString().trim();
+        const blockText = parentBlock ? parentBlock.textContent.trim() : "";
+
+        // If entire block is selected, or changing back to paragraph, or no parent block found
+        if (!parentBlock || parentBlock === editorRef.current || selectedText === blockText || targetTag === "p") {
+            exec("formatBlock", targetTag);
+        } else {
+            // Partial selection inside a block: extract selected text into its own heading tag
+            try {
+                const heading = document.createElement(targetTag);
+                heading.appendChild(range.extractContents());
+
+                range.insertNode(heading);
+
+                const newRange = document.createRange();
+                newRange.selectNodeContents(heading);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+                saveSelection();
+            } catch (e) {
+                console.error("Partial block format error:", e);
+                exec("formatBlock", targetTag);
+            }
+        }
+
+        handleInput();
     };
 
     // Insert Callout Box
@@ -439,6 +608,7 @@ export default function RichPetitionEditor({
                         <i className="fas fa-font text-gray-500 text-[11px]"></i>
                         <select
                             value={selectedFont}
+                            onMouseDown={saveSelection}
                             onChange={(e) => applyFontFamily(e.target.value)}
                             className="bg-transparent text-xs font-medium text-gray-700 outline-none cursor-pointer pr-1"
                         >
@@ -455,6 +625,7 @@ export default function RichPetitionEditor({
                         <i className="fas fa-text-height text-gray-500 text-[11px]"></i>
                         <select
                             value={selectedSize}
+                            onMouseDown={saveSelection}
                             onChange={(e) => applyFontSize(e.target.value)}
                             className="bg-transparent text-xs font-medium text-gray-700 outline-none cursor-pointer pr-1"
                         >
@@ -468,6 +639,7 @@ export default function RichPetitionEditor({
 
                     {/* Format Block */}
                     <select
+                        onMouseDown={saveSelection}
                         onChange={(e) => applyBlockFormat(e.target.value)}
                         defaultValue="p"
                         className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs font-medium text-gray-700 outline-none cursor-pointer"
@@ -671,7 +843,13 @@ export default function RichPetitionEditor({
                         contentEditable
                         onInput={handleInput}
                         onPaste={handlePaste}
-                        onBlur={onBlur}
+                        onBlur={(e) => {
+                            saveSelection();
+                            if (onBlur) onBlur(e);
+                        }}
+                        onMouseUp={saveSelection}
+                        onKeyUp={saveSelection}
+                        onSelect={saveSelection}
                         className="prose max-w-none p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F43676]/20 focus:border-[#F43676] transition-all bg-white min-h-[160px] outline-none leading-relaxed text-sm text-[#302d55]"
                         data-placeholder={placeholder}
                     />
