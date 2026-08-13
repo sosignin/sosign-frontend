@@ -143,6 +143,38 @@ export default function StartPetitionPage() {
       required: false,
     },
   });
+
+  // Mother Petition state
+  const [motherPetitionSearch, setMotherPetitionSearch] = useState("");
+  const [motherPetitionResults, setMotherPetitionResults] = useState([]);
+  const [isSearchingMotherPetition, setIsSearchingMotherPetition] = useState(false);
+  const [selectedMotherPetition, setSelectedMotherPetition] = useState(null);
+
+  // Search mother petitions effect
+  useEffect(() => {
+    if (!motherPetitionSearch || motherPetitionSearch.trim().length < 2) {
+      setMotherPetitionResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingMotherPetition(true);
+      try {
+        const response = await fetch(`/api/petitions?search=${encodeURIComponent(motherPetitionSearch.trim())}&limit=5`);
+        if (response.ok) {
+          const data = await response.json();
+          setMotherPetitionResults(data.petitions || []);
+        }
+      } catch (error) {
+        console.error("Error searching mother petitions:", error);
+      } finally {
+        setIsSearchingMotherPetition(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [motherPetitionSearch]);
+
   const totalSteps = 4;
   const DRAFT_KEY = "petition_draft";
 
@@ -568,6 +600,8 @@ export default function StartPetitionPage() {
             if (draft.requestedSigners) setRequestedSigners(draft.requestedSigners);
             if (draft.selectedCategories)
               setSelectedCategories(draft.selectedCategories);
+            if (draft.selectedMotherPetition)
+              setSelectedMotherPetition(draft.selectedMotherPetition);
             if (draft.step) setStep(draft.step);
             setShowDraftNotification(true);
             setTimeout(() => setShowDraftNotification(false), 5000);
@@ -589,6 +623,7 @@ export default function StartPetitionPage() {
         recipients,
         requestedSigners,
         selectedCategories,
+        selectedMotherPetition,
         step,
         savedAt: new Date().toISOString(),
       };
@@ -598,7 +633,7 @@ export default function StartPetitionPage() {
         console.error("Error saving draft:", error);
       }
     }
-  }, [formData, recipients, requestedSigners, selectedCategories, step, user, draftLoaded]);
+  }, [formData, recipients, requestedSigners, selectedCategories, selectedMotherPetition, step, user, draftLoaded]);
 
   // Autofill starter info from user profile if fields are empty
   useEffect(() => {
@@ -1241,6 +1276,11 @@ export default function StartPetitionPage() {
         JSON.stringify(formData.socialLinks || {}),
       );
 
+      // Add mother petition reference if selected
+      if (selectedMotherPetition?._id) {
+        submitData.append("motherPetition", selectedMotherPetition._id);
+      }
+
       // Check if user and token are available
       if (!user || !user.token) {
         setIsSubmitting(false);
@@ -1816,6 +1856,113 @@ export default function StartPetitionPage() {
                     />
                   </button>
                 </div>
+              </div>
+
+              {/* Mother Petition Selector (Optional) */}
+              <div className="mt-8 p-5 bg-gradient-to-br from-indigo-50/60 via-purple-50/40 to-pink-50/40 rounded-2xl border border-indigo-100 shadow-xs">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#2D3A8C] to-[#F43676] text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                    <FaLandmarkDome className="text-base" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-800">
+                      Mother Petition <span className="text-gray-400 font-normal text-xs">(Optional)</span>
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      If your petition is part of a larger ongoing campaign or same topic, select an existing petition as the Mother Petition.
+                    </p>
+                  </div>
+                </div>
+
+                {selectedMotherPetition ? (
+                  <div className="mt-4 p-4 bg-white rounded-xl border border-indigo-200 shadow-xs flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {selectedMotherPetition.petitionDetails?.image ? (
+                        <img
+                          src={selectedMotherPetition.petitionDetails.image}
+                          alt={selectedMotherPetition.title}
+                          className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0 font-bold text-lg">
+                          {selectedMotherPetition.title?.charAt(0)}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <span className="text-[10px] uppercase font-bold text-indigo-600 tracking-wider bg-indigo-50 px-2.5 py-0.5 rounded-full inline-block mb-1">
+                          Selected Mother Petition
+                        </span>
+                        <h4 className="font-bold text-gray-800 text-sm truncate">
+                          {selectedMotherPetition.title}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          {selectedMotherPetition.numberOfSignatures || 0} signatures
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMotherPetition(null)}
+                      className="px-3.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative mt-3">
+                    <input
+                      type="text"
+                      value={motherPetitionSearch}
+                      onChange={(e) => setMotherPetitionSearch(e.target.value)}
+                      placeholder="Type to search existing petitions by title..."
+                      className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white shadow-xs"
+                    />
+                    {isSearchingMotherPetition && (
+                      <FaSpinner className="animate-spin absolute right-3.5 top-3.5 text-indigo-500 text-base" />
+                    )}
+
+                    {motherPetitionResults.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-30 max-h-60 overflow-y-auto divide-y divide-gray-100">
+                        {motherPetitionResults.map((pet) => (
+                          <div
+                            key={pet._id}
+                            onClick={() => {
+                              setSelectedMotherPetition(pet);
+                              setMotherPetitionSearch("");
+                              setMotherPetitionResults([]);
+                            }}
+                            className="p-3 hover:bg-indigo-50 cursor-pointer transition-colors flex items-center justify-between gap-3"
+                          >
+                            <div className="min-w-0 flex items-center gap-3">
+                              {pet.petitionDetails?.image ? (
+                                <img
+                                  src={pet.petitionDetails.image}
+                                  alt={pet.title}
+                                  className="w-10 h-10 rounded object-cover flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                  {pet.title?.charAt(0)}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-800 truncate">
+                                  {pet.title}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  By {pet.petitionStarter?.name || "Anonymous"} • {pet.numberOfSignatures || 0} signatures
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                              Select
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Create Category Modal */}

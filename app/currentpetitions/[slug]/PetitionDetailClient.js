@@ -828,8 +828,19 @@ export default function PetitionDetailClient({ initialPetition }) {
                                         </div>
                                         <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
                                             <span>Verified signatures</span>
-                                            <ChevronDown className="w-3 h-3" />
                                         </div>
+
+                                        {petition.combinedSignatures && (petition.motherPetition || (petition.subPetitions && petition.subPetitions.length > 0)) && (
+                                            <div className="mt-3 p-2.5 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-xl border border-indigo-100/80">
+                                                <div className="flex items-center justify-center gap-1.5 text-xs font-black text-indigo-900">
+                                                    <span className="text-sm">🔥</span>
+                                                    <span>{(petition.combinedSignatures || 0).toLocaleString()} Combined Signatures</span>
+                                                </div>
+                                                <p className="text-[10px] text-indigo-600/90 font-medium mt-0.5">
+                                                    Total signatures across mother & linked petitions
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
 
                             <h2 className="text-2xl font-black text-[#1a1a2e] tracking-tight">Sign this petition</h2>
@@ -1309,6 +1320,99 @@ export default function PetitionDetailClient({ initialPetition }) {
                                             <p className="text-[10px] text-[#F43676] font-bold truncate uppercase tracking-widest bg-pink-50 px-2 py-0.5 rounded-full inline-block mt-0.5">{signer.designation}</p>
                                         </div>
                                     </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Mother Petition Reference Banner */}
+                    {petition.motherPetition && (
+                        <div className="bg-gradient-to-r from-indigo-950 via-purple-900 to-indigo-900 rounded-2xl p-6 shadow-xl text-white">
+                            <div className="flex items-start justify-between flex-wrap gap-4">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-indigo-300 flex-shrink-0 border border-white/10">
+                                        <FileText className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-extrabold uppercase tracking-widest bg-indigo-500/30 text-indigo-200 px-3 py-1 rounded-full border border-indigo-400/30">
+                                            Sub-Petition of a Mother Campaign
+                                        </span>
+                                        <h3 className="text-lg md:text-xl font-extrabold mt-2 text-white leading-snug">
+                                            {petition.motherPetition.title}
+                                        </h3>
+                                        <p className="text-xs text-indigo-200 mt-1">
+                                            This petition is linked to a broader campaign topic. View the Mother Petition for details and updates.
+                                        </p>
+                                    </div>
+                                </div>
+                                {petition.motherPetition.slug && (
+                                    <Link
+                                        href={`/currentpetitions/${petition.motherPetition.slug}`}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-indigo-950 hover:bg-indigo-50 font-bold text-sm shadow-md transition-all transform hover:scale-105 flex-shrink-0"
+                                    >
+                                        <span>View Mother Petition</span>
+                                        <ChevronRight className="w-4 h-4" />
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Sub-Petitions / Child Petitions Section */}
+                    {petition.subPetitions && petition.subPetitions.length > 0 && (
+                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500/10 to-indigo-500/20 flex items-center justify-center">
+                                        <Users className="w-5 h-5 text-indigo-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-xl text-[#1a1a2e]">Linked Sub-Petitions</h3>
+                                        <p className="text-xs text-gray-500">
+                                            Petitions started by supporters on this same topic
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
+                                    {petition.subPetitions.length} Sub-Petition{petition.subPetitions.length > 1 ? "s" : ""}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {petition.subPetitions.map((subPet) => (
+                                    <Link
+                                        key={subPet._id}
+                                        href={`/currentpetitions/${subPet.slug}`}
+                                        className="group border border-gray-100 hover:border-indigo-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md bg-slate-50/50 hover:bg-indigo-50/30 flex flex-col justify-between"
+                                    >
+                                        <div>
+                                            {subPet.petitionDetails?.image && (
+                                                <div className="relative w-full h-32 rounded-lg overflow-hidden mb-3 border border-gray-100">
+                                                    <Image
+                                                        src={subPet.petitionDetails.image}
+                                                        alt={subPet.title}
+                                                        fill
+                                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    />
+                                                </div>
+                                            )}
+                                            <h4 className="font-bold text-gray-800 text-sm line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                                                {subPet.title}
+                                            </h4>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                By {subPet.petitionStarter?.name || "Anonymous"}
+                                            </p>
+                                        </div>
+
+                                        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                                            <span className="font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
+                                                {(subPet.numberOfSignatures || 0).toLocaleString()} signatures
+                                            </span>
+                                            <span className="text-gray-400 group-hover:text-indigo-600 font-semibold inline-flex items-center gap-1">
+                                                View <ChevronRight className="w-3.5 h-3.5" />
+                                            </span>
+                                        </div>
+                                    </Link>
                                 ))}
                             </div>
                         </div>
