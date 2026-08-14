@@ -26,6 +26,21 @@ export default function DefendStallModal({ isOpen, onClose, report, onSuccess })
 
   if (!isOpen || !report) return null;
 
+  const resetForm = () => {
+    setVendorName("");
+    setVendorContact("");
+    setReason("not_within_50m");
+    setExplanation("");
+    setGoogleMapsUrl("");
+    setError("");
+    setSuccess("");
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -53,6 +68,7 @@ export default function DefendStallModal({ isOpen, onClose, report, onSuccess })
       const data = await res.json();
       if (res.ok) {
         setSuccess("Defense & dispute request submitted! Admin will crosscheck and verify.");
+        resetForm();
         setTimeout(() => {
           if (onSuccess) onSuccess();
           onClose();
@@ -86,7 +102,7 @@ export default function DefendStallModal({ isOpen, onClose, report, onSuccess })
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-pink-50 hover:text-[#F43676] flex items-center justify-center transition-colors"
           >
             <FaTimes />
@@ -199,7 +215,7 @@ export default function DefendStallModal({ isOpen, onClose, report, onSuccess })
           <div className="pt-2 flex items-center justify-end gap-2 border-t border-gray-100">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-colors"
             >
               Cancel

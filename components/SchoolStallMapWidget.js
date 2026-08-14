@@ -51,14 +51,153 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
 
   // Location Search & Geocoding states
   const [searchResults, setSearchResults] = useState([]);
+  const [liveSuggestions, setLiveSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersGroupRef = useRef(null);
   const searchedMarkerRef = useRef(null);
+  const suggestionTimeoutRef = useRef(null);
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  // Live Google Maps-style Autocomplete Suggestion Fetcher (As you type)
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+
+    if (suggestionTimeoutRef.current) {
+      clearTimeout(suggestionTimeoutRef.current);
+    }
+
+    if (!val || val.trim().length < 2) {
+      setLiveSuggestions([]);
+      return;
+    }
+
+    const q = val.trim().toLowerCase();
+
+    // 1. Instant local school suggestions
+    const localSchoolMatches = schools
+      .filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          (s.address && s.address.toLowerCase().includes(q)) ||
+          (s.city && s.city.toLowerCase().includes(q))
+      )
+      .slice(0, 3)
+      .map((s) => ({
+        type: "school",
+        title: s.name,
+        subtitle: `${s.city} - ${s.address || "Maharashtra"}`,
+        lat: s.location?.coordinates ? s.location.coordinates[1] : null,
+        lng: s.location?.coordinates ? s.location.coordinates[0] : null,
+        school: s,
+      }));
+
+    setLiveSuggestions(localSchoolMatches);
+
+    // 2. Debounced Geocoding API call with Photon API (best for Indian school names/POIs) + Nominatim fallback
+    suggestionTimeoutRef.current = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        let placeMatches = [];
+
+        // Attempt 1: Query Photon API for high accuracy Indian POI & School matching
+        try {
+          const photonRes = await fetch(
+            `https://photon.komoot.io/api/?q=${encodeURIComponent(val.trim())}&limit=5`
+          );
+          if (photonRes.ok) {
+            const photonData = await photonRes.json();
+            if (photonData?.features) {
+              photonData.features.forEach((feat) => {
+                const props = feat.properties || {};
+                const coords = feat.geometry?.coordinates;
+                if (coords && coords.length >= 2) {
+                  const name = props.name || props.street || val.trim();
+                  const placeDetails = [props.street, props.city || props.district, props.state, props.country]
+                    .filter(Boolean)
+                    .join(", ");
+                  placeMatches.push({
+                    type: "place",
+                    title: name,
+                    subtitle: placeDetails || "Location in Maharashtra",
+                    lat: coords[1],
+                    lng: coords[0],
+                  });
+                }
+              });
+            }
+          }
+        } catch (e) {
+          console.warn("Photon API fetch failed:", e);
+        }
+
+        // Attempt 2: Fallback to Nominatim if Photon returned 0 results
+        if (placeMatches.length === 0) {
+          const nomRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+              val.trim() + ", Maharashtra, India"
+            )}&limit=5`
+          );
+          if (nomRes.ok) {
+            const nomData = await nomRes.json();
+            nomData.forEach((item) => {
+              placeMatches.push({
+                type: "place",
+                title: item.display_name.split(",")[0],
+                subtitle: item.display_name,
+                lat: parseFloat(item.lat),
+                lng: parseFloat(item.lon),
+              });
+            });
+          }
+        }
+
+        setLiveSuggestions([...localSchoolMatches, ...placeMatches]);
+      } catch (err) {
+        console.warn("Live autocomplete error:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+  };
+
+  const handleSelectSuggestion = (sug) => {
+    if (sug.type === "school" && sug.school) {
+      zoomToSchool(sug.school);
+      const schoolReports = approvedReports.filter(
+        (r) => r.schoolId?._id === sug.school._id || r.schoolId === sug.school._id
+      );
+      if (schoolReports.length > 0) {
+        setSelectedReportModal(schoolReports[0]);
+      }
+    } else if (sug.lat && sug.lng) {
+      if (mapInstanceRef.current && mapInstanceRef.current.setView) {
+        mapInstanceRef.current.setView([sug.lat, sug.lng], 17);
+        if (window.L) {
+          if (searchedMarkerRef.current) {
+            mapInstanceRef.current.removeLayer(searchedMarkerRef.current);
+          }
+          const searchIconHtml = `<div style="background:#F43676; color:white; font-size:16px; padding:6px; border-radius:50%; border:2px solid #ffffff; box-shadow:0 0 14px rgba(244,54,118,0.9); cursor:pointer;">📍</div>`;
+          const searchIcon = window.L.divIcon({
+            html: searchIconHtml,
+            className: "custom-search-pin",
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+          });
+          searchedMarkerRef.current = window.L.marker([sug.lat, sug.lng], { icon: searchIcon })
+            .bindPopup(`<div style="padding:6px; font-family:system-ui; font-size:11px; font-weight:700;"><b style="color:#F43676;">📍 ${sug.title}</b><br/>${sug.subtitle}</div>`)
+            .addTo(mapInstanceRef.current)
+            .openPopup();
+        }
+      }
+    }
+    setSearchQuery(sug.title);
+    setLiveSuggestions([]);
+  };
 
   // Active Location Geocoding & Map Centering Handler
   const handleLocationSearch = async (e) => {
@@ -67,7 +206,6 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
 
     const q = searchQuery.trim();
     setIsSearching(true);
-    setSearchResults([]);
 
     // 1. Check if query matches any school in local loaded data
     const matchedSchool = schools.find(
@@ -77,55 +215,81 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
     );
 
     if (matchedSchool && matchedSchool.location?.coordinates) {
-      const lng = matchedSchool.location.coordinates[0];
-      const lat = matchedSchool.location.coordinates[1];
-      if (mapInstanceRef.current) {
-        if (mapInstanceRef.current.setView) {
-          mapInstanceRef.current.setView([lat, lng], 16);
-        } else if (mapInstanceRef.current.panTo) {
-          mapInstanceRef.current.panTo({ lat, lng });
-        }
-      }
+      zoomToSchool(matchedSchool);
       setIsSearching(false);
       return;
     }
 
-    // 2. Perform OpenStreetMap / Nominatim Geocoding for ANY city, area or landmark in Maharashtra/India
+    // 2. Perform Photon POI search first, then fallback to Nominatim
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          q + ", Maharashtra, India"
-        )}&limit=5`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.length > 0) {
-          setSearchResults(data);
-          const top = data[0];
-          const lat = parseFloat(top.lat);
-          const lon = parseFloat(top.lon);
+      let topLocation = null;
 
-          if (mapInstanceRef.current && mapInstanceRef.current.setView) {
-            mapInstanceRef.current.setView([lat, lon], 15);
-
-            if (window.L) {
-              if (searchedMarkerRef.current) {
-                mapInstanceRef.current.removeLayer(searchedMarkerRef.current);
-              }
-              const searchIconHtml = `<div style="background:#F43676; color:white; font-size:16px; padding:6px; border-radius:50%; border:2px solid #ffffff; box-shadow:0 0 14px rgba(244,54,118,0.9); cursor:pointer;">📍</div>`;
-              const searchIcon = window.L.divIcon({
-                html: searchIconHtml,
-                className: "custom-search-pin",
-                iconSize: [32, 32],
-                iconAnchor: [16, 16],
-              });
-              searchedMarkerRef.current = window.L.marker([lat, lon], { icon: searchIcon })
-                .bindPopup(`<div style="padding:6px; font-family:system-ui; font-size:11px; font-weight:700;"><b style="color:#F43676;">📍 Searched Location</b><br/>${top.display_name}</div>`)
-                .addTo(mapInstanceRef.current)
-                .openPopup();
+      // Attempt 1: Photon API
+      try {
+        const photonRes = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=3`
+        );
+        if (photonRes.ok) {
+          const photonData = await photonRes.json();
+          if (photonData?.features && photonData.features.length > 0) {
+            const feat = photonData.features[0];
+            const coords = feat.geometry?.coordinates;
+            if (coords && coords.length >= 2) {
+              const props = feat.properties || {};
+              topLocation = {
+                title: props.name || q,
+                subtitle: [props.street, props.city, props.state, props.country].filter(Boolean).join(", "),
+                lat: coords[1],
+                lng: coords[0],
+              };
             }
           }
         }
+      } catch (err) {
+        console.warn("Photon search err:", err);
+      }
+
+      // Attempt 2: Nominatim API fallback
+      if (!topLocation) {
+        const nomRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+            q + ", Maharashtra, India"
+          )}&limit=3`
+        );
+        if (nomRes.ok) {
+          const nomData = await nomRes.json();
+          if (nomData && nomData.length > 0) {
+            const top = nomData[0];
+            topLocation = {
+              title: top.display_name.split(",")[0],
+              subtitle: top.display_name,
+              lat: parseFloat(top.lat),
+              lng: parseFloat(top.lon),
+            };
+          }
+        }
+      }
+
+      if (topLocation && mapInstanceRef.current && mapInstanceRef.current.setView) {
+        mapInstanceRef.current.setView([topLocation.lat, topLocation.lng], 17);
+        if (window.L) {
+          if (searchedMarkerRef.current) {
+            mapInstanceRef.current.removeLayer(searchedMarkerRef.current);
+          }
+          const searchIconHtml = `<div style="background:#F43676; color:white; font-size:16px; padding:6px; border-radius:50%; border:2px solid #ffffff; box-shadow:0 0 14px rgba(244,54,118,0.9); cursor:pointer;">📍</div>`;
+          const searchIcon = window.L.divIcon({
+            html: searchIconHtml,
+            className: "custom-search-pin",
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+          });
+          searchedMarkerRef.current = window.L.marker([topLocation.lat, topLocation.lng], { icon: searchIcon })
+            .bindPopup(`<div style="padding:6px; font-family:system-ui; font-size:11px; font-weight:700;"><b style="color:#F43676;">📍 ${topLocation.title}</b><br/>${topLocation.subtitle}</div>`)
+            .addTo(mapInstanceRef.current)
+            .openPopup();
+        }
+      } else {
+        alert(`Location '${q}' could not be pinpointed. Please check spelling or request this school via '+ Request Missing City / School'.`);
       }
     } catch (err) {
       console.warn("Geocoding search failed:", err);
@@ -138,7 +302,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
     const lat = parseFloat(item.lat);
     const lon = parseFloat(item.lon);
     if (mapInstanceRef.current && mapInstanceRef.current.setView) {
-      mapInstanceRef.current.setView([lat, lon], 16);
+      mapInstanceRef.current.setView([lat, lon], 18);
       if (window.L) {
         if (searchedMarkerRef.current) {
           mapInstanceRef.current.removeLayer(searchedMarkerRef.current);
@@ -157,6 +321,16 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
       }
     }
     setSearchResults([]);
+  };
+
+  // Auto zoom-in map to 50m radius view of selected school
+  const zoomToSchool = (school) => {
+    if (!school || !school.location?.coordinates) return;
+    const lng = school.location.coordinates[0];
+    const lat = school.location.coordinates[1];
+    if (mapInstanceRef.current && mapInstanceRef.current.setView) {
+      mapInstanceRef.current.setView([lat, lng], 18, { animate: true });
+    }
   };
 
   // Load Mappls SDK and Leaflet
@@ -427,11 +601,12 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
               }
             );
 
-          if (hasViolation) {
-            marker.on("click", () => {
+          marker.on("click", () => {
+            zoomToSchool(school);
+            if (hasViolation) {
               setSelectedReportModal(schoolReports[0]);
-            });
-          }
+            }
+          });
 
           markersGroupRef.current.addLayer(marker);
 
@@ -524,9 +699,9 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
   });
 
   return (
-    <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl text-gray-900 border border-pink-100/90 space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-pink-100 pb-5">
+    <div className="bg-white rounded-3xl p-5 sm:p-7 shadow-xl text-gray-900 border border-pink-100/90 space-y-6">
+      {/* Top Header Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-pink-100 pb-5">
         <div>
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-pink-50 border border-pink-200 text-[#F43676] text-xs font-extrabold mb-2 shadow-xs">
             <span className="relative flex h-2.5 w-2.5">
@@ -543,7 +718,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             onClick={() => setIsAddSchoolModalOpen(true)}
             className="px-4 py-2.5 rounded-2xl bg-white hover:bg-pink-50 text-[#F43676] font-bold text-xs border border-pink-200 transition-all flex items-center justify-center gap-2 shadow-sm"
@@ -564,341 +739,432 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         </div>
       </div>
 
-      {/* Campaign Purpose & Motive Box */}
-      <div className="bg-gradient-to-r from-pink-50/80 via-white to-pink-50/40 p-4 sm:p-5 rounded-2xl border border-pink-100/90 text-xs text-gray-700 space-y-2.5">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2 text-pink-950 font-black text-xs md:text-sm">
-            <FaBullhorn className="text-[#F43676] text-base" />
-            <span>Why This Map Exists & Human Impact Objective</span>
-          </div>
-          <span className="px-2.5 py-0.5 rounded-full bg-pink-100 text-[#F43676] font-extrabold text-[10px] uppercase">
-            Legal Safety Buffer: 50 Meters
-          </span>
-        </div>
-        <p className="leading-relaxed text-gray-600 font-medium">
-          Under national health regulations (COTPA & FSSAI guidelines), selling junk food, tobacco, or unhygienic snacks within <strong>50 meters of educational institution entrances</strong> is prohibited. This live interactive GIS map lets citizens, parents, and signers inspect school locations across Maharashtra, monitor active 50-meter geofenced buffer circles, and submit geo-tagged photo evidence of violations to trigger administrative enforcement actions.
-        </p>
-      </div>
-
-      {/* Campaign Stat Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-pink-50/40 p-3.5 rounded-2xl border border-pink-100 text-center space-y-1">
-          <span className="text-2xl font-black text-gray-900">{schools.length}</span>
-          <span className="block text-[11px] font-bold text-gray-600 flex items-center justify-center gap-1">
-            <FaSchool className="text-[#F43676]" /> Monitored Schools
-          </span>
-        </div>
-
-        <div className="bg-rose-50/60 p-3.5 rounded-2xl border border-rose-200 text-center space-y-1">
-          <span className="text-2xl font-black text-rose-600">{approvedReports.length}</span>
-          <span className="block text-[11px] font-bold text-rose-800 flex items-center justify-center gap-1">
-            <FaExclamationTriangle className="text-rose-500" /> Active 50m Violations
-          </span>
-        </div>
-
-        <div className="bg-emerald-50/50 p-3.5 rounded-2xl border border-emerald-200 text-center space-y-1">
-          <span className="text-2xl font-black text-emerald-700">{cleanSchoolsCount}</span>
-          <span className="block text-[11px] font-bold text-emerald-800 flex items-center justify-center gap-1">
-            <FaCheckCircle className="text-emerald-600" /> Safe School Zones
-          </span>
-        </div>
-
-        <div className="bg-indigo-50/40 p-3.5 rounded-2xl border border-indigo-100 text-center space-y-1">
-          <span className="text-2xl font-black text-indigo-900">{cities.length || 7}</span>
-          <span className="block text-[11px] font-bold text-indigo-700 flex items-center justify-center gap-1">
-            <FaCity className="text-indigo-500" /> Cities Mapped
-          </span>
-        </div>
-      </div>
-
-      {/* City Filter & Search Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-pink-50/50 p-3.5 rounded-2xl border border-pink-100/80">
-        <div className="flex items-center gap-2 text-xs font-extrabold text-gray-700 shrink-0">
-          <FaCity className="text-[#F43676]" /> Select City:
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5 flex-1">
-          <button
-            onClick={() => setSelectedCity("")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              selectedCity === ""
-                ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-md shadow-pink-500/20 font-extrabold"
-                : "bg-white text-gray-700 hover:text-[#F43676] hover:bg-pink-50 border border-gray-200/80"
-            }`}
-          >
-            All Maharashtra
-          </button>
-
-          {cities.map((city) => (
-            <button
-              key={city}
-              onClick={() => setSelectedCity(city)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                selectedCity === city
-                  ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-md shadow-pink-500/20 font-extrabold"
-                  : "bg-white text-gray-700 hover:text-[#F43676] hover:bg-pink-50 border border-gray-200/80"
-              }`}
-            >
-              {city}
-            </button>
-          ))}
-        </div>
-
-        <form
-          onSubmit={handleLocationSearch}
-          className="relative shrink-0 w-full md:w-72 mt-2 md:mt-0"
-        >
-          <div className="relative flex items-center">
-            <FaSearch className="absolute left-3 text-gray-400 text-xs" />
-            <input
-              type="text"
-              placeholder="Search any school, area or city..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (searchResults.length > 0) setSearchResults([]);
-              }}
-              className="w-full text-xs pl-8 pr-16 py-2.5 bg-white border border-gray-200/90 rounded-xl outline-none text-gray-900 font-medium focus:border-[#F43676] focus:ring-2 focus:ring-pink-100 transition-colors placeholder:text-gray-400 shadow-sm"
-            />
-            <button
-              type="submit"
-              disabled={isSearching || !searchQuery.trim()}
-              className="absolute right-1 px-2.5 py-1.5 bg-[#F43676] hover:bg-pink-700 text-white rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50 flex items-center gap-1"
-            >
-              {isSearching ? <FaSpinner className="animate-spin text-xs" /> : "Go"}
-            </button>
-          </div>
-
-          {/* Live Search Suggestions Dropdown */}
-          {searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-pink-100 py-1 z-50 max-h-48 overflow-y-auto">
-              <div className="px-3 py-1 text-[10px] font-black text-pink-600 uppercase tracking-wider bg-pink-50/50">
-                📍 Location Results (Click to Pan Map)
+      {/* MAIN HORIZONTAL SPLIT GRID (Left Panel = Details/Controls/Schools, Right Panel = Interactive Map) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* LEFT SIDE PANEL (Info, City Selector, Search, Stats, & Monitored School Cards) */}
+        <div className="lg:col-span-5 space-y-4">
+          
+          {/* Campaign Purpose & Motive Box */}
+          <div className="bg-gradient-to-r from-pink-50/80 via-white to-pink-50/40 p-4 rounded-2xl border border-pink-100/90 text-xs text-gray-700 space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 text-pink-950 font-black text-xs">
+                <FaBullhorn className="text-[#F43676] text-sm" />
+                <span>Campaign Objective</span>
               </div>
-              {searchResults.map((item, idx) => (
+              <span className="px-2 py-0.5 rounded-full bg-pink-100 text-[#F43676] font-extrabold text-[10px] uppercase">
+                50m Buffer Zone
+              </span>
+            </div>
+            <p className="leading-relaxed text-gray-600 font-medium text-[11px]">
+              Selling junk food or tobacco within <strong>50m of school entrances</strong> is illegal under COTPA & FSSAI rules. Inspect schools, monitor geofences, and submit evidence.
+            </p>
+          </div>
+
+          {/* Campaign Stat Metric Cards */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="bg-pink-50/40 p-3 rounded-2xl border border-pink-100 text-center space-y-0.5">
+              <span className="text-xl font-black text-gray-900">{schools.length}</span>
+              <span className="block text-[10px] font-bold text-gray-600 flex items-center justify-center gap-1">
+                <FaSchool className="text-[#F43676]" /> Monitored Schools
+              </span>
+            </div>
+
+            <div className="bg-rose-50/60 p-3 rounded-2xl border border-rose-200 text-center space-y-0.5">
+              <span className="text-xl font-black text-rose-600">{approvedReports.length}</span>
+              <span className="block text-[10px] font-bold text-rose-800 flex items-center justify-center gap-1">
+                <FaExclamationTriangle className="text-rose-500" /> Active 50m Violations
+              </span>
+            </div>
+
+            <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-200 text-center space-y-0.5">
+              <span className="text-xl font-black text-emerald-700">{cleanSchoolsCount}</span>
+              <span className="block text-[10px] font-bold text-emerald-800 flex items-center justify-center gap-1">
+                <FaCheckCircle className="text-emerald-600" /> Safe School Zones
+              </span>
+            </div>
+
+            <div className="bg-indigo-50/40 p-3 rounded-2xl border border-indigo-100 text-center space-y-0.5">
+              <span className="text-xl font-black text-indigo-900">{cities.length || 7}</span>
+              <span className="block text-[10px] font-bold text-indigo-700 flex items-center justify-center gap-1">
+                <FaCity className="text-indigo-500" /> Cities Mapped
+              </span>
+            </div>
+          </div>
+
+          {/* City Selection Pills */}
+          <div className="bg-pink-50/50 p-3.5 rounded-2xl border border-pink-100/80 space-y-2">
+            <div className="flex items-center justify-between text-xs font-extrabold text-gray-700">
+              <span className="flex items-center gap-1.5">
+                <FaCity className="text-[#F43676]" /> Select City:
+              </span>
+              <span className="text-[10px] font-bold text-pink-600">
+                {selectedCity ? selectedCity : "All Cities"}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 max-h-28 overflow-y-auto pr-1">
+              <button
+                onClick={() => setSelectedCity("")}
+                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                  selectedCity === ""
+                    ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-md shadow-pink-500/20 font-extrabold"
+                    : "bg-white text-gray-700 hover:text-[#F43676] hover:bg-pink-50 border border-gray-200/80"
+                }`}
+              >
+                All Maharashtra
+              </button>
+
+              {cities.map((city) => (
                 <button
-                  key={idx}
-                  type="button"
-                  onClick={() => selectSearchResult(item)}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-pink-50 text-gray-800 transition-colors border-b border-gray-100 last:border-0 truncate block font-medium"
+                  key={city}
+                  onClick={() => setSelectedCity(city)}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                    selectedCity === city
+                      ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-md shadow-pink-500/20 font-extrabold"
+                      : "bg-white text-gray-700 hover:text-[#F43676] hover:bg-pink-50 border border-gray-200/80"
+                  }`}
                 >
-                  📍 {item.display_name}
+                  {city}
                 </button>
               ))}
             </div>
-          )}
-        </form>
-      </div>
-
-      {/* Interactive Map Visual Legend Bar */}
-      <div className="bg-gray-50/80 p-3 rounded-2xl border border-gray-200/80 flex flex-wrap items-center justify-between gap-3 text-[11px]">
-        <div className="flex items-center gap-1.5 font-bold text-gray-800">
-          <FaInfoCircle className="text-[#F43676]" /> Map Symbol Legend:
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-gray-600 font-medium">
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-blue-600 inline-block border border-white"></span>
-            <span>School Entrance</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-[#F43676] inline-block border border-white"></span>
-            <span>School with Violation</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="text-xs">🏪</span>
-            <span>Illegal Food/Tobacco Stall</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full border-2 border-dashed border-[#F43676] bg-pink-100/50 inline-block"></span>
-            <span>50m Geofenced Buffer Zone</span>
-          </span>
-        </div>
-      </div>
-
-      {/* Mappls Interactive Canvas */}
-      <div className="relative z-0 isolate rounded-2xl overflow-hidden border border-pink-200 shadow-md bg-pink-50/20 min-h-[350px]">
-        {/* Map Header Status Tag */}
-        <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-pink-200 text-[11px] font-extrabold text-gray-800 flex items-center gap-2 shadow-md">
-          <FaLayerGroup className="text-[#F43676] text-xs" />
-          <span>
-            {selectedCity
-              ? `Mappls GIS View: ${selectedCity} (${filteredSchools.length} Schools)`
-              : `Mappls GIS View: Maharashtra State Level (${filteredSchools.length} Schools)`}
-          </span>
-        </div>
-
-        {/* Map Element */}
-        <div
-          ref={mapRef}
-          id="mappls-map-canvas"
-          className="w-full h-80 md:h-[420px] bg-slate-100 rounded-2xl"
-        />
-
-        {/* Fallback Overlay if SDK load is pending or in progress */}
-        {!mapLoaded && (
-          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-gray-700 p-4 text-center">
-            <FaSpinner className="animate-spin text-3xl text-[#F43676] mb-2" />
-            <p className="text-xs font-bold">Initializing Mappls Web Maps API & State Vector Tiles...</p>
-          </div>
-        )}
-      </div>
-
-      {/* 4-Step Citizen Action Guide */}
-      <div className="bg-pink-50/30 p-4 rounded-2xl border border-pink-100 space-y-3">
-        <h4 className="text-xs font-extrabold text-gray-900 flex items-center gap-1.5 uppercase tracking-wider">
-          <FaBullhorn className="text-[#F43676]" /> How You Can Protect School Zones (4 Steps)
-        </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-          <div className="bg-white p-3 rounded-xl border border-pink-100/80 space-y-1">
-            <span className="text-[10px] font-black bg-pink-100 text-[#F43676] px-2 py-0.5 rounded-full">Step 1</span>
-            <p className="font-bold text-gray-900 text-xs">Find Your School</p>
-            <p className="text-[11px] text-gray-500">Select city or type school name in the search filter.</p>
           </div>
 
-          <div className="bg-white p-3 rounded-xl border border-pink-100/80 space-y-1">
-            <span className="text-[10px] font-black bg-pink-100 text-[#F43676] px-2 py-0.5 rounded-full">Step 2</span>
-            <p className="font-bold text-gray-900 text-xs">Inspect 50m Radius</p>
-            <p className="text-[11px] text-gray-500">Check the enforced 50m buffer circle around the entrance.</p>
-          </div>
+          {/* Active Geocoding & Live Autocomplete Search Bar */}
+          <form onSubmit={handleLocationSearch} className="relative w-full">
+            <div className="relative flex items-center">
+              <FaSearch className="absolute left-3.5 text-[#F43676] text-xs" />
+              <input
+                type="text"
+                placeholder="Search school, area, city or landmark..."
+                value={searchQuery}
+                onChange={handleInputChange}
+                onFocus={() => {
+                  if (searchQuery.trim().length >= 2 && liveSuggestions.length === 0) {
+                    handleInputChange({ target: { value: searchQuery } });
+                  }
+                }}
+                className="w-full text-xs pl-9 pr-16 py-2.5 bg-white border-2 border-pink-200 rounded-xl outline-none text-gray-900 font-bold focus:border-[#F43676] focus:ring-2 focus:ring-pink-100 transition-colors placeholder:text-gray-400 shadow-xs"
+              />
+              <button
+                type="submit"
+                disabled={isSearching || !searchQuery.trim()}
+                className="absolute right-1 px-3 py-1.5 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white rounded-lg text-[11px] font-extrabold transition-colors disabled:opacity-50 flex items-center gap-1 shadow-xs"
+              >
+                {isSearching ? <FaSpinner className="animate-spin text-xs" /> : "Search"}
+              </button>
+            </div>
 
-          <div className="bg-white p-3 rounded-xl border border-pink-100/80 space-y-1">
-            <span className="text-[10px] font-black bg-pink-100 text-[#F43676] px-2 py-0.5 rounded-full">Step 3</span>
-            <p className="font-bold text-gray-900 text-xs">Submit Evidence</p>
-            <p className="text-[11px] text-gray-500">Click &apos;Report Junk Food Stall&apos; with photos or Google link.</p>
-          </div>
+            {/* Live Autocomplete Suggestions Dropdown (Left Panel) */}
+            {liveSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-2xl border-2 border-pink-200 py-1.5 z-50 max-h-60 overflow-y-auto divide-y divide-gray-100">
+                <div className="px-3.5 py-1 text-[10px] font-black text-[#F43676] uppercase tracking-wider bg-pink-50/80 flex items-center justify-between">
+                  <span>📍 Live Suggestions</span>
+                  <span className="text-[9px] text-gray-400 font-normal">Click to Pan Map</span>
+                </div>
+                {liveSuggestions.map((sug, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectSuggestion(sug)}
+                    className="w-full text-left px-3.5 py-2 hover:bg-pink-50 text-gray-800 transition-colors flex items-start gap-2 group"
+                  >
+                    <span className="text-sm mt-0.5 shrink-0">
+                      {sug.type === "school" ? "🏫" : "📍"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-gray-900 group-hover:text-[#F43676] truncate">
+                        {sug.title}
+                      </p>
+                      <p className="text-[10px] text-gray-500 truncate">
+                        {sug.subtitle}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </form>
 
-          <div className="bg-white p-3 rounded-xl border border-pink-100/80 space-y-1">
-            <span className="text-[10px] font-black bg-pink-100 text-[#F43676] px-2 py-0.5 rounded-full">Step 4</span>
-            <p className="font-bold text-gray-900 text-xs">Legal Enforcement</p>
-            <p className="text-[11px] text-gray-500">Admin verifies report & files notice to municipal authority.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Visual School Cards & Violation List */}
-      {loading ? (
-        <div className="py-10 text-center text-gray-400 space-y-2">
-          <FaSpinner className="animate-spin text-2xl text-[#F43676] mx-auto" />
-          <p className="text-xs font-semibold">Fetching schools and 50m radius violation data...</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
+          {/* School Status Filter Tabs & Header */}
+          <div className="flex items-center justify-between border-b border-pink-100 pb-2 pt-1">
+            <h3 className="text-xs font-extrabold text-gray-900 flex items-center gap-1.5">
               <FaSchool className="text-[#F43676]" />
-              <span>Schools in {selectedCity || "Maharashtra"} ({filteredSchools.length})</span>
+              <span>Schools ({filteredSchools.length})</span>
             </h3>
-
-            {/* School Filter Buttons */}
-            <div className="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-xl text-xs font-bold">
-              <button
-                onClick={() => setStatusFilter("all")}
-                className={`px-2.5 py-1 rounded-lg transition-all ${
-                  statusFilter === "all" ? "bg-white text-gray-900 shadow-xs" : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                All ({schools.length})
-              </button>
-              <button
-                onClick={() => setStatusFilter("violated")}
-                className={`px-2.5 py-1 rounded-lg transition-all ${
-                  statusFilter === "violated" ? "bg-rose-600 text-white shadow-xs" : "text-rose-600 hover:bg-rose-50"
-                }`}
-              >
-                🚨 Violations ({schoolsWithViolations.length})
-              </button>
-              <button
-                onClick={() => setStatusFilter("clear")}
-                className={`px-2.5 py-1 rounded-lg transition-all ${
-                  statusFilter === "clear" ? "bg-emerald-600 text-white shadow-xs" : "text-emerald-700 hover:bg-emerald-50"
-                }`}
-              >
-                🛡️ Safe ({cleanSchoolsCount})
-              </button>
+            <div className="flex items-center gap-1">
+              {[
+                { id: "all", label: `All (${schools.length})` },
+                { id: "violated", label: "🚨 Violations" },
+                { id: "clear", label: "🛡️ Safe" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                    statusFilter === tab.id
+                      ? "bg-[#F43676] text-white font-extrabold shadow-xs"
+                      : "bg-gray-100 text-gray-600 hover:bg-pink-50 hover:text-[#F43676]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredSchools.map((school) => {
-              const schoolReports = approvedReports.filter(
-                (r) => r.schoolId?._id === school._id || r.schoolId === school._id
-              );
-              const hasViolation = schoolReports.length > 0;
+          {/* Scrollable List of School Cards */}
+          {filteredSchools.length === 0 ? (
+            <div className="bg-pink-50/40 p-6 rounded-2xl border border-pink-200/80 text-center space-y-2">
+              <p className="text-xs text-gray-600 font-bold">No schools found matching search criteria.</p>
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("all");
+                  setSelectedCity("");
+                }}
+                className="text-[11px] font-extrabold text-[#F43676] hover:underline"
+              >
+                Reset Filters & Search
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+              {filteredSchools.map((school) => {
+                const schoolReports = approvedReports.filter(
+                  (r) => r.schoolId?._id === school._id || r.schoolId === school._id
+                );
+                const hasViolation = schoolReports.length > 0;
 
-              return (
-                <div
-                  key={school._id}
-                  className={`relative p-4.5 rounded-2xl border transition-all duration-300 ${
-                    hasViolation
-                      ? "bg-gradient-to-br from-pink-50/90 via-white to-pink-50/40 border-pink-300 shadow-md"
-                      : "bg-white border-gray-200/80 hover:border-pink-200 shadow-sm"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className="relative mt-0.5">
-                        <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                            hasViolation
-                              ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-sm shadow-pink-500/30"
-                              : "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                          }`}
-                        >
-                          <FaSchool className="text-lg" />
+                return (
+                  <div
+                    key={school._id}
+                    onClick={() => zoomToSchool(school)}
+                    className={`relative p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer group hover:border-pink-300 hover:shadow-md ${
+                      hasViolation
+                        ? "bg-gradient-to-br from-pink-50/90 via-white to-pink-50/40 border-pink-300 shadow-xs"
+                        : "bg-white border-gray-200/80 hover:border-pink-200 shadow-2xs"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-start gap-2.5">
+                        <div className="relative mt-0.5 shrink-0">
+                          <div
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                              hasViolation
+                                ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
+                                : "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                            }`}
+                          >
+                            <FaSchool className="text-sm" />
+                          </div>
+                          {hasViolation && (
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F43676] opacity-90"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#F43676] border border-white"></span>
+                            </span>
+                          )}
                         </div>
-                        {hasViolation && (
-                          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F43676] opacity-90"></span>
-                            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#F43676] border-2 border-white"></span>
-                          </span>
-                        )}
+
+                        <div>
+                          <h4 className="font-extrabold text-gray-900 text-xs leading-snug">
+                            {school.name}
+                          </h4>
+                          <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1 font-medium">
+                            <FaMapMarkerAlt className="text-[#F43676] text-[9px]" />
+                            {school.address || school.city}
+                          </p>
+                        </div>
                       </div>
 
-                      <div>
-                        <h4 className="font-extrabold text-gray-900 text-sm leading-snug">
-                          {school.name}
-                        </h4>
-                        <p className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1 font-medium">
-                          <FaMapMarkerAlt className="text-[#F43676] text-[10px]" />
-                          {school.address || school.city}
-                        </p>
-                      </div>
+                      {hasViolation ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white uppercase tracking-wider animate-pulse shadow-xs shrink-0">
+                          🚨 50m Violation!
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                          <FaCheckCircle className="text-[9px]" /> Clear Zone
+                        </span>
+                      )}
                     </div>
 
-                    {hasViolation ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white uppercase tracking-wider animate-pulse shadow-sm shadow-pink-500/20 shrink-0">
-                        🚨 50m Violation!
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                        <FaCheckCircle className="text-[10px]" /> Clear Zone
-                      </span>
+                    {hasViolation && (
+                      <div className="mt-2 pt-2 border-t border-pink-200/60 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                        <p className="text-[11px] font-extrabold text-gray-900 flex items-center justify-between">
+                          <span>Reported Stall: {schoolReports[0].shopName}</span>
+                          <span className="text-[9px] font-extrabold bg-[#F43676] px-1.5 py-0.5 rounded-full text-white">
+                            {schoolReports[0].distanceFromSchoolMeters}m Away
+                          </span>
+                        </p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedReportModal(schoolReports[0]);
+                          }}
+                          className="w-full text-[11px] font-bold bg-pink-50 hover:bg-pink-100 text-[#F43676] py-1.5 rounded-xl border border-pink-200 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <span>View Verified Photos & Evidence</span>
+                          <FaChevronRight className="text-[9px]" />
+                        </button>
+                      </div>
                     )}
                   </div>
-
-                  {hasViolation && (
-                    <div className="mt-3 pt-3 border-t border-pink-200/60 space-y-2">
-                      <p className="text-xs font-extrabold text-gray-900 flex items-center justify-between">
-                        <span>Reported Stall: {schoolReports[0].shopName}</span>
-                        <span className="text-[10px] font-extrabold bg-[#F43676] px-2 py-0.5 rounded-full text-white">
-                          {schoolReports[0].distanceFromSchoolMeters}m Away
-                        </span>
-                      </p>
-                      <button
-                        onClick={() => setSelectedReportModal(schoolReports[0])}
-                        className="w-full text-xs font-bold bg-pink-50 hover:bg-pink-100 text-[#F43676] py-2 rounded-xl border border-pink-200 transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <span>View Verified Photos & Evidence</span>
-                        <FaChevronRight className="text-[10px]" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* RIGHT SIDE PANEL (Interactive Map View, Dedicated Location Search & Legend) */}
+        <div className="lg:col-span-7 space-y-3 lg:sticky lg:top-20">
+
+          {/* DEDICATED HIGH-VISIBILITY GOOGLE MAPS STYLE SEARCH BAR */}
+          <div className="relative w-full z-40">
+            <div className="relative flex items-center bg-white rounded-2xl shadow-md border-2 border-pink-300 p-1.5 focus-within:border-[#F43676] focus-within:ring-4 focus-within:ring-pink-100 transition-all">
+              <FaSearch className="ml-3 text-[#F43676] text-sm shrink-0" />
+              <input
+                type="text"
+                placeholder="Search any location, city, area or school in Maharashtra..."
+                value={searchQuery}
+                onChange={handleInputChange}
+                onFocus={() => {
+                  if (searchQuery.trim().length >= 2 && liveSuggestions.length === 0) {
+                    handleInputChange({ target: { value: searchQuery } });
+                  }
+                }}
+                className="w-full text-xs sm:text-sm pl-2.5 pr-24 py-2 bg-transparent outline-none text-gray-900 font-extrabold placeholder:text-gray-400"
+              />
+              <button
+                type="button"
+                onClick={() => handleLocationSearch()}
+                disabled={isSearching || !searchQuery.trim()}
+                className="absolute right-1.5 px-3.5 py-2 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] text-white rounded-xl text-xs font-black transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-xs"
+              >
+                {isSearching ? <FaSpinner className="animate-spin text-xs" /> : "Search Map"}
+              </button>
+            </div>
+
+            {/* LIVE GOOGLE MAPS AUTOCOMPLETE SUGGESTIONS DROPDOWN (Right Panel) */}
+            {liveSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-2xl border-2 border-pink-200 py-2 z-50 max-h-72 overflow-y-auto divide-y divide-gray-100">
+                <div className="px-4 py-1.5 text-[10px] font-black text-[#F43676] uppercase tracking-wider bg-pink-50/80 flex items-center justify-between">
+                  <span>📍 Live Location Suggestions</span>
+                  <span className="text-[9px] text-gray-500 font-bold">Click to Pan & Zoom Map</span>
+                </div>
+                {liveSuggestions.map((sug, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectSuggestion(sug)}
+                    className="w-full text-left px-4 py-3 hover:bg-pink-50 text-gray-800 transition-colors flex items-start gap-3 group"
+                  >
+                    <span className="text-base mt-0.5 shrink-0">
+                      {sug.type === "school" ? "🏫" : "📍"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-black text-gray-900 group-hover:text-[#F43676] truncate">
+                        {sug.title}
+                      </p>
+                      <p className="text-[10px] text-gray-500 truncate font-medium">
+                        {sug.subtitle}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Map Symbol Legend Bar */}
+          <div className="bg-gray-50/90 p-3 rounded-2xl border border-gray-200/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+            <div className="flex items-center gap-1.5 font-bold text-gray-800">
+              <FaInfoCircle className="text-[#F43676]" /> Map Symbol Legend:
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-gray-600 font-medium text-[10px]">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block border border-white"></span>
+                <span>School Entrance</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#F43676] inline-block border border-white"></span>
+                <span>School with Violation</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="text-[10px]">🏪</span>
+                <span>Illegal Stall</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full border-2 border-dashed border-[#F43676] bg-pink-100/50 inline-block"></span>
+                <span>50m Geofence</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Interactive Map Canvas Container */}
+          <div className="relative z-0 isolate rounded-2xl overflow-hidden border border-pink-200 shadow-md bg-pink-50/20 h-[480px] lg:h-[580px]">
+            
+            {/* Map Status Tag */}
+            <div className="absolute bottom-3 left-3 z-10 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-pink-200 text-[10px] font-black text-gray-800 flex items-center gap-1.5 shadow-md">
+              <FaLayerGroup className="text-[#F43676] text-xs" />
+              <span>
+                {selectedCity
+                  ? `${selectedCity} (${filteredSchools.length} Schools)`
+                  : `Maharashtra State (${filteredSchools.length} Schools)`}
+              </span>
+            </div>
+
+            {/* Map Element */}
+            <div
+              ref={mapRef}
+              id="mappls-map-canvas"
+              className="w-full h-full bg-slate-100 rounded-2xl"
+            />
+
+            {/* Fallback Overlay if SDK load is pending */}
+            {!mapLoaded && (
+              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-gray-700 p-4 text-center">
+                <FaSpinner className="animate-spin text-3xl text-[#F43676] mb-2" />
+                <p className="text-xs font-bold">Initializing Mappls Web Maps API & State Vector Tiles...</p>
+              </div>
+            )}
+          </div>
+
+          {/* 4-Step Citizen Action Guide */}
+          <div className="bg-pink-50/30 p-3.5 rounded-2xl border border-pink-100 space-y-2">
+            <h4 className="text-[11px] font-extrabold text-gray-900 flex items-center gap-1.5 uppercase tracking-wider">
+              <FaBullhorn className="text-[#F43676]" /> How You Can Protect School Zones (4 Steps)
+            </h4>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[11px]">
+              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
+                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 1</span>
+                <p className="font-bold text-gray-900 text-[11px]">Find Your School</p>
+                <p className="text-[10px] text-gray-500 leading-tight">Select city or search school name.</p>
+              </div>
+
+              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
+                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 2</span>
+                <p className="font-bold text-gray-900 text-[11px]">Inspect 50m Radius</p>
+                <p className="text-[10px] text-gray-500 leading-tight">Check enforced 50m buffer circle.</p>
+              </div>
+
+              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
+                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 3</span>
+                <p className="font-bold text-gray-900 text-[11px]">Submit Evidence</p>
+                <p className="text-[10px] text-gray-500 leading-tight">Click &apos;Report Junk Food Stall&apos; with photos.</p>
+              </div>
+
+              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
+                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 4</span>
+                <p className="font-bold text-gray-900 text-[11px]">Legal Enforcement</p>
+                <p className="text-[10px] text-gray-500 leading-tight">Admin verifies & files notice to authority.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
 
       {/* Report Modal Popup for Evidence */}
       {selectedReportModal && (

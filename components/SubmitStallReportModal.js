@@ -157,6 +157,22 @@ export default function SubmitStallReportModal({
     );
   };
 
+  const resetForm = () => {
+    setShopName("");
+    setDescription("");
+    setLatitude("");
+    setLongitude("");
+    setGoogleMapsUrl("");
+    setImageFiles([]);
+    setError("");
+    setSuccess("");
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -193,6 +209,7 @@ export default function SubmitStallReportModal({
 
       if (res.ok) {
         setSuccess("Report submitted successfully! Admin will review and verify the 50m radius violation.");
+        resetForm();
         setTimeout(() => {
           if (onSuccess) onSuccess();
           onClose();
@@ -226,7 +243,7 @@ export default function SubmitStallReportModal({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-pink-50 hover:text-[#F43676] flex items-center justify-center transition-colors"
           >
             <FaTimes />
@@ -437,7 +454,7 @@ export default function SubmitStallReportModal({
             <div className="flex gap-3 pt-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="flex-1 py-3 border border-gray-300 font-bold text-xs text-gray-700 rounded-xl hover:bg-gray-50"
               >
                 Cancel
