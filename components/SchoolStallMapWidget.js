@@ -49,16 +49,21 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // 'all', 'violated', 'clear'
 
-  // Location Search & Geocoding states
+  // Location Search, Geocoding & Map Style states
   const [searchResults, setSearchResults] = useState([]);
   const [liveSuggestions, setLiveSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [mapStyle, setMapStyle] = useState("street"); // 'street' or 'satellite'
 
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersGroupRef = useRef(null);
   const searchedMarkerRef = useRef(null);
   const suggestionTimeoutRef = useRef(null);
+
+  const streetTileRef = useRef(null);
+  const satelliteTileRef = useRef(null);
+  const satelliteLabelsRef = useRef(null);
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -333,6 +338,30 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
     }
   };
 
+  // Toggle between Standard Street View and High-Res Satellite View
+  const toggleMapStyle = (style) => {
+    setMapStyle(style);
+    if (!mapInstanceRef.current || !window.L) return;
+
+    const map = mapInstanceRef.current;
+
+    if (style === "satellite") {
+      if (streetTileRef.current && map.hasLayer && map.hasLayer(streetTileRef.current)) {
+        map.removeLayer(streetTileRef.current);
+      }
+      if (satelliteTileRef.current) satelliteTileRef.current.addTo(map);
+      if (satelliteLabelsRef.current) satelliteLabelsRef.current.addTo(map);
+    } else {
+      if (satelliteTileRef.current && map.hasLayer && map.hasLayer(satelliteTileRef.current)) {
+        map.removeLayer(satelliteTileRef.current);
+      }
+      if (satelliteLabelsRef.current && map.hasLayer && map.hasLayer(satelliteLabelsRef.current)) {
+        map.removeLayer(satelliteLabelsRef.current);
+      }
+      if (streetTileRef.current) streetTileRef.current.addTo(map);
+    }
+  };
+
   // Load Mappls SDK and Leaflet
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -493,10 +522,9 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         }
       }
 
-      // 2. Leaflet fallback if Mappls not initialized or on fallback
+      // 2. Leaflet map engine initialization with Satellite + Street View tile support
       if (!mapInstanceRef.current && window.L) {
         const container = mapRef.current;
-        // Reset container if re-initializing Leaflet
         if (container._leaflet_id) {
           container._leaflet_id = null;
         }
@@ -507,10 +535,40 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
           zoomControl: true,
         });
 
-        window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution: "© Mappls / OpenStreetMap contributors",
-        }).addTo(lMap);
+        // Initialize Street & Satellite Tile Layers
+        const streetLayer = window.L.tileLayer(
+          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          {
+            maxZoom: 19,
+            attribution: "© OpenStreetMap / Mappls",
+          }
+        );
+
+        const satLayer = window.L.tileLayer(
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          {
+            maxZoom: 19,
+            attribution: "© Esri World Imagery Satellite",
+          }
+        );
+
+        const satLabelsLayer = window.L.tileLayer(
+          "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+          {
+            maxZoom: 19,
+          }
+        );
+
+        streetTileRef.current = streetLayer;
+        satelliteTileRef.current = satLayer;
+        satelliteLabelsRef.current = satLabelsLayer;
+
+        if (mapStyle === "satellite") {
+          satLayer.addTo(lMap);
+          satLabelsLayer.addTo(lMap);
+        } else {
+          streetLayer.addTo(lMap);
+        }
 
         mapInstanceRef.current = lMap;
       }
@@ -1076,33 +1134,87 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
             )}
           </div>
 
-          {/* Map Symbol Legend Bar */}
-          <div className="bg-gray-50/90 p-3 rounded-2xl border border-gray-200/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-            <div className="flex items-center gap-1.5 font-bold text-gray-800">
-              <FaInfoCircle className="text-[#F43676]" /> Map Symbol Legend:
+          {/* Map Symbol Legend Bar with Satellite View Switcher */}
+          <div className="bg-gray-50/90 p-3 rounded-2xl border border-gray-200/80 flex flex-wrap items-center justify-between gap-3 text-[11px]">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5 font-bold text-gray-800">
+                <FaInfoCircle className="text-[#F43676]" /> Legend:
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-gray-600 font-medium text-[10px]">
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block border border-white"></span>
+                  <span>School</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#F43676] inline-block border border-white"></span>
+                  <span>Violation</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="text-[10px]">🏪</span>
+                  <span>Stall</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-3 rounded-full border-2 border-dashed border-[#F43676] bg-pink-100/50 inline-block"></span>
+                  <span>50m Zone</span>
+                </span>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3 text-gray-600 font-medium text-[10px]">
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block border border-white"></span>
-                <span>School Entrance</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#F43676] inline-block border border-white"></span>
-                <span>School with Violation</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="text-[10px]">🏪</span>
-                <span>Illegal Stall</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full border-2 border-dashed border-[#F43676] bg-pink-100/50 inline-block"></span>
-                <span>50m Geofence</span>
-              </span>
+
+            {/* MAP VIEW STYLE SWITCHER (STANDARD vs HIGH-RES SATELLITE) */}
+            <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-pink-200 shadow-xs">
+              <button
+                type="button"
+                onClick={() => toggleMapStyle("street")}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition-all flex items-center gap-1 ${
+                  mapStyle === "street"
+                    ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
+                    : "text-gray-600 hover:bg-pink-50 hover:text-[#F43676]"
+                }`}
+              >
+                <span>🗺️</span> Standard
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleMapStyle("satellite")}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition-all flex items-center gap-1 ${
+                  mapStyle === "satellite"
+                    ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
+                    : "text-gray-600 hover:bg-pink-50 hover:text-[#F43676]"
+                }`}
+              >
+                <span>🛰️</span> Satellite
+              </button>
             </div>
           </div>
 
           {/* Interactive Map Canvas Container */}
           <div className="relative z-0 isolate rounded-2xl overflow-hidden border border-pink-200 shadow-md bg-pink-50/20 h-[480px] lg:h-[580px]">
+            
+            {/* FLOATING SATELLITE TOGGLE BADGE OVER MAP TOP RIGHT */}
+            <div className="absolute top-3 right-3 z-20 bg-white/95 backdrop-blur-md p-1 rounded-xl border-2 border-pink-300 shadow-lg flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => toggleMapStyle("street")}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1 ${
+                  mapStyle === "street"
+                    ? "bg-[#F43676] text-white shadow-xs"
+                    : "text-gray-700 hover:bg-pink-50 hover:text-[#F43676]"
+                }`}
+              >
+                <span>🗺️</span> Map
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleMapStyle("satellite")}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1 ${
+                  mapStyle === "satellite"
+                    ? "bg-[#F43676] text-white shadow-xs"
+                    : "text-gray-700 hover:bg-pink-50 hover:text-[#F43676]"
+                }`}
+              >
+                <span>🛰️</span> Satellite
+              </button>
+            </div>
             
             {/* Map Status Tag */}
             <div className="absolute bottom-3 left-3 z-10 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-pink-200 text-[10px] font-black text-gray-800 flex items-center gap-1.5 shadow-md">
