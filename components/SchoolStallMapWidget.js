@@ -788,7 +788,7 @@ export default function SchoolStallMapWidget({
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F43676] opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#F43676]"></span>
             </span>
-            Official Child Protection 50m Radius Monitor &bull; Powered by Mappls Maps
+            Official Child Protection 50m Radius Monitor &bull;
           </div>
           <h2 className="text-xl md:text-2xl font-black tracking-tight text-gray-900 flex items-center gap-2">
             <FaShieldAlt className="text-[#F43676]" /> Maharashtra School Violation & Buffer Zone Map
