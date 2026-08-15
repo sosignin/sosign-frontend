@@ -591,9 +591,13 @@ export default function CategoryPage() {
                                                 >
                                                     <div className="rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                                                         <img
-                                                            src={ad.image || ad.imageUrl}
+                                                            src={
+                                                                (ad.image || ad.imageUrl)?.startsWith("http")
+                                                                    ? (ad.image || ad.imageUrl)
+                                                                    : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/${(ad.image || ad.imageUrl)?.replace(/\\/g, "/").replace(/^\//, "")}`
+                                                            }
                                                             alt={ad.title || "Advertisement"}
-                                                            className="w-full h-auto object-cover"
+                                                            className="w-full h-auto object-cover max-h-60"
                                                         />
                                                     </div>
                                                     <div className="mt-3">

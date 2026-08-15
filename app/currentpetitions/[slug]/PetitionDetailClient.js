@@ -722,7 +722,35 @@ export default function PetitionDetailClient({ initialPetition }) {
     return (
         <div className="min-h-screen bg-[#f0f2f5] pb-12">
 
-            {/* Cinematic Header Section */}
+            {/* 1. Map Section FIRST (50m School Buffer Zone & Junk Food Stall Violation Map) */}
+            {petition.showSchoolStallMap && (
+                <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 pt-6">
+                    <SchoolStallMapWidget
+                        petitionId={petition._id}
+                        hasSigned={signatureStatus.hasSigned}
+                        onScrollToSign={() => {
+                            const signElement = document.getElementById("sign-petition-section");
+                            if (signElement) {
+                                signElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                            }
+                        }}
+                        onOpenReportModal={() => {
+                            if (!user) {
+                                setShowLoginModal(true);
+                            } else if (!signatureStatus.hasSigned) {
+                                const signElement = document.getElementById("sign-petition-section");
+                                if (signElement) {
+                                    signElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                                }
+                            } else {
+                                setIsStallModalOpen(true);
+                            }
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* 2. Petition Image and Sign Section BELOW */}
             <div className="w-full mt-6 overflow-hidden">
                 <div className="max-w-[1500px] mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr]">
@@ -805,7 +833,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                         </div>
 
                         {/* Right — sign card */}
-                        <div className="relative min-h-[380px] overflow-hidden border-t lg:border-t-0 lg:col-start-2 bg-gray-50">
+                        <div id="sign-petition-section" className="relative min-h-[380px] overflow-hidden border-t lg:border-t-0 lg:col-start-2 bg-gray-50">
 
                             <div className="relative z-10 flex items-center justify-center p-6 lg:p-8 h-full min-h-[380px]">
                                 <motion.div
@@ -1142,24 +1170,6 @@ export default function PetitionDetailClient({ initialPetition }) {
             </div>
 
             <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
-                {/* 50m School Buffer Zone & Junk Food Stall Violation Map (Placed right below Image & Sign Box) */}
-                {petition.showSchoolStallMap && (
-                    <div className="mt-6 mb-4">
-                        <SchoolStallMapWidget
-                            petitionId={petition._id}
-                            onOpenReportModal={() => {
-                                if (!user) {
-                                    setShowLoginModal(true);
-                                } else if (!signatureStatus.hasSigned) {
-                                    alert("Please sign this petition first to submit a junk food stall report.");
-                                } else {
-                                    setIsStallModalOpen(true);
-                                }
-                            }}
-                        />
-                    </div>
-                )}
-
                 {/* Back Link & Language Switcher */}
                 <div className="flex justify-between items-center mt-4 mb-2">
                     {/* <Link href="/currentpetitions" className="text-gray-600 hover:text-[#F43676] transition-colors flex items-center gap-2 text-sm font-medium">

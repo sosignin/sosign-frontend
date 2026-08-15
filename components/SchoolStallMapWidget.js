@@ -16,6 +16,7 @@ import {
   FaLayerGroup,
   FaBullhorn,
   FaInfoCircle,
+  FaPlusCircle,
 } from "react-icons/fa";
 
 import AddSchoolModal from "./AddSchoolModal";
@@ -36,7 +37,12 @@ const CITY_COORDINATES = {
 
 const MAHARASHTRA_CENTER = [19.7515, 75.7139]; // Default state center
 
-export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) {
+export default function SchoolStallMapWidget({
+  petitionId,
+  onOpenReportModal,
+  hasSigned = true,
+  onScrollToSign,
+}) {
   const [cities, setCities] = useState([]);
   const [selectedCity, setSelectedCity] = useState("");
   const [approvedReports, setApprovedReports] = useState([]);
@@ -48,6 +54,8 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
   const [mapLoaded, setMapLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // 'all', 'violated', 'clear'
+  const [addSchoolPrefill, setAddSchoolPrefill] = useState(null);
+  const [searchedLocation, setSearchedLocation] = useState(null);
 
   // Location Search, Geocoding & Map Style states
   const [searchResults, setSearchResults] = useState([]);
@@ -173,6 +181,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
   const handleSelectSuggestion = (sug) => {
     if (sug.type === "school" && sug.school) {
       zoomToSchool(sug.school);
+      setSearchedLocation(null);
       const schoolReports = approvedReports.filter(
         (r) => r.schoolId?._id === sug.school._id || r.schoolId === sug.school._id
       );
@@ -180,6 +189,15 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
         setSelectedReportModal(schoolReports[0]);
       }
     } else if (sug.lat && sug.lng) {
+      const locObj = {
+        title: sug.title,
+        subtitle: sug.subtitle,
+        lat: sug.lat,
+        lng: sug.lng,
+        city: sug.city || selectedCity || "",
+      };
+      setSearchedLocation(locObj);
+
       if (mapInstanceRef.current && mapInstanceRef.current.setView) {
         mapInstanceRef.current.setView([sug.lat, sug.lng], 17);
         if (window.L) {
@@ -221,6 +239,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
 
     if (matchedSchool && matchedSchool.location?.coordinates) {
       zoomToSchool(matchedSchool);
+      setSearchedLocation(null);
       setIsSearching(false);
       return;
     }
@@ -244,6 +263,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
               topLocation = {
                 title: props.name || q,
                 subtitle: [props.street, props.city, props.state, props.country].filter(Boolean).join(", "),
+                city: props.city || selectedCity || "",
                 lat: coords[1],
                 lng: coords[0],
               };
@@ -268,6 +288,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
             topLocation = {
               title: top.display_name.split(",")[0],
               subtitle: top.display_name,
+              city: selectedCity || "",
               lat: parseFloat(top.lat),
               lng: parseFloat(top.lon),
             };
@@ -276,6 +297,7 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
       }
 
       if (topLocation && mapInstanceRef.current && mapInstanceRef.current.setView) {
+        setSearchedLocation(topLocation);
         mapInstanceRef.current.setView([topLocation.lat, topLocation.lng], 17);
         if (window.L) {
           if (searchedMarkerRef.current) {
@@ -776,31 +798,320 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button
-            onClick={() => setIsAddSchoolModalOpen(true)}
-            className="px-4 py-2.5 rounded-2xl bg-white hover:bg-pink-50 text-[#F43676] font-bold text-xs border border-pink-200 transition-all flex items-center justify-center gap-2 shadow-sm"
-          >
-            <FaSchool className="text-sm text-[#F43676]" />
-            <span>+ Request Missing City / School</span>
-          </button>
+        <div className="relative shrink-0">
+          {!hasSigned ? (
+            <div className="relative flex flex-wrap items-center gap-2">
+              {/* Blurred Action Buttons */}
+              <div className="flex items-center gap-2 filter blur-[3px] opacity-45 pointer-events-none select-none">
+                <button
+                  tabIndex={-1}
+                  className="px-4 py-2.5 rounded-2xl bg-white text-[#F43676] font-bold text-xs border border-pink-200 flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <FaSchool className="text-sm text-[#F43676]" />
+                  <span>+ Request Missing City / School</span>
+                </button>
 
-          {onOpenReportModal && (
-            <button
-              onClick={onOpenReportModal}
-              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] hover:to-[#c41e50] text-white font-extrabold text-xs shadow-md shadow-pink-500/20 transition-all flex items-center justify-center gap-2 border border-pink-400/30"
-            >
-              <FaStore className="text-sm" />
-              <span>Report Junk Food Stall</span>
-            </button>
+                <button
+                  tabIndex={-1}
+                  className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2 border border-pink-400/30"
+                >
+                  <FaStore className="text-sm" />
+                  <span>Report Junk Food Stall</span>
+                </button>
+              </div>
+
+              {/* Overlay Call-To-Action Button */}
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onScrollToSign) {
+                      onScrollToSign();
+                    } else {
+                      const el = document.getElementById("sign-petition-section");
+                      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] hover:to-[#c41e50] text-white font-extrabold text-xs shadow-xl shadow-pink-500/30 transition-all flex items-center justify-center gap-2 border-2 border-white cursor-pointer hover:scale-105"
+                >
+                  <span className="text-sm">✍️</span>
+                  <span>Sign This Petition to Report</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setIsAddSchoolModalOpen(true)}
+                className="px-4 py-2.5 rounded-2xl bg-white hover:bg-pink-50 text-[#F43676] font-bold text-xs border border-pink-200 transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <FaSchool className="text-sm text-[#F43676]" />
+                <span>+ Request Missing City / School</span>
+              </button>
+
+              {onOpenReportModal && (
+                <button
+                  onClick={onOpenReportModal}
+                  className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] hover:to-[#c41e50] text-white font-extrabold text-xs shadow-md shadow-pink-500/20 transition-all flex items-center justify-center gap-2 border border-pink-400/30"
+                >
+                  <FaStore className="text-sm" />
+                  <span>Report Junk Food Stall</span>
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
 
-      {/* MAIN HORIZONTAL SPLIT GRID (Left Panel = Details/Controls/Schools, Right Panel = Interactive Map) */}
+      {/* MAIN HORIZONTAL SPLIT GRID (Left Panel = Interactive Map, Right Panel = Details/Controls/Schools) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* LEFT SIDE PANEL (Info, City Selector, Search, Stats, & Monitored School Cards) */}
+        {/* LEFT SIDE PANEL (Interactive Map View, Dedicated Location Search & Legend) */}
+        <div className="lg:col-span-7 space-y-3 lg:sticky lg:top-20">
+
+          {/* DEDICATED HIGH-VISIBILITY GOOGLE MAPS STYLE SEARCH BAR */}
+          <div className="relative w-full z-40">
+            <div className="relative flex items-center bg-white rounded-2xl shadow-md border-2 border-pink-300 p-1.5 focus-within:border-[#F43676] focus-within:ring-4 focus-within:ring-pink-100 transition-all">
+              <FaSearch className="ml-3 text-[#F43676] text-sm shrink-0" />
+              <input
+                type="text"
+                placeholder="Search any location, city, area or school in Maharashtra..."
+                value={searchQuery}
+                onChange={handleInputChange}
+                onFocus={() => {
+                  if (searchQuery.trim().length >= 2 && liveSuggestions.length === 0) {
+                    handleInputChange({ target: { value: searchQuery } });
+                  }
+                }}
+                className="w-full text-xs sm:text-sm pl-2.5 pr-24 py-2 bg-transparent outline-none text-gray-900 font-extrabold placeholder:text-gray-400"
+              />
+              <button
+                type="button"
+                onClick={() => handleLocationSearch()}
+                disabled={isSearching || !searchQuery.trim()}
+                className="absolute right-1.5 px-3.5 py-2 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] text-white rounded-xl text-xs font-black transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-xs"
+              >
+                {isSearching ? <FaSpinner className="animate-spin text-xs" /> : "Search Map"}
+              </button>
+            </div>
+
+            {/* LIVE GOOGLE MAPS AUTOCOMPLETE SUGGESTIONS DROPDOWN (Left Panel) */}
+            {liveSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-2xl border-2 border-pink-200 py-2 z-50 max-h-72 overflow-y-auto divide-y divide-gray-100">
+                <div className="px-4 py-1.5 text-[10px] font-black text-[#F43676] uppercase tracking-wider bg-pink-50/80 flex items-center justify-between">
+                  <span>📍 Live Location Suggestions</span>
+                  <span className="text-[9px] text-gray-500 font-bold">Click to Pan & Zoom Map</span>
+                </div>
+                {liveSuggestions.map((sug, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectSuggestion(sug)}
+                    className="w-full text-left px-4 py-3 hover:bg-pink-50 text-gray-800 transition-colors flex items-start gap-3 group"
+                  >
+                    <span className="text-base mt-0.5 shrink-0">
+                      {sug.type === "school" ? "🏫" : "📍"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-black text-gray-900 group-hover:text-[#F43676] truncate">
+                        {sug.title}
+                      </p>
+                      <p className="text-[10px] text-gray-500 truncate font-medium">
+                        {sug.subtitle}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Map Symbol Legend Bar with Satellite View Switcher */}
+          <div className="bg-gray-50/90 p-3 rounded-2xl border border-gray-200/80 flex flex-wrap items-center justify-between gap-3 text-[11px]">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5 font-bold text-gray-800">
+                <FaInfoCircle className="text-[#F43676]" /> Legend:
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-gray-600 font-medium text-[10px]">
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block border border-white"></span>
+                  <span>School</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#F43676] inline-block border border-white"></span>
+                  <span>Violation</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="text-[10px]">🏪</span>
+                  <span>Stall</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-3 rounded-full border-2 border-dashed border-[#F43676] bg-pink-100/50 inline-block"></span>
+                  <span>50m Zone</span>
+                </span>
+              </div>
+            </div>
+
+            {/* MAP VIEW STYLE SWITCHER (STANDARD vs HIGH-RES SATELLITE) */}
+            <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-pink-200 shadow-xs">
+              <button
+                type="button"
+                onClick={() => toggleMapStyle("street")}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition-all flex items-center gap-1 ${
+                  mapStyle === "street"
+                    ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
+                    : "text-gray-600 hover:bg-pink-50 hover:text-[#F43676]"
+                }`}
+              >
+                <span>🗺️</span> Standard
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleMapStyle("satellite")}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition-all flex items-center gap-1 ${
+                  mapStyle === "satellite"
+                    ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
+                    : "text-gray-600 hover:bg-pink-50 hover:text-[#F43676]"
+                }`}
+              >
+                <span>🛰️</span> Satellite
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Map Canvas Container */}
+          <div className="relative z-0 isolate rounded-2xl overflow-hidden border border-pink-200 shadow-md bg-pink-50/20 h-[480px] lg:h-[580px]">
+            
+            {/* FLOATING SATELLITE TOGGLE BADGE OVER MAP TOP RIGHT */}
+            <div className="absolute top-3 right-3 z-20 bg-white/95 backdrop-blur-md p-1 rounded-xl border-2 border-pink-300 shadow-lg flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => toggleMapStyle("street")}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1 ${
+                  mapStyle === "street"
+                    ? "bg-[#F43676] text-white shadow-xs"
+                    : "text-gray-700 hover:bg-pink-50 hover:text-[#F43676]"
+                }`}
+              >
+                <span>🗺️</span> Map
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleMapStyle("satellite")}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1 ${
+                  mapStyle === "satellite"
+                    ? "bg-[#F43676] text-white shadow-xs"
+                    : "text-gray-700 hover:bg-pink-50 hover:text-[#F43676]"
+                }`}
+              >
+                <span>🛰️</span> Satellite
+              </button>
+            </div>
+
+            {/* FLOATING ACTION BANNER FOR SEARCHED LOCATION TO REQUEST 50m ZONE */}
+            {searchedLocation && (
+              <div className="absolute bottom-12 left-3 right-3 sm:left-auto sm:right-3 max-w-md z-20 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl border-2 border-pink-300 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs animate-in fade-in slide-in-from-bottom duration-300">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm">📍</span>
+                    <p className="font-extrabold text-gray-900 text-xs truncate">
+                      {searchedLocation.title}
+                    </p>
+                  </div>
+                  <p className="text-[10px] text-gray-500 truncate font-medium">
+                    {searchedLocation.subtitle}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!hasSigned) {
+                      if (onScrollToSign) {
+                        onScrollToSign();
+                      } else {
+                        const el = document.getElementById("sign-petition-section");
+                        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }
+                      return;
+                    }
+                    setAddSchoolPrefill({
+                      schoolName: searchedLocation.title,
+                      city: searchedLocation.city || selectedCity || "",
+                      address: searchedLocation.subtitle,
+                      latitude: searchedLocation.lat,
+                      longitude: searchedLocation.lng,
+                    });
+                    setIsAddSchoolModalOpen(true);
+                  }}
+                  className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] text-white font-extrabold text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-1.5"
+                >
+                  <FaPlusCircle className="text-xs" />
+                  <span>Request 50m School Zone</span>
+                </button>
+              </div>
+            )}
+
+            {/* Map Status Tag */}
+            <div className="absolute bottom-3 left-3 z-10 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-pink-200 text-[10px] font-black text-gray-800 flex items-center gap-1.5 shadow-md">
+              <FaLayerGroup className="text-[#F43676] text-xs" />
+              <span>
+                {selectedCity
+                  ? `${selectedCity} (${filteredSchools.length} Schools)`
+                  : `Maharashtra State (${filteredSchools.length} Schools)`}
+              </span>
+            </div>
+
+            {/* Map Element */}
+            <div
+              ref={mapRef}
+              id="mappls-map-canvas"
+              className="w-full h-full bg-slate-100 rounded-2xl"
+            />
+
+            {/* Fallback Overlay if SDK load is pending */}
+            {!mapLoaded && (
+              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-gray-700 p-4 text-center">
+                <FaSpinner className="animate-spin text-3xl text-[#F43676] mb-2" />
+                <p className="text-xs font-bold">Initializing Mappls Web Maps API & State Vector Tiles...</p>
+              </div>
+            )}
+          </div>
+
+          {/* 4-Step Citizen Action Guide */}
+          <div className="bg-pink-50/30 p-3.5 rounded-2xl border border-pink-100 space-y-2">
+            <h4 className="text-[11px] font-extrabold text-gray-900 flex items-center gap-1.5 uppercase tracking-wider">
+              <FaBullhorn className="text-[#F43676]" /> How You Can Protect School Zones (4 Steps)
+            </h4>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[11px]">
+              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
+                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 1</span>
+                <p className="font-bold text-gray-900 text-[11px]">Find Your School</p>
+                <p className="text-[10px] text-gray-500 leading-tight">Select city or search school name.</p>
+              </div>
+
+              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
+                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 2</span>
+                <p className="font-bold text-gray-900 text-[11px]">Inspect 50m Radius</p>
+                <p className="text-[10px] text-gray-500 leading-tight">Check enforced 50m buffer circle.</p>
+              </div>
+
+              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
+                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 3</span>
+                <p className="font-bold text-gray-900 text-[11px]">Submit Evidence</p>
+                <p className="text-[10px] text-gray-500 leading-tight">Click &apos;Report Junk Food Stall&apos; with photos.</p>
+              </div>
+
+              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
+                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 4</span>
+                <p className="font-bold text-gray-900 text-[11px]">Legal Enforcement</p>
+                <p className="text-[10px] text-gray-500 leading-tight">Admin verifies & files notice to authority.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* RIGHT SIDE PANEL (Info, City Selector, Search, Stats, & Monitored School Cards) */}
         <div className="lg:col-span-5 space-y-4">
           
           {/* Campaign Purpose & Motive Box */}
@@ -1073,209 +1384,6 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
             </div>
           )}
         </div>
-
-        {/* RIGHT SIDE PANEL (Interactive Map View, Dedicated Location Search & Legend) */}
-        <div className="lg:col-span-7 space-y-3 lg:sticky lg:top-20">
-
-          {/* DEDICATED HIGH-VISIBILITY GOOGLE MAPS STYLE SEARCH BAR */}
-          <div className="relative w-full z-40">
-            <div className="relative flex items-center bg-white rounded-2xl shadow-md border-2 border-pink-300 p-1.5 focus-within:border-[#F43676] focus-within:ring-4 focus-within:ring-pink-100 transition-all">
-              <FaSearch className="ml-3 text-[#F43676] text-sm shrink-0" />
-              <input
-                type="text"
-                placeholder="Search any location, city, area or school in Maharashtra..."
-                value={searchQuery}
-                onChange={handleInputChange}
-                onFocus={() => {
-                  if (searchQuery.trim().length >= 2 && liveSuggestions.length === 0) {
-                    handleInputChange({ target: { value: searchQuery } });
-                  }
-                }}
-                className="w-full text-xs sm:text-sm pl-2.5 pr-24 py-2 bg-transparent outline-none text-gray-900 font-extrabold placeholder:text-gray-400"
-              />
-              <button
-                type="button"
-                onClick={() => handleLocationSearch()}
-                disabled={isSearching || !searchQuery.trim()}
-                className="absolute right-1.5 px-3.5 py-2 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] text-white rounded-xl text-xs font-black transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-xs"
-              >
-                {isSearching ? <FaSpinner className="animate-spin text-xs" /> : "Search Map"}
-              </button>
-            </div>
-
-            {/* LIVE GOOGLE MAPS AUTOCOMPLETE SUGGESTIONS DROPDOWN (Right Panel) */}
-            {liveSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-2xl border-2 border-pink-200 py-2 z-50 max-h-72 overflow-y-auto divide-y divide-gray-100">
-                <div className="px-4 py-1.5 text-[10px] font-black text-[#F43676] uppercase tracking-wider bg-pink-50/80 flex items-center justify-between">
-                  <span>📍 Live Location Suggestions</span>
-                  <span className="text-[9px] text-gray-500 font-bold">Click to Pan & Zoom Map</span>
-                </div>
-                {liveSuggestions.map((sug, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSelectSuggestion(sug)}
-                    className="w-full text-left px-4 py-3 hover:bg-pink-50 text-gray-800 transition-colors flex items-start gap-3 group"
-                  >
-                    <span className="text-base mt-0.5 shrink-0">
-                      {sug.type === "school" ? "🏫" : "📍"}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-black text-gray-900 group-hover:text-[#F43676] truncate">
-                        {sug.title}
-                      </p>
-                      <p className="text-[10px] text-gray-500 truncate font-medium">
-                        {sug.subtitle}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Map Symbol Legend Bar with Satellite View Switcher */}
-          <div className="bg-gray-50/90 p-3 rounded-2xl border border-gray-200/80 flex flex-wrap items-center justify-between gap-3 text-[11px]">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-1.5 font-bold text-gray-800">
-                <FaInfoCircle className="text-[#F43676]" /> Legend:
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-gray-600 font-medium text-[10px]">
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block border border-white"></span>
-                  <span>School</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#F43676] inline-block border border-white"></span>
-                  <span>Violation</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="text-[10px]">🏪</span>
-                  <span>Stall</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full border-2 border-dashed border-[#F43676] bg-pink-100/50 inline-block"></span>
-                  <span>50m Zone</span>
-                </span>
-              </div>
-            </div>
-
-            {/* MAP VIEW STYLE SWITCHER (STANDARD vs HIGH-RES SATELLITE) */}
-            <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-pink-200 shadow-xs">
-              <button
-                type="button"
-                onClick={() => toggleMapStyle("street")}
-                className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition-all flex items-center gap-1 ${
-                  mapStyle === "street"
-                    ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
-                    : "text-gray-600 hover:bg-pink-50 hover:text-[#F43676]"
-                }`}
-              >
-                <span>🗺️</span> Standard
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleMapStyle("satellite")}
-                className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition-all flex items-center gap-1 ${
-                  mapStyle === "satellite"
-                    ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
-                    : "text-gray-600 hover:bg-pink-50 hover:text-[#F43676]"
-                }`}
-              >
-                <span>🛰️</span> Satellite
-              </button>
-            </div>
-          </div>
-
-          {/* Interactive Map Canvas Container */}
-          <div className="relative z-0 isolate rounded-2xl overflow-hidden border border-pink-200 shadow-md bg-pink-50/20 h-[480px] lg:h-[580px]">
-            
-            {/* FLOATING SATELLITE TOGGLE BADGE OVER MAP TOP RIGHT */}
-            <div className="absolute top-3 right-3 z-20 bg-white/95 backdrop-blur-md p-1 rounded-xl border-2 border-pink-300 shadow-lg flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => toggleMapStyle("street")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1 ${
-                  mapStyle === "street"
-                    ? "bg-[#F43676] text-white shadow-xs"
-                    : "text-gray-700 hover:bg-pink-50 hover:text-[#F43676]"
-                }`}
-              >
-                <span>🗺️</span> Map
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleMapStyle("satellite")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1 ${
-                  mapStyle === "satellite"
-                    ? "bg-[#F43676] text-white shadow-xs"
-                    : "text-gray-700 hover:bg-pink-50 hover:text-[#F43676]"
-                }`}
-              >
-                <span>🛰️</span> Satellite
-              </button>
-            </div>
-            
-            {/* Map Status Tag */}
-            <div className="absolute bottom-3 left-3 z-10 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-pink-200 text-[10px] font-black text-gray-800 flex items-center gap-1.5 shadow-md">
-              <FaLayerGroup className="text-[#F43676] text-xs" />
-              <span>
-                {selectedCity
-                  ? `${selectedCity} (${filteredSchools.length} Schools)`
-                  : `Maharashtra State (${filteredSchools.length} Schools)`}
-              </span>
-            </div>
-
-            {/* Map Element */}
-            <div
-              ref={mapRef}
-              id="mappls-map-canvas"
-              className="w-full h-full bg-slate-100 rounded-2xl"
-            />
-
-            {/* Fallback Overlay if SDK load is pending */}
-            {!mapLoaded && (
-              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-gray-700 p-4 text-center">
-                <FaSpinner className="animate-spin text-3xl text-[#F43676] mb-2" />
-                <p className="text-xs font-bold">Initializing Mappls Web Maps API & State Vector Tiles...</p>
-              </div>
-            )}
-          </div>
-
-          {/* 4-Step Citizen Action Guide */}
-          <div className="bg-pink-50/30 p-3.5 rounded-2xl border border-pink-100 space-y-2">
-            <h4 className="text-[11px] font-extrabold text-gray-900 flex items-center gap-1.5 uppercase tracking-wider">
-              <FaBullhorn className="text-[#F43676]" /> How You Can Protect School Zones (4 Steps)
-            </h4>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[11px]">
-              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
-                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 1</span>
-                <p className="font-bold text-gray-900 text-[11px]">Find Your School</p>
-                <p className="text-[10px] text-gray-500 leading-tight">Select city or search school name.</p>
-              </div>
-
-              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
-                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 2</span>
-                <p className="font-bold text-gray-900 text-[11px]">Inspect 50m Radius</p>
-                <p className="text-[10px] text-gray-500 leading-tight">Check enforced 50m buffer circle.</p>
-              </div>
-
-              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
-                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 3</span>
-                <p className="font-bold text-gray-900 text-[11px]">Submit Evidence</p>
-                <p className="text-[10px] text-gray-500 leading-tight">Click &apos;Report Junk Food Stall&apos; with photos.</p>
-              </div>
-
-              <div className="bg-white p-2.5 rounded-xl border border-pink-100/80 space-y-0.5">
-                <span className="text-[9px] font-black bg-pink-100 text-[#F43676] px-1.5 py-0.2 rounded-full">Step 4</span>
-                <p className="font-bold text-gray-900 text-[11px]">Legal Enforcement</p>
-                <p className="text-[10px] text-gray-500 leading-tight">Admin verifies & files notice to authority.</p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
       </div>
 
       {/* Report Modal Popup for Evidence */}
@@ -1374,8 +1482,12 @@ export default function SchoolStallMapWidget({ petitionId, onOpenReportModal }) 
       {/* Add School Modal */}
       <AddSchoolModal
         isOpen={isAddSchoolModalOpen}
-        onClose={() => setIsAddSchoolModalOpen(false)}
+        onClose={() => {
+          setIsAddSchoolModalOpen(false);
+          setAddSchoolPrefill(null);
+        }}
         existingCities={cities}
+        initialData={addSchoolPrefill}
         onSuccess={() => {
           fetchCities();
           fetchSchools(selectedCity);

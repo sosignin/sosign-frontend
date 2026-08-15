@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaSchool,
   FaCity,
@@ -14,7 +14,7 @@ import {
 
 import { parseGoogleLocationString } from "../utils/parseGoogleLocation";
 
-export default function AddSchoolModal({ isOpen, onClose, existingCities = [], onSuccess }) {
+export default function AddSchoolModal({ isOpen, onClose, existingCities = [], onSuccess, initialData = null }) {
   const [cityMode, setCityMode] = useState("new"); // 'existing' or 'new'
   const [selectedCity, setSelectedCity] = useState(existingCities[0] || "");
   const [customCity, setCustomCity] = useState("");
@@ -30,6 +30,21 @@ export default function AddSchoolModal({ isOpen, onClose, existingCities = [], o
   const [success, setSuccess] = useState("");
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    if (isOpen && initialData) {
+      if (initialData.schoolName || initialData.name) {
+        setSchoolName(initialData.schoolName || initialData.name || "");
+      }
+      if (initialData.city) {
+        setCityMode("new");
+        setCustomCity(initialData.city);
+      }
+      if (initialData.address) setAddress(initialData.address);
+      if (initialData.latitude) setLatitude(initialData.latitude.toString());
+      if (initialData.longitude) setLongitude(initialData.longitude.toString());
+    }
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
