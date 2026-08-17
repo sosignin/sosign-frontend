@@ -70,15 +70,25 @@ const MyProfilePage = () => {
     <>
       {/* Navigation Banner */}
       <div className="bg-pink-100 border-b border-pink-200 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
           <h1 className="text-3xl font-bold text-[#1a1a2e]">My Profile</h1>
-          <nav className="flex items-center gap-2 text-sm text-gray-600">
-            <Link href="/" className="hover:text-[#F43676] transition-colors">
-              Home
-            </Link>
-            <FaChevronRight className="text-gray-400 text-xs" />
-            <span className="text-[#1a1a2e] font-medium">My Profile</span>
-          </nav>
+          <div className="flex items-center gap-4">
+            {user && (
+              <Link
+                href={`/profile/${user._id || user.uniqueCode}`}
+                className="inline-flex items-center gap-2 bg-[#F43676] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-pink-700 transition shadow-sm"
+              >
+                <span>View Public Profile</span>
+              </Link>
+            )}
+            <nav className="flex items-center gap-2 text-sm text-gray-600">
+              <Link href="/" className="hover:text-[#F43676] transition-colors">
+                Home
+              </Link>
+              <FaChevronRight className="text-gray-400 text-xs" />
+              <span className="text-[#1a1a2e] font-medium">My Profile</span>
+            </nav>
+          </div>
         </div>
       </div>
 
@@ -106,12 +116,20 @@ const MyProfilePage = () => {
                 </button>
               </div>
 
-              {/* User Name */}
-              <div className="text-center">
-                <h2 className="text-3xl font-bold text-[#1a1a2e] mb-2">
+              {/* User Name & Public Profile Link */}
+              <div className="text-center flex flex-col items-center">
+                <h2 className="text-3xl font-bold text-[#1a1a2e] mb-1">
                   {user.name || "Guest"}
                 </h2>
-                <p className="text-gray-500 text-sm">Member Profile</p>
+                <p className="text-gray-500 text-sm mb-3">Member Profile</p>
+
+                <Link
+                  href={`/profile/${user._id || user.uniqueCode}`}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-[#F43676] to-[#3650AD] text-white font-bold text-xs shadow-md hover:shadow-lg hover:scale-105 transition-all"
+                >
+                  <FaUser className="text-xs" />
+                  <span>View My Public Profile</span>
+                </Link>
               </div>
 
               {/* Bio Section */}

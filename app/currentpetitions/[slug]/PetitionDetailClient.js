@@ -1207,6 +1207,47 @@ export default function PetitionDetailClient({ initialPetition }) {
 
                 {/* Additional Petition Details */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Petition Starter / Campaign Author */}
+                    {petition.petitionStarter && (
+                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#F43676]/10 to-[#F43676]/20 flex items-center justify-center">
+                                    <PenTool className="w-5 h-5 text-[#F43676]" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-[#1a1a2e]">Petition Starter</h3>
+                                    <p className="text-xs text-gray-500">Campaign Author & Activist</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-4 p-3 bg-pink-50/50 rounded-xl border border-pink-100">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#3650AD] to-[#F43676] text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
+                                        {(petition.petitionStarter.name || "U").charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-extrabold text-gray-900 truncate">
+                                            {petition.petitionStarter.name || "Anonymous Activist"}
+                                        </p>
+                                        {petition.petitionStarter.location && (
+                                            <p className="text-xs text-gray-500 truncate">
+                                                📍 {petition.petitionStarter.location}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                {(petition.petitionStarter.user || petition.createdBy) && (
+                                    <Link
+                                        href={`/profile/${petition.petitionStarter.user?._id || petition.petitionStarter.user || petition.createdBy}`}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F43676] hover:bg-pink-700 text-white font-bold text-xs shrink-0 shadow-xs transition transform hover:scale-105"
+                                    >
+                                        <span>View Profile</span>
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Decision Makers */}
                     {petition.decisionMakers && petition.decisionMakers.length > 0 && (
                         <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">

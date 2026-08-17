@@ -520,11 +520,18 @@ export default function Navbar() {
                       className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-100"
                     >
                       <Link
+                        href={`/profile/${user._id || user.uniqueCode}`}
+                        className="block px-4 py-2 text-[#F43676] font-semibold text-sm hover:bg-pink-50 transition-colors"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        View Public Profile
+                      </Link>
+                      <Link
                         href="/my-profile"
                         className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
                         onClick={() => setDropdownOpen(false)}
                       >
-                        My Profile
+                        Account Settings
                       </Link>
                       <Link
                         href="/my-petition"
@@ -654,16 +661,26 @@ export default function Navbar() {
                   Contact
                 </Link>
 
-                {/* Wallet Link for Mobile - Only shown when logged in */}
+                {/* Wallet & Profile Links for Mobile - Only shown when logged in */}
                 {user && (
-                  <Link
-                    href="/wallet"
-                    className="flex items-center gap-2 text-[#F43676] font-medium text-sm py-2 border-t border-gray-100 mt-2"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <FaWallet className="text-sm" />
-                    Wallet ({walletBalance.toFixed(1)} Pts)
-                  </Link>
+                  <div className="flex flex-col gap-1 border-t border-gray-100 pt-2 mt-2">
+                    <Link
+                      href={`/profile/${user._id || user.uniqueCode}`}
+                      className="flex items-center gap-2 text-[#F43676] font-bold text-sm py-1.5"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <FaUserCircle className="text-sm" />
+                      View Public Profile
+                    </Link>
+                    <Link
+                      href="/wallet"
+                      className="flex items-center gap-2 text-[#302d55] font-medium text-sm py-1.5"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <FaWallet className="text-sm text-[#F43676]" />
+                      Wallet ({walletBalance.toFixed(1)} Pts)
+                    </Link>
+                  </div>
                 )}
 
                 {/* Social Icons for Mobile */}

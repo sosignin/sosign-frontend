@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import LoginModal from "./LoginModal";
@@ -496,23 +497,50 @@ const CommentsSection = ({ petitionId, petitionStarterId }) => {
                     {/* Comment Header */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-[#3650AD] rounded-full flex items-center justify-center text-white font-medium">
-                          {comment?.user?.name
-                            ? comment.user.name.charAt(0).toUpperCase()
-                            : "?"}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {comment?.user?.name || "Unknown User"}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {comment?.user?.designation || "Citizen"} •{" "}
-                            {formatDate(comment.createdAt)}
-                            {comment.isEdited && (
-                              <span className="text-gray-400 ml-1">(edited)</span>
-                            )}
-                          </p>
-                        </div>
+                        {comment?.user?._id ? (
+                          <Link
+                            href={`/profile/${comment.user._id}`}
+                            className="flex items-center space-x-3 group hover:opacity-90 transition cursor-pointer"
+                          >
+                            <div className="w-8 h-8 bg-[#3650AD] rounded-full flex items-center justify-center text-white font-medium group-hover:bg-[#F43676] transition-colors">
+                              {comment?.user?.name
+                                ? comment.user.name.charAt(0).toUpperCase()
+                                : "?"}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 group-hover:text-[#F43676] transition-colors">
+                                {comment?.user?.name || "Unknown User"}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {comment?.user?.designation || "Citizen"} •{" "}
+                                {formatDate(comment.createdAt)}
+                                {comment.isEdited && (
+                                  <span className="text-gray-400 ml-1">(edited)</span>
+                                )}
+                              </p>
+                            </div>
+                          </Link>
+                        ) : (
+                          <>
+                            <div className="w-8 h-8 bg-[#3650AD] rounded-full flex items-center justify-center text-white font-medium">
+                              {comment?.user?.name
+                                ? comment.user.name.charAt(0).toUpperCase()
+                                : "?"}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {comment?.user?.name || "Unknown User"}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {comment?.user?.designation || "Citizen"} •{" "}
+                                {formatDate(comment.createdAt)}
+                                {comment.isEdited && (
+                                  <span className="text-gray-400 ml-1">(edited)</span>
+                                )}
+                              </p>
+                            </div>
+                          </>
+                        )}
                         {/* Pending Approval Badge */}
                         {!comment.isApproved && (
                           <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full inline-flex items-center gap-1">
