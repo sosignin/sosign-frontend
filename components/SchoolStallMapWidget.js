@@ -39,12 +39,34 @@ const MAHARASHTRA_CENTER = [19.7515, 75.7139]; // Default state center
 
 export default function SchoolStallMapWidget({
   petitionId,
+  petitionTitle,
   onOpenReportModal,
   hasSigned = true,
   onScrollToSign,
 }) {
+  const [displayPetitionTitle, setDisplayPetitionTitle] = useState(petitionTitle || "");
   const [cities, setCities] = useState([]);
   const [selectedCity, setSelectedCity] = useState("");
+
+  useEffect(() => {
+    if (petitionTitle) {
+      setDisplayPetitionTitle(petitionTitle);
+    } else if (petitionId) {
+      const fetchPetition = async () => {
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+          const res = await fetch(`${apiUrl}/api/petitions/${petitionId}`);
+          const data = await res.json();
+          if (data.success && data.petition) {
+            setDisplayPetitionTitle(data.petition.title);
+          }
+        } catch (e) {
+          console.error("Error fetching petition title:", e);
+        }
+      };
+      fetchPetition();
+    }
+  }, [petitionId, petitionTitle]);
   const [approvedReports, setApprovedReports] = useState([]);
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -780,6 +802,20 @@ export default function SchoolStallMapWidget({
 
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-7 shadow-xl text-gray-900 border border-pink-100/90 space-y-6">
+      {/* PETITION TITLE BANNER AT THE TOP OF MAP SECTION */}
+      {displayPetitionTitle && (
+        <div className="bg-gradient-to-r from-pink-500/10 via-pink-50/90 to-purple-50 p-3.5 sm:p-4 rounded-2xl border-2 border-pink-200/90 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <span className="px-3 py-1 rounded-xl bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-black text-xs uppercase tracking-wider shadow-xs shrink-0 flex items-center gap-1.5">
+              <FaBullhorn className="text-xs" /> Active Petition
+            </span>
+            <h1 className="text-base sm:text-lg font-black text-gray-900 leading-snug truncate">
+              {displayPetitionTitle}
+            </h1>
+          </div>
+        </div>
+      )}
+
       {/* Top Header Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-pink-100 pb-5">
         <div>

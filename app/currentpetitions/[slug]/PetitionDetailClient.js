@@ -727,6 +727,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                 <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 pt-6">
                     <SchoolStallMapWidget
                         petitionId={petition._id}
+                        petitionTitle={petition.title}
                         hasSigned={signatureStatus.hasSigned}
                         onScrollToSign={() => {
                             const signElement = document.getElementById("sign-petition-section");
