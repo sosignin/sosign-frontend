@@ -24,9 +24,7 @@ import {
 import AddSchoolModal from "./AddSchoolModal";
 import DefendStallModal from "./DefendStallModal";
 
-const GOOGLE_MAPS_API_KEY =
-  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
-  "AIzaSyBIQzb--1JbXniwqQCg0gmWLU-wNYvnD1Q";
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 // All 36 Official Districts & Major Sub-Municipal Areas of Maharashtra with exact GPS Center
 const MAHARASHTRA_DISTRICTS = [
