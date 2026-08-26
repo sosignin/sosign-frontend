@@ -215,9 +215,9 @@ export default function StartPetitionPage() {
     title: {
       required: true,
       minLength: 10,
-      maxLength: 65,
+      maxLength: 150,
       pattern: null,
-      message: "Title must be between 10-65 characters",
+      message: "Title must be between 10-150 characters",
       example:
         "e.g., 'Stop Illegal Deforestation in Western Ghats' or 'Improve Road Safety in School Zones'",
     },
@@ -1530,7 +1530,7 @@ export default function StartPetitionPage() {
               <label className="block mb-2 font-medium">
                 Petition Title <span className="text-red-500">*</span>
                 <span className="text-gray-400 text-sm ml-2">
-                  (10-65 characters)
+                  (10-150 characters)
                 </span>
               </label>
               {(() => {
@@ -1545,7 +1545,7 @@ export default function StartPetitionPage() {
                           handleInputChange("title", e.target.value)
                         }
                         onBlur={() => markFieldTouched("title")}
-                        maxLength={65}
+                        maxLength={150}
                         className={props.className}
                         placeholder="Enter a clear, compelling petition title..."
                       />
