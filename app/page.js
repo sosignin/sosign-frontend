@@ -8,6 +8,7 @@ import FeaturedTopic from "@/components/FeaturedTopic";
 import Content from "@/components/Content";
 import YouHave from "@/components/YouHave";
 import SuccessStories from "@/components/SuccessStories";
+import CrowdfundingPopup from "@/components/CrowdfundingPopup";
 
 export const metadata = {
   title: "SoSign | Start & Sign Online Petitions in India",
@@ -74,6 +75,7 @@ export default async function Home() {
       <Content initialPetitions={petitions} initialPagination={paginationInfo} />
       <YouHave />
       <SuccessStories />
+      <CrowdfundingPopup />
     </>
   );
 }

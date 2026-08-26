@@ -18,7 +18,21 @@ import {
   ChevronLeft,
   ChevronRight,
   Share2,
+  Plus,
+  TrendingUp,
+  Play,
+  Star,
+  ExternalLink,
 } from "lucide-react";
+
+// Helper to extract YouTube video ID
+const getYoutubeId = (url) => {
+  if (!url || typeof url !== "string") return null;
+  const regExp =
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/;
+  const match = url.match(regExp);
+  return match && match[1]?.length === 11 ? match[1] : null;
+};
 
 function ImageSlider({ images }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -94,8 +108,103 @@ function ImageSlider({ images }) {
   );
 }
 
+function VideoProductCard({ vUrl, vIdx, updateTitle, onPlay }) {
+  const yId = getYoutubeId(vUrl);
+  const thumbnailUrl = yId
+    ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg`
+    : null;
+
+  return (
+    <div
+      onClick={() => onPlay(vUrl)}
+      className="group bg-white rounded-xl border border-gray-200 hover:border-gray-300 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col cursor-pointer text-left"
+    >
+      {/* Top Image / Media Area */}
+      <div className="relative w-full aspect-[4/3] bg-slate-950 overflow-hidden">
+        {thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            alt={`Video update ${vIdx + 1}`}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">
+            <Video className="w-10 h-10 text-gray-400" />
+          </div>
+        )}
+
+        {/* Subtle Dark Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10 opacity-75 group-hover:opacity-40 transition-opacity" />
+
+        {/* Top-Left Trending Badge (Product Card Style) */}
+        <div className="absolute top-2.5 left-2.5 z-10">
+          <span className="w-7 h-7 rounded-full bg-white/95 backdrop-blur-xs flex items-center justify-center shadow-md text-red-500 group-hover:scale-110 transition-transform">
+            <TrendingUp className="w-4 h-4 text-red-500" />
+          </span>
+        </div>
+
+        {/* Top-Right HD Tag */}
+        <div className="absolute top-2.5 right-2.5 z-10">
+          <span className="px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-xs text-[10px] font-bold text-white uppercase tracking-wider">
+            HD Video
+          </span>
+        </div>
+
+        {/* Center Play Button Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <div className="w-11 h-11 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl group-hover:scale-115 group-hover:bg-red-700 transition-all duration-300">
+            <Play className="w-5 h-5 ml-0.5 fill-white" />
+          </div>
+        </div>
+
+        {/* Bottom-Left Rating-Style Pill Badge */}
+        <div className="absolute bottom-2.5 left-2.5 z-10">
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur-xs text-[11px] font-bold text-gray-800 shadow-md">
+            <span className="text-emerald-700 font-extrabold flex items-center gap-0.5">
+              4.9 <Star className="w-3 h-3 fill-emerald-600 text-emerald-600" />
+            </span>
+            <span className="text-gray-300">|</span>
+            <span className="text-gray-600">Video #{vIdx + 1}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Product-Style Details Area */}
+      <div className="p-3.5 flex flex-col justify-between flex-1 bg-white">
+        <div>
+          {/* Brand/Heading line */}
+          <h4 className="font-bold text-gray-900 text-sm sm:text-base leading-tight group-hover:text-[#F43676] transition-colors truncate">
+            {updateTitle ? `${updateTitle} - Part ${vIdx + 1}` : `Video Update #${vIdx + 1}`}
+          </h4>
+          {/* Subtitle / Category line */}
+          <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+            Official Video • Progress Report
+          </p>
+        </div>
+
+        {/* Action Link / Price-Style Row */}
+        <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="font-extrabold text-xs sm:text-sm text-gray-900">
+              Watch Now
+            </span>
+            <span className="text-[11px] font-bold text-[#F43676]">
+              (Free HD)
+            </span>
+          </div>
+          <span className="text-xs font-bold text-[#3650AD] group-hover:text-[#F43676] flex items-center gap-1 transition-colors">
+            Play <Play className="w-3 h-3 fill-current" />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProgressUpdateCard({ update, index, currentUserId, handleReact, getYoutubeId }) {
   const hasReacted = currentUserId && update.reactions?.some(r => r.user === currentUserId);
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   return (
     <motion.div
@@ -212,51 +321,126 @@ function ProgressUpdateCard({ update, index, currentUserId, handleReact, getYout
           </div>
         )}
 
-        {/* Video in Brick Design */}
-        {update.videoUrl && (
-          <div className="mb-4 rounded-2xl bg-gradient-to-br from-[#7C2525] via-[#A33232] to-[#5C1B1B] border-4 border-[#5C1B1B] p-3 shadow-[6px_6px_0px_#3B0F0F] hover:shadow-[8px_8px_0px_#3B0F0F] transition-all duration-300">
-            {/* Brick Header Bar */}
-            <div className="flex items-center justify-between px-1 pb-2 text-white border-b border-red-400/30 mb-2">
-              <div className="flex items-center gap-2">
-                <span className="bg-red-950/90 text-red-200 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider border border-red-500/30 flex items-center gap-1.5 shadow-inner">
-                  <span className="w-2 h-2 rounded-full bg-red-400 animate-ping"></span>
-                  Brick Frame Video Update
-                </span>
-              </div>
-              <a
-                href={update.videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[11px] font-bold text-red-100 hover:text-white flex items-center gap-1.5 bg-red-900/60 hover:bg-red-900/90 px-2 py-0.5 rounded transition-colors border border-red-500/20"
-              >
-                <span>Watch on YouTube</span>
-                <Share2 className="w-3 h-3" />
-              </a>
-            </div>
+        {/* Videos in Product Page Style Grid (with Gaps) */}
+        {(() => {
+          const allVideos = [];
+          if (Array.isArray(update.videoUrls) && update.videoUrls.length > 0) {
+            update.videoUrls.forEach((u) => {
+              if (u && typeof u === "string" && u.trim() && !allVideos.includes(u.trim())) {
+                allVideos.push(u.trim());
+              }
+            });
+          }
+          if (update.videoUrl && typeof update.videoUrl === "string") {
+            const splitUrls = update.videoUrl.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
+            splitUrls.forEach((u) => {
+              if (!allVideos.includes(u)) allVideos.push(u);
+            });
+          }
 
-            {/* Embedded Player inside Brick Frame */}
-            {getYoutubeId(update.videoUrl) ? (
-              <div className="w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black border border-red-950/80">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src={`https://www.youtube.com/embed/${getYoutubeId(update.videoUrl)}`}
-                  title="YouTube update video player"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full"
-                ></iframe>
+          if (allVideos.length === 0) return null;
+
+          return (
+            <div className="mb-4">
+              <div
+                className={`grid gap-3.5 sm:gap-4 ${
+                  allVideos.length === 1
+                    ? "grid-cols-1 sm:grid-cols-2 max-w-xl"
+                    : allVideos.length === 2
+                    ? "grid-cols-1 sm:grid-cols-2"
+                    : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+                }`}
+              >
+                {allVideos.map((vUrl, vIdx) => (
+                  <VideoProductCard
+                    key={vIdx}
+                    vUrl={vUrl}
+                    vIdx={vIdx}
+                    updateTitle={update.title}
+                    onPlay={(url) => setSelectedVideo(url)}
+                  />
+                ))}
               </div>
-            ) : (
-              <div className="w-full aspect-video rounded-xl flex items-center justify-center bg-red-950 text-white border border-red-900/60">
-                <a href={update.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-bold text-red-200 hover:text-white transition-colors">
-                  <Video className="w-6 h-6 text-red-400" /> Watch Update Video
-                </a>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          );
+        })()}
+
+        {/* Video Player Modal */}
+        <AnimatePresence>
+          {selectedVideo && (
+            <div
+              className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              onClick={() => setSelectedVideo(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ duration: 0.25 }}
+                className="relative w-full max-w-3xl bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-4 bg-slate-950/90 border-b border-slate-800 text-white">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                    <h4 className="font-bold text-sm sm:text-base truncate">
+                      {update.title || "Video Update"}
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={selectedVideo}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-gray-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      <span>YouTube</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVideo(null)}
+                      className="p-1.5 text-gray-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                      aria-label="Close video"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Video Player Embed */}
+                <div className="w-full aspect-video bg-black">
+                  {getYoutubeId(selectedVideo) ? (
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={`https://www.youtube.com/embed/${getYoutubeId(selectedVideo)}?autoplay=1`}
+                      title="Update video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    ></iframe>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-white">
+                      <Video className="w-12 h-12 text-gray-400 mb-3" />
+                      <p className="text-sm font-semibold mb-3">External Video Link</p>
+                      <a
+                        href={selectedVideo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-[#F43676] text-white text-xs font-bold rounded-lg hover:bg-[#e02a60] transition-colors inline-flex items-center gap-1.5"
+                      >
+                        Open Video Link <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Actions */}
         <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
@@ -293,7 +477,7 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
   const [content, setContent] = useState("");
   const [updateType, setUpdateType] = useState("text");
   const [milestoneLabel, setMilestoneLabel] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
+  const [videoUrls, setVideoUrls] = useState([""]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [selectedDocs, setSelectedDocs] = useState([]);
 
@@ -365,8 +549,17 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
         formData.append("milestoneLabel", milestoneLabel);
         formData.append("milestoneStatus", "completed");
       }
-      if (updateType === "video" && videoUrl) {
-        formData.append("videoUrl", videoUrl);
+      if (updateType === "video") {
+        const validVideos = videoUrls
+          .flatMap((u) => u.split(/[\n,]+/))
+          .map((u) => u.trim())
+          .filter((u) => u.length > 0);
+
+        if (validVideos.length > 0) {
+          formData.append("videoUrl", validVideos[0]);
+          validVideos.forEach((v) => formData.append("videoUrls", v));
+          formData.append("videoUrlsJson", JSON.stringify(validVideos));
+        }
       }
 
       selectedImages.forEach((img) => formData.append("images", img));
@@ -393,7 +586,7 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
       setSelectedImages([]);
       setSelectedDocs([]);
       setMilestoneLabel("");
-      setVideoUrl("");
+      setVideoUrls([""]);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -703,15 +896,64 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
               )}
 
               {updateType === "video" && (
-                <div className="pt-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">YouTube Video Link</label>
-                  <input
-                    type="url"
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    placeholder="https://youtube.com/watch?v=..."
-                    className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#3650AD] focus:border-transparent"
-                  />
+                <div className="pt-2 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      YouTube Video Links <span className="text-xs font-normal text-gray-500">(Add multiple videos in brick cards)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setVideoUrls([...videoUrls, ""])}
+                      className="text-xs font-bold text-[#F43676] hover:text-[#d6255d] flex items-center gap-1 bg-pink-50 hover:bg-pink-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Another Video
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {videoUrls.map((url, idx) => {
+                      const yId = getYoutubeId(url);
+                      return (
+                        <div key={idx} className="flex flex-col gap-1.5 p-3 bg-gray-50/90 rounded-xl border border-gray-200">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-md bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold shrink-0">
+                              {idx + 1}
+                            </div>
+                            <input
+                              type="url"
+                              value={url}
+                              onChange={(e) => {
+                                const updated = [...videoUrls];
+                                updated[idx] = e.target.value;
+                                setVideoUrls(updated);
+                              }}
+                              placeholder="Paste YouTube link (e.g., https://youtube.com/watch?v=... or https://youtu.be/...)"
+                              className="flex-1 p-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] focus:border-transparent outline-none"
+                            />
+                            {videoUrls.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setVideoUrls(videoUrls.filter((_, i) => i !== idx))}
+                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                                title="Remove this video link"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Quick Live Detection Preview */}
+                          {yId && (
+                            <div className="flex items-center gap-2 mt-0.5 pl-8 text-xs text-emerald-700 bg-emerald-50/80 py-1 px-2.5 rounded-lg border border-emerald-100">
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span className="font-medium truncate">Ready to embed (YouTube ID: {yId})</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

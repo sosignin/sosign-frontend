@@ -49,7 +49,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Languages,
-    Star
+    Star,
+    Eye
 } from "lucide-react";
 
 export default function PetitionDetailClient({ initialPetition }) {
@@ -275,6 +276,33 @@ export default function PetitionDetailClient({ initialPetition }) {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [isLangOpen]);
+
+    // Record unique petition view
+    useEffect(() => {
+        if (!petition?._id) return;
+
+        const storageKey = `sosign_viewed_${petition._id}`;
+        const userInfo = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
+        const headers = { "Content-Type": "application/json" };
+        if (userInfo?.token) {
+            headers.Authorization = `Bearer ${userInfo.token}`;
+        }
+
+        fetch(`/api/petitions/${petition._id}/view`, {
+            method: "POST",
+            headers,
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data && typeof data.views === "number") {
+                    setPetition((prev) => (prev ? { ...prev, views: data.views } : prev));
+                }
+                try {
+                    sessionStorage.setItem(storageKey, "true");
+                } catch {}
+            })
+            .catch(() => {});
+    }, [petition?._id]);
 
     useEffect(() => {
         // Only fetch if we don't have initial petition data
@@ -1724,6 +1752,11 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 <span className="ml-auto font-semibold text-[#1a1a2e]">{petition.numberOfSignatures || 0}</span>
                             </div>
                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                <Eye className="w-4 h-4 text-[#3650AD]" />
+                                <span className="font-medium">Total Views:</span>
+                                <span className="ml-auto font-semibold text-[#1a1a2e]">{(petition.views || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                                 <Calendar className="w-4 h-4 text-[#3650AD]" />
                                 <span className="font-medium">Started:</span>
                                 <span className="ml-auto text-[#1a1a2e]">{new Date(petition.createdAt).toLocaleDateString()}</span>
@@ -1743,6 +1776,29 @@ export default function PetitionDetailClient({ initialPetition }) {
                     isCreator={signatureStatus.isCreator} 
                     petition={petition} 
                 />
+
+                {/* Petition Views & Engagement Section */}
+                <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#3650AD]/10 to-[#F43676]/20 flex items-center justify-center shrink-0">
+                                <Eye className="w-6 h-6 text-[#3650AD]" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-[#1a1a2e] text-lg">Petition Views</h3>
+                                <p className="text-xs text-gray-500">Total views and community engagement on this petition</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 bg-gray-50 sm:bg-transparent px-4 py-2.5 sm:p-0 rounded-xl">
+                            <div className="text-left sm:text-right">
+                                <span className="text-2xl sm:text-3xl font-extrabold text-[#1a1a2e]">
+                                    {(petition.views || 0).toLocaleString()}
+                                </span>
+                                <span className="text-xs text-gray-500 font-medium ml-1.5 sm:ml-0 sm:block">Views</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Share This Petition */}
                 <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg">

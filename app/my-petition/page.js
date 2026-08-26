@@ -813,34 +813,19 @@ const MyPetitionsPage = () => {
           petitions.map((p) =>
             p._id === petitionId
               ? {
-                ...p,
-                title: editFormData.title,
-                country: editFormData.country,
-                categories: editFormData.categories,
-                decisionMakers: validDMs,
-                requestedSigners: validRSs,
-                petitionDetails: {
-                  ...p.petitionDetails,
-                  problem: editFormData.problem,
-                  solution: editFormData.solution,
-                  videoUrl: editFormData.videoUrl,
-                  image: updatedImagesList[0] || p.petitionDetails?.image || "",
-                  images: updatedImagesList,
-                },
-                petitionStarter: {
-                  ...p.petitionStarter,
-                  ...editFormData.starter,
-                },
-                constituencySettings: editFormData.constituencySettings,
-                signingRequirements: editFormData.signingRequirements,
-                approved: false, // Mark as pending approval after edit
-                status: "pending",
-              }
+                  ...p,
+                  hasPendingUpdates: Boolean(data.hasPendingUpdates),
+                  pendingUpdates: data.pendingUpdates || undefined,
+                }
               : p
           )
         );
         setShowEditModal(null);
-        alert("Petition updated successfully! Your changes are pending admin approval.");
+        if (data.approved) {
+          alert("Petition updates submitted for admin approval! Your current petition will remain live and visible while the updates are under review.");
+        } else {
+          alert("Petition updated successfully! Your petition is pending admin approval.");
+        }
       } else {
         alert(data.message || "Failed to update petition");
       }
