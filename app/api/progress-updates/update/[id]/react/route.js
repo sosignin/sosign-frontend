@@ -19,9 +19,10 @@ export async function PUT(request, { params }) {
     const response = await fetch(
       `${API_BASE_URL}/api/progress-updates/${id}/react`,
       {
-        method: "PUT",
+        method: "POST",
         headers: {
           Authorization: authHeader,
+          "X-HTTP-Method-Override": "PUT",
         },
       }
     );
@@ -43,4 +44,8 @@ export async function PUT(request, { params }) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request, context) {
+  return PUT(request, context);
 }

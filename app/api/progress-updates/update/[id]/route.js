@@ -19,9 +19,10 @@ export async function DELETE(request, { params }) {
     const response = await fetch(
       `${API_BASE_URL}/api/progress-updates/${id}`,
       {
-        method: "DELETE",
+        method: "POST",
         headers: {
           Authorization: authHeader,
+          "X-HTTP-Method-Override": "DELETE",
         },
       }
     );
@@ -43,4 +44,8 @@ export async function DELETE(request, { params }) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request, context) {
+  return DELETE(request, context);
 }

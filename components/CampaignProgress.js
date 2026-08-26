@@ -421,10 +421,11 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
       setTargetError("");
 
       const response = await fetch(`/api/progress-updates/${petitionId}/progress`, {
-        method: "PUT",
+        method: "POST",
         headers: {
           Authorization: `Bearer ${userInfo.token}`,
           "Content-Type": "application/json",
+          "X-HTTP-Method-Override": "PUT",
         },
         body: JSON.stringify({ targetSignatures: nextTarget }),
       });
@@ -453,9 +454,10 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
 
     try {
       const response = await fetch(`/api/progress-updates/update/${updateId}/react`, {
-        method: "PUT",
+        method: "POST",
         headers: {
           Authorization: `Bearer ${userInfo.token}`,
+          "X-HTTP-Method-Override": "PUT",
         },
       });
 
