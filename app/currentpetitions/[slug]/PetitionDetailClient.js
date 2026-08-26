@@ -50,8 +50,106 @@ import {
     ChevronRight,
     Languages,
     Star,
-    Eye
+    Eye,
+    Play,
+    TrendingUp,
+    ExternalLink
 } from "lucide-react";
+
+function VideoProductCard({ video, vIdx, onPlay, getYoutubeId }) {
+    const vUrl = video.url;
+    const yId = getYoutubeId(vUrl);
+    const thumbnailUrl = yId
+        ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg`
+        : null;
+
+    return (
+        <div
+            onClick={() => onPlay(video.url, video.title)}
+            className="group bg-white rounded-xl border border-gray-200 hover:border-gray-300 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col cursor-pointer text-left w-full"
+        >
+            {/* Top Image / Media Area */}
+            <div className="relative w-full aspect-[4/3] bg-slate-950 overflow-hidden">
+                {thumbnailUrl ? (
+                    <img
+                        src={thumbnailUrl}
+                        alt={`Video ${vIdx + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">
+                        <Video className="w-10 h-10 text-gray-400" />
+                    </div>
+                )}
+
+                {/* Subtle Dark Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10 opacity-75 group-hover:opacity-40 transition-opacity" />
+
+                {/* Top-Left Trending / Source Badge */}
+                <div className="absolute top-2.5 left-2.5 z-10">
+                    <span className="w-7 h-7 rounded-full bg-white/95 backdrop-blur-xs flex items-center justify-center shadow-md text-red-500 group-hover:scale-110 transition-transform">
+                        <TrendingUp className="w-4 h-4 text-red-500" />
+                    </span>
+                </div>
+
+                {/* Top-Right HD Tag */}
+                <div className="absolute top-2.5 right-2.5 z-10">
+                    <span className="px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-xs text-[10px] font-bold text-white uppercase tracking-wider">
+                        HD Video
+                    </span>
+                </div>
+
+                {/* Center Play Button Overlay */}
+                <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <div className="w-11 h-11 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl group-hover:scale-115 group-hover:bg-red-700 transition-all duration-300">
+                        <Play className="w-5 h-5 ml-0.5 fill-white" />
+                    </div>
+                </div>
+
+                {/* Bottom-Left Rating-Style Pill Badge */}
+                <div className="absolute bottom-2.5 left-2.5 z-10">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/95 backdrop-blur-xs text-[11px] font-bold text-gray-800 shadow-md">
+                        <span className="text-emerald-700 font-extrabold flex items-center gap-0.5">
+                            4.9 <Star className="w-3 h-3 fill-emerald-600 text-emerald-600" />
+                        </span>
+                        <span className="text-gray-300">|</span>
+                        <span className="text-gray-600">Video #{vIdx + 1}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom Product-Style Details Area */}
+            <div className="p-3.5 flex flex-col justify-between flex-1 bg-white">
+                <div>
+                    {/* Brand/Heading line */}
+                    <h4 className="font-bold text-gray-900 text-sm sm:text-base leading-tight group-hover:text-[#F43676] transition-colors truncate">
+                        {video.title ? `${video.title}` : `Official Video #${vIdx + 1}`}
+                    </h4>
+                    {/* Subtitle / Category line */}
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                        {video.source === "Post Update Video" ? "Post Update Video • Progress Report" : "Official Campaign Video • Verified Media"}
+                    </p>
+                </div>
+
+                {/* Action Link / Price-Style Row */}
+                <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                        <span className="font-extrabold text-xs sm:text-sm text-gray-900">
+                            Watch Now
+                        </span>
+                        <span className="text-[11px] font-bold text-[#F43676]">
+                            (Free HD)
+                        </span>
+                    </div>
+                    <span className="text-xs font-bold text-[#3650AD] group-hover:text-[#F43676] flex items-center gap-1 transition-colors">
+                        Play <Play className="w-3 h-3 fill-current" />
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function PetitionDetailClient({ initialPetition }) {
     const { slug } = useParams();
@@ -88,6 +186,8 @@ export default function PetitionDetailClient({ initialPetition }) {
     const [isPetitionReportModalOpen, setIsPetitionReportModalOpen] = useState(false);
     const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
     const [selectedClaimSigner, setSelectedClaimSigner] = useState(null);
+    const [selectedVideoModal, setSelectedVideoModal] = useState(null);
+    const [progressUpdates, setProgressUpdates] = useState([]);
     const [signatureStatus, setSignatureStatus] = useState({
         hasSigned: false,
         isCreator: false,
@@ -300,6 +400,19 @@ export default function PetitionDetailClient({ initialPetition }) {
                 try {
                     sessionStorage.setItem(storageKey, "true");
                 } catch {}
+            })
+            .catch(() => {});
+    }, [petition?._id]);
+
+    // Fetch approved progress updates to extract update videos
+    useEffect(() => {
+        if (!petition?._id) return;
+        fetch(`/api/progress-updates/${petition._id}`)
+            .then((res) => (res.ok ? res.json() : []))
+            .then((data) => {
+                if (Array.isArray(data)) {
+                    setProgressUpdates(data);
+                }
             })
             .catch(() => {});
     }, [petition?._id]);
@@ -730,13 +843,54 @@ export default function PetitionDetailClient({ initialPetition }) {
 
     // Helper to extract YouTube video ID
     const getYoutubeId = (url) => {
-        if (!url) return null;
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        if (!url || typeof url !== "string") return null;
+        const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/;
         const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
+        return match && match[1]?.length === 11 ? match[1] : null;
     };
 
-    const videoId = getYoutubeId(petition?.petitionDetails?.videoUrl);
+    // Collect all videos: Main Petition Video + Post Update Videos
+    const allVideos = [];
+    const addedUrls = new Set();
+
+    const addVideo = (url, title, source = "Official Campaign Video") => {
+        if (!url || typeof url !== "string") return;
+        const cleanUrl = url.trim();
+        if (!cleanUrl || addedUrls.has(cleanUrl)) return;
+        addedUrls.add(cleanUrl);
+        allVideos.push({
+            url: cleanUrl,
+            title: title || petition?.title || "Campaign Video",
+            source,
+        });
+    };
+
+    // 1. Main Petition Details Videos
+    if (Array.isArray(petition?.petitionDetails?.videoUrls)) {
+        petition.petitionDetails.videoUrls.forEach((u) => addVideo(u, petition?.title, "Official Campaign Video"));
+    }
+    if (petition?.petitionDetails?.videoUrl) {
+        petition.petitionDetails.videoUrl.split(/[\n,]+/).forEach((u) => addVideo(u, petition?.title, "Official Campaign Video"));
+    }
+    if (Array.isArray(petition?.videoUrls)) {
+        petition.videoUrls.forEach((u) => addVideo(u, petition?.title, "Official Campaign Video"));
+    }
+    if (petition?.videoUrl) {
+        petition.videoUrl.split(/[\n,]+/).forEach((u) => addVideo(u, petition?.title, "Official Campaign Video"));
+    }
+
+    // 2. Post Updates Videos (from approved progress updates)
+    if (Array.isArray(progressUpdates)) {
+        progressUpdates.forEach((up) => {
+            const updateTitle = up.title || "Progress Update Video";
+            if (Array.isArray(up.videoUrls) && up.videoUrls.length > 0) {
+                up.videoUrls.forEach((u) => addVideo(u, updateTitle, "Post Update Video"));
+            }
+            if (up.videoUrl && typeof up.videoUrl === "string") {
+                up.videoUrl.split(/[\n,]+/).forEach((u) => addVideo(u, updateTitle, "Post Update Video"));
+            }
+        });
+    }
 
     const heroImages =
         petition.petitionDetails?.images?.length > 0
@@ -757,6 +911,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                         petitionId={petition._id}
                         petitionTitle={petition.title}
                         hasSigned={signatureStatus.hasSigned}
+                        isCreator={signatureStatus.isCreator}
                         onScrollToSign={() => {
                             const signElement = document.getElementById("sign-petition-section");
                             if (signElement) {
@@ -766,7 +921,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                         onOpenReportModal={() => {
                             if (!user) {
                                 setShowLoginModal(true);
-                            } else if (!signatureStatus.hasSigned) {
+                            } else if (!signatureStatus.hasSigned && !signatureStatus.isCreator) {
                                 const signElement = document.getElementById("sign-petition-section");
                                 if (signElement) {
                                     signElement.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1682,58 +1837,58 @@ export default function PetitionDetailClient({ initialPetition }) {
                         )}
                     </div>
 
-                    {/* Video URL & Preview (Brick Design) */}
-                    {petition.petitionDetails?.videoUrl && (
-                        <div className="bg-gradient-to-br from-[#7C2525] via-[#A33232] to-[#5C1B1B] border-4 border-[#5C1B1B] rounded-2xl p-5 shadow-[8px_8px_0px_#3B0F0F] hover:shadow-[10px_10px_0px_#3B0F0F] transition-all duration-300 md:col-span-2">
-                            <div className="flex items-center justify-between mb-4 border-b border-red-400/30 pb-3">
+                    {/* Video Section (Product Card Design) */}
+                    {allVideos.length > 0 && (
+                        <div className="bg-white rounded-2xl p-6 md:p-7 border border-gray-100 shadow-lg hover:shadow-xl transition-shadow md:col-span-2">
+                            {/* Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-red-950/80 border border-red-500/30 flex items-center justify-center shadow-inner">
-                                        <Video className="w-5 h-5 text-red-300" />
+                                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-pink-500/10 to-pink-500/20 border border-pink-200 flex items-center justify-center">
+                                        <Video className="w-5 h-5 text-[#F43676]" />
                                     </div>
                                     <div>
-                                        <p className="font-extrabold text-white text-base tracking-wide flex items-center gap-2">
-                                            Petition Video Update
-                                            {/* <span className="text-[10px] font-bold bg-red-950/90 text-red-200 uppercase px-2 py-0.5 rounded border border-red-400/30">
-                                                Brick Frame
-                                            </span> */}
+                                        <h3 className="font-black text-gray-900 text-lg tracking-tight flex items-center gap-2">
+                                            Campaign & Update Video{allVideos.length > 1 ? "s" : ""}
+                                            <span className="text-xs font-bold bg-pink-50 text-[#F43676] px-2.5 py-0.5 rounded-full border border-pink-200">
+                                                {allVideos.length} Video{allVideos.length > 1 ? "s" : ""}
+                                            </span>
+                                        </h3>
+                                        <p className="text-xs text-gray-500 font-medium">
+                                            Watch official campaign coverage, key statements & organizer progress video updates
                                         </p>
-                                        <p className="text-xs text-red-200/80">Watch official campaign video message</p>
                                     </div>
                                 </div>
-                                <a
-                                    href={petition.petitionDetails.videoUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs font-bold text-white bg-red-900/80 hover:bg-red-950 px-3 py-1.5 rounded-lg border border-red-400/30 flex items-center gap-1.5 transition-colors shadow-sm"
-                                >
-                                    <span>Watch on YouTube</span>
-                                    <Share2 className="w-3.5 h-3.5" />
-                                </a>
+                                {allVideos.length === 1 && (
+                                    <a
+                                        href={allVideos[0].url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs font-bold text-gray-700 hover:text-[#F43676] bg-gray-50 hover:bg-pink-50 px-3.5 py-1.5 rounded-xl border border-gray-200 hover:border-pink-200 flex items-center gap-1.5 transition-all shadow-xs w-fit"
+                                    >
+                                        <span>Open on YouTube</span>
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                    </a>
+                                )}
                             </div>
-                            {videoId ? (
-                                <div className="w-full max-w-3xl mx-auto aspect-video rounded-xl overflow-hidden shadow-2xl bg-black border border-red-950">
-                                    <iframe
-                                        width="100%"
-                                        height="100%"
-                                        src={`https://www.youtube.com/embed/${videoId}`}
-                                        title="YouTube video player"
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                        className="w-full h-full"
-                                    ></iframe>
-                                </div>
-                            ) : (
-                                <a
-                                    href={petition.petitionDetails.videoUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-red-100 hover:text-white font-bold transition-colors bg-red-900/60 p-3 rounded-xl border border-red-500/20"
-                                >
-                                    <span>Watch Video</span>
-                                    <Video className="w-4 h-4 text-red-300" />
-                                </a>
-                            )}
+
+                            {/* Product Card Grid */}
+                            <div className={`grid gap-3.5 sm:gap-4 ${
+                                allVideos.length === 1
+                                    ? "grid-cols-1 sm:grid-cols-2 max-w-xl"
+                                    : allVideos.length === 2
+                                    ? "grid-cols-1 sm:grid-cols-2 max-w-2xl"
+                                    : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+                            }`}>
+                                {allVideos.map((video, vIdx) => (
+                                    <VideoProductCard
+                                        key={vIdx}
+                                        video={video}
+                                        vIdx={vIdx}
+                                        onPlay={(url, title) => setSelectedVideoModal({ url, title })}
+                                        getYoutubeId={getYoutubeId}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -2167,6 +2322,94 @@ export default function PetitionDetailClient({ initialPetition }) {
                     }}
                 />
             )}
+
+            {/* Fullscreen Video Player Modal */}
+            <AnimatePresence>
+                {selectedVideoModal && (() => {
+                    const modalVideoUrl = typeof selectedVideoModal === "object" ? selectedVideoModal?.url : selectedVideoModal;
+                    const modalVideoTitle = typeof selectedVideoModal === "object" ? selectedVideoModal?.title : (petition?.title || "Campaign Video Player");
+                    const modalYoutubeId = getYoutubeId(modalVideoUrl);
+
+                    return (
+                        <div 
+                            className="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] flex items-center justify-center p-3 sm:p-5"
+                            onClick={() => setSelectedVideoModal(null)}
+                        >
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.92, y: 15 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.92, y: 15 }}
+                                transition={{ duration: 0.2 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-gray-950 border border-gray-800 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+                            >
+                                {/* Modal Top Bar */}
+                                <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800 text-white">
+                                    <div className="flex items-center gap-2 overflow-hidden pr-3">
+                                        <div className="w-6 h-6 rounded-md bg-red-600 flex items-center justify-center shrink-0">
+                                            <Play className="w-3 h-3 fill-white text-white ml-0.5" />
+                                        </div>
+                                        <span className="font-bold text-xs sm:text-sm text-gray-200 truncate">
+                                            {modalVideoTitle}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {modalYoutubeId && (
+                                            <a
+                                                href={modalVideoUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs font-bold text-gray-300 hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1"
+                                            >
+                                                <span>YouTube</span>
+                                                <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedVideoModal(null)}
+                                            className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                                            aria-label="Close video"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Video Player Embed */}
+                                <div className="w-full aspect-video bg-black">
+                                    {modalYoutubeId ? (
+                                        <iframe
+                                            width="100%"
+                                            height="100%"
+                                            src={`https://www.youtube.com/embed/${modalYoutubeId}?autoplay=1`}
+                                            title="Campaign video player"
+                                            frameBorder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                            className="w-full h-full"
+                                        ></iframe>
+                                    ) : (
+                                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-white">
+                                            <Video className="w-12 h-12 text-gray-400 mb-3" />
+                                            <p className="text-sm font-semibold mb-3">External Video Link</p>
+                                            <a
+                                                href={modalVideoUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-4 py-2 bg-[#F43676] text-white text-xs font-bold rounded-lg hover:bg-[#e02a60] transition-colors inline-flex items-center gap-1.5"
+                                            >
+                                                Open Video Link <ExternalLink className="w-3.5 h-3.5" />
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        </div>
+                    );
+                })()}
+            </AnimatePresence>
         </div>
     );
 }

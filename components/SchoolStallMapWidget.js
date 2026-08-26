@@ -88,8 +88,10 @@ export default function SchoolStallMapWidget({
   petitionTitle,
   onOpenReportModal,
   hasSigned = true,
+  isCreator = false,
   onScrollToSign,
 }) {
+  const canReport = hasSigned || isCreator;
   const [displayPetitionTitle, setDisplayPetitionTitle] = useState(petitionTitle || "");
   const [cities, setCities] = useState([]);
   const [selectedCity, setSelectedCity] = useState("");
@@ -714,7 +716,7 @@ export default function SchoolStallMapWidget({
         </div>
 
         <div className="relative shrink-0">
-          {!hasSigned ? (
+          {!canReport ? (
             <div className="relative flex flex-wrap items-center gap-2">
               {/* Blurred Action Buttons */}
               <div className="flex items-center gap-2 filter blur-[3px] opacity-45 pointer-events-none select-none">

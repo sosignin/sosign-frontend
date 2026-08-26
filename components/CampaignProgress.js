@@ -466,7 +466,9 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const UPDATES_PER_PAGE = 2;
+
   const [targetSignatures, setTargetSignatures] = useState(Number(petition?.targetSignatures) || 0);
   const [targetInput, setTargetInput] = useState(petition?.targetSignatures ? String(petition.targetSignatures) : "");
   const [targetSubmitting, setTargetSubmitting] = useState(false);
@@ -573,10 +575,16 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Failed to post update");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to post update");
+      }
 
       const newUpdate = await response.json();
-      setUpdates([newUpdate, ...updates]);
+      if (newUpdate.isApproved) {
+        setUpdates((prev) => [newUpdate, ...prev]);
+      }
+      setCurrentPage(1);
       
       // Reset form
       setShowForm(false);
@@ -587,6 +595,7 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
       setSelectedDocs([]);
       setMilestoneLabel("");
       setVideoUrls([""]);
+      alert("Update posted successfully! It has been submitted for admin approval and will appear on the campaign once approved.");
     } catch (err) {
       alert(err.message);
     } finally {
@@ -774,52 +783,97 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
             animate={{ opacity: 1, height: "auto", marginBottom: 32 }}
             exit={{ opacity: 0, height: 0, marginBottom: 0 }}
             onSubmit={handleSubmit}
-            className="bg-blue-50/50 border border-blue-100 p-6 rounded-2xl overflow-hidden"
+            className="bg-gradient-to-br from-pink-50/60 via-white to-blue-50/50 border-2 border-pink-200/80 p-6 md:p-7 rounded-3xl overflow-hidden shadow-lg shadow-pink-500/5 mb-8"
           >
-            <div className="space-y-4">
+            {/* Form Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-gray-200/80 mb-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Update Title</label>
+                <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                  <span className="text-[#F43676]">📢</span> Post Campaign Update
+                </h3>
+                <p className="text-xs text-gray-500 font-medium mt-0.5">
+                  Keep your supporters updated with news, photos, videos, or milestone achievements.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors cursor-pointer"
+                title="Close form"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Type Selector Pills */}
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-2">
+                  Select Update Type
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {[
+                    { type: "text", label: "General Text", icon: "📝" },
+                    { type: "image", label: "Photos", icon: "📷" },
+                    { type: "document", label: "PDF Document", icon: "📄" },
+                    { type: "video", label: "YouTube Video", icon: "🎥" },
+                    { type: "milestone", label: "Milestone", icon: "🏆" },
+                  ].map((item) => (
+                    <button
+                      key={item.type}
+                      type="button"
+                      onClick={() => setUpdateType(item.type)}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        updateType === item.type
+                          ? "bg-[#F43676] text-white border-[#F43676] shadow-md shadow-pink-500/25 scale-102"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                      }`}
+                    >
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Title */}
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-1.5">
+                  Update Headline / Title <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="E.g., Met with municipal officer today"
-                  className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#3650AD] focus:border-transparent transition-shadow font-medium"
+                  placeholder="E.g., Meeting with Municipal Commissioner & High Court Petition Filed"
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F43676]/30 focus:border-[#F43676] outline-none transition-all font-semibold text-sm text-gray-900"
                   required
                 />
               </div>
 
+              {/* Details Content */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Update Details</label>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-1.5">
+                  Update Details & Message <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="Share what happened..."
-                  className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#3650AD] focus:border-transparent transition-shadow min-h-[120px] resize-y"
+                  placeholder="Describe what progress was achieved, upcoming steps, and how supporters can help..."
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F43676]/30 focus:border-[#F43676] outline-none transition-all min-h-[120px] resize-y text-sm text-gray-800"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Type of Update</label>
-                  <select
-                    value={updateType}
-                    onChange={(e) => setUpdateType(e.target.value)}
-                    className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#3650AD] focus:border-transparent font-medium"
-                  >
-                    <option value="text">General Update (Text)</option>
-                    <option value="image">Photo Update</option>
-                    <option value="document">Official Document (PDF)</option>
-                    <option value="video">Video Link (YouTube)</option>
-                    <option value="milestone">Milestone Reached</option>
-                  </select>
-                </div>
-              </div>
-
+              {/* Photo Upload */}
               {updateType === "image" && (
-                <div className="pt-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Photos (Max 4)</label>
+                <div className="pt-2 p-4 bg-white/80 rounded-2xl border border-gray-200/80">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-black uppercase tracking-wider text-gray-700">
+                      Upload Photos <span className="text-gray-400 font-medium">(Max 4 Images)</span>
+                    </label>
+                    <span className="text-[11px] font-bold text-gray-500">{selectedImages.length}/4 selected</span>
+                  </div>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -830,12 +884,12 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
                   />
                   <div className="flex flex-wrap gap-3">
                     {selectedImages.map((file, i) => (
-                      <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group">
+                      <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-gray-200 group shadow-xs">
                         <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
                         <button
                           type="button"
                           onClick={() => setSelectedImages(selectedImages.filter((_, idx) => idx !== i))}
-                          className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -845,19 +899,22 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-blue-400 hover:text-blue-500 transition-colors"
+                        className="w-24 h-24 rounded-xl border-2 border-dashed border-pink-300 hover:border-[#F43676] bg-pink-50/40 hover:bg-pink-50 flex flex-col items-center justify-center text-pink-600 transition-all cursor-pointer"
                       >
-                        <UploadCloud className="w-6 h-6 mb-1" />
-                        <span className="text-[10px] font-medium">Add Photo</span>
+                        <UploadCloud className="w-6 h-6 mb-1 text-[#F43676]" />
+                        <span className="text-[10px] font-extrabold">+ Add Photo</span>
                       </button>
                     )}
                   </div>
                 </div>
               )}
 
+              {/* PDF Document Upload */}
               {updateType === "document" && (
-                <div className="pt-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Upload PDF Document</label>
+                <div className="pt-2 p-4 bg-white/80 rounded-2xl border border-gray-200/80">
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-2">
+                    Official PDF Document
+                  </label>
                   <input
                     type="file"
                     ref={docInputRef}
@@ -867,15 +924,17 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
                   />
                   <div className="flex flex-col gap-2">
                     {selectedDocs.map((file, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                          <FileText className="w-5 h-5 text-red-500 flex-shrink-0" />
-                          <span className="text-sm font-medium text-gray-700 truncate">{file.name}</span>
+                      <div key={i} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-xs">
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          <div className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-bold text-gray-800 truncate">{file.name}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => setSelectedDocs(selectedDocs.filter((_, idx) => idx !== i))}
-                          className="text-gray-400 hover:text-red-500 p-1"
+                          className="text-gray-400 hover:text-red-500 p-1.5 transition-colors cursor-pointer"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -885,26 +944,27 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
                       <button
                         type="button"
                         onClick={() => docInputRef.current?.click()}
-                        className="w-full p-4 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center gap-2 text-gray-500 hover:bg-gray-50 hover:border-red-400 hover:text-red-500 transition-colors"
+                        className="w-full p-5 rounded-xl border-2 border-dashed border-gray-300 hover:border-red-400 hover:bg-red-50/40 flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 transition-all cursor-pointer"
                       >
-                        <UploadCloud className="w-5 h-5" />
-                        <span className="text-sm font-medium">Select PDF File</span>
+                        <UploadCloud className="w-5 h-5 text-red-500" />
+                        <span className="text-xs font-bold">Select PDF Document (Max 10MB)</span>
                       </button>
                     )}
                   </div>
                 </div>
               )}
 
+              {/* YouTube Video Links */}
               {updateType === "video" && (
-                <div className="pt-2 space-y-3">
+                <div className="pt-2 p-4 bg-white/80 rounded-2xl border border-gray-200/80 space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="block text-sm font-semibold text-gray-700">
-                      YouTube Video Links <span className="text-xs font-normal text-gray-500">(Add multiple videos in brick cards)</span>
+                    <label className="block text-xs font-black uppercase tracking-wider text-gray-700">
+                      YouTube Video Links <span className="text-gray-400 font-medium">(Product-style video cards)</span>
                     </label>
                     <button
                       type="button"
                       onClick={() => setVideoUrls([...videoUrls, ""])}
-                      className="text-xs font-bold text-[#F43676] hover:text-[#d6255d] flex items-center gap-1 bg-pink-50 hover:bg-pink-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                      className="text-xs font-bold text-[#F43676] hover:text-[#d6255d] flex items-center gap-1 bg-pink-50 hover:bg-pink-100 px-3 py-1 rounded-lg transition-colors cursor-pointer border border-pink-200"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Add Another Video
@@ -928,8 +988,8 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
                                 updated[idx] = e.target.value;
                                 setVideoUrls(updated);
                               }}
-                              placeholder="Paste YouTube link (e.g., https://youtube.com/watch?v=... or https://youtu.be/...)"
-                              className="flex-1 p-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#3650AD] focus:border-transparent outline-none"
+                              placeholder="Paste YouTube link (e.g. https://youtube.com/watch?v=... or https://youtu.be/...)"
+                              className="flex-1 p-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#F43676]/30 focus:border-[#F43676] outline-none"
                             />
                             {videoUrls.length > 1 && (
                               <button
@@ -957,26 +1017,47 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
                 </div>
               )}
 
+              {/* Milestone Reached */}
               {updateType === "milestone" && (
-                <div className="pt-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Milestone Reached</label>
+                <div className="pt-2 p-4 bg-white/80 rounded-2xl border border-gray-200/80">
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
+                    Milestone Achievement Label
+                  </label>
                   <input
                     type="text"
                     value={milestoneLabel}
                     onChange={(e) => setMilestoneLabel(e.target.value)}
-                    placeholder="E.g., 10,000 Signatures"
-                    className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#3650AD] focus:border-transparent"
+                    placeholder="E.g., 25,000 Verified Citizens Joined the Mission"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F43676]/30 focus:border-[#F43676] outline-none text-sm font-semibold"
                   />
                 </div>
               )}
 
-              <div className="pt-4 flex justify-end">
+              {/* Actions */}
+              <div className="pt-3 border-t border-gray-200/70 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-xs hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-3 bg-[#1a1a2e] text-white rounded-xl font-bold hover:bg-black transition-colors disabled:opacity-70 flex items-center gap-2"
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] hover:to-[#c41e50] text-white rounded-xl font-black text-xs shadow-md shadow-pink-500/25 hover:shadow-lg transition-all disabled:opacity-70 flex items-center gap-2 cursor-pointer"
                 >
-                  {submitting ? "Posting..." : "Post Update"}
+                  {submitting ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Posting Update...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Post Update</span>
+                      <TrendingUp className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -984,17 +1065,10 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
         )}
       </AnimatePresence>
 
-      {/* Timeline */}
-      <div className="relative">
+      {/* Timeline Section */}
+      <div id="campaign-progress-section" className="relative">
         {/* Vertical Line */}
         <div className="absolute left-[20px] md:left-[39px] top-4 bottom-0 w-0.5 bg-gradient-to-b from-gray-300 via-gray-200 to-transparent"></div>
-        
-        {/* Creation Node - Always at the bottom */}
-        <div className="relative pl-12 md:pl-20 py-4 mb-4 mt-8 opacity-70">
-          <div className="absolute left-[13px] md:left-[32px] top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-300 border-4 border-white rounded-full z-10 shadow-sm"></div>
-          <p className="font-semibold text-gray-600">Petition Created</p>
-          <p className="text-xs text-gray-400 mt-1">{new Date(petition?.createdAt).toLocaleDateString()}</p>
-        </div>
 
         {loading ? (
           <div className="pl-12 md:pl-20 py-8 text-gray-500 font-medium animate-pulse">Loading updates...</div>
@@ -1003,32 +1077,106 @@ export default function CampaignProgress({ petitionId, isCreator, petition }) {
             <AlertCircle className="w-5 h-5" /> {error}
           </div>
         ) : updates.length === 0 ? (
-          <div className="pl-12 md:pl-20 py-8 text-gray-500 italic">No progress updates yet.</div>
+          <div className="pl-12 md:pl-20 py-8 text-gray-500 italic">No progress updates posted yet.</div>
         ) : (
           <>
-            <div className="flex flex-col-reverse">
-              {(isExpanded ? updates : updates.slice(-3)).map((update, index) => (
-                <ProgressUpdateCard
-                  key={update._id}
-                  update={update}
-                  index={index}
-                  currentUserId={currentUserId}
-                  handleReact={handleReact}
-                  getYoutubeId={getYoutubeId}
-                />
-              ))}
+            {/* Paginated Updates List (2 updates per page) */}
+            <div className="space-y-1">
+              {updates
+                .slice((currentPage - 1) * UPDATES_PER_PAGE, currentPage * UPDATES_PER_PAGE)
+                .map((update, index) => (
+                  <ProgressUpdateCard
+                    key={update._id}
+                    update={update}
+                    index={index}
+                    currentUserId={currentUserId}
+                    handleReact={handleReact}
+                    getYoutubeId={getYoutubeId}
+                  />
+                ))}
             </div>
-            
-            {updates.length > 3 && (
-              <div className="pl-12 md:pl-16 py-4 flex justify-center">
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="px-6 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-semibold rounded-full border border-gray-200 transition-colors shadow-sm"
-                >
-                  {isExpanded ? "Show less updates" : `View all ${updates.length} updates`}
-                </button>
+
+            {/* Creation Node - Rendered at bottom of updates on the last page or when only 1 page */}
+            {(currentPage === Math.ceil(updates.length / UPDATES_PER_PAGE) || updates.length <= UPDATES_PER_PAGE) && (
+              <div className="relative pl-12 md:pl-20 py-4 mb-2 mt-4 opacity-75">
+                <div className="absolute left-[13px] md:left-[32px] top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-300 border-4 border-white rounded-full z-10 shadow-sm"></div>
+                <p className="font-semibold text-gray-700 text-sm">Petition Created</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {new Date(petition?.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+                </p>
               </div>
             )}
+
+            {/* Numbered Pagination (Displayed after 2 updates posted) */}
+            {updates.length > UPDATES_PER_PAGE && (() => {
+              const totalPages = Math.ceil(updates.length / UPDATES_PER_PAGE);
+              const startIndex = (currentPage - 1) * UPDATES_PER_PAGE;
+              const endIndex = startIndex + UPDATES_PER_PAGE;
+
+              return (
+                <div className="pl-6 md:pl-16 pt-6 pb-2 border-t border-gray-100 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-xs text-gray-500 font-semibold">
+                    Showing <span className="text-gray-900 font-extrabold">{startIndex + 1}–{Math.min(endIndex, updates.length)}</span> of <span className="text-gray-900 font-extrabold">{updates.length}</span> updates
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {/* Previous Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (currentPage > 1) {
+                          setCurrentPage(currentPage - 1);
+                          const el = document.getElementById("campaign-progress-section");
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                        }
+                      }}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>Prev</span>
+                    </button>
+
+                    {/* Page Number Buttons */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => {
+                          setCurrentPage(pageNum);
+                          const el = document.getElementById("campaign-progress-section");
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                        }}
+                        className={`w-8 h-8 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer ${
+                          currentPage === pageNum
+                            ? "bg-[#F43676] text-white shadow-md shadow-pink-500/25 scale-105"
+                            : "bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+
+                    {/* Next Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (currentPage < totalPages) {
+                          setCurrentPage(currentPage + 1);
+                          const el = document.getElementById("campaign-progress-section");
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                        }
+                      }}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </>
         )}
       </div>
