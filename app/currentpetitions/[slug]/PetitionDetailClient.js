@@ -22,6 +22,7 @@ import SchoolStallMapWidget from "../../../components/SchoolStallMapWidget";
 import SubmitStallReportModal from "../../../components/SubmitStallReportModal";
 import SubmitPetitionReportModal from "../../../components/SubmitPetitionReportModal";
 import ClaimRequestedSignatureModal from "../../../components/ClaimRequestedSignatureModal";
+import PetitionInsightsModal from "../../../components/PetitionInsightsModal";
 import {
     FileText,
     Users,
@@ -188,6 +189,7 @@ export default function PetitionDetailClient({ initialPetition }) {
     const [selectedClaimSigner, setSelectedClaimSigner] = useState(null);
     const [selectedVideoModal, setSelectedVideoModal] = useState(null);
     const [progressUpdates, setProgressUpdates] = useState([]);
+    const [showInsightsModal, setShowInsightsModal] = useState(false);
     const [signatureStatus, setSignatureStatus] = useState({
         hasSigned: false,
         isCreator: false,
@@ -1388,6 +1390,52 @@ export default function PetitionDetailClient({ initialPetition }) {
                     </div>
                 </div>
 
+                {/* Petition Views & Engagement Section - Just Below Petition Image Section */}
+                <div className="mt-4 bg-white rounded-2xl p-5 md:p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100/90">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#3650AD]/10 to-[#F43676]/20 flex items-center justify-center shrink-0 border border-[#F43676]/20">
+                                <Eye className="w-6 h-6 text-[#3650AD]" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-bold text-[#1a1a2e] text-lg">Petition Views</h3>
+                                    {(signatureStatus.isCreator || (user && petition && (user._id === petition.user?._id || user._id === petition.user))) && (
+                                        <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                                            Creator Access
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-500">Total views and community engagement on this petition</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center flex-wrap gap-3 self-start md:self-auto">
+                            <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-pink-50 md:bg-transparent px-4 py-2.5 md:p-0 rounded-xl border border-blue-100/60 md:border-0">
+                                <div className="text-left md:text-right">
+                                    <span className="text-2xl sm:text-3xl font-black text-[#1a1a2e]">
+                                        {(petition.views || 0).toLocaleString()}
+                                    </span>
+                                    <span className="text-xs text-gray-500 font-bold ml-1.5 md:ml-0 md:block uppercase tracking-wider">Views</span>
+                                </div>
+                            </div>
+
+                            {/* View Insights button for Petitioner / Creator */}
+                            {(signatureStatus.isCreator || (user && petition && (user._id === petition.user?._id || user._id === petition.user))) && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowInsightsModal(true)}
+                                    className="px-4 py-2.5 bg-gradient-to-r from-[#3650AD] to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-200 hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer group"
+                                    title="View follower vs non-follower view breakdown and audience insights"
+                                >
+                                    <BarChart3 className="w-4 h-4 text-blue-200 group-hover:scale-110 transition-transform" />
+                                    <span>View Insights</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 {/* Additional Petition Details */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Petition Starter / Campaign Author */}
@@ -1932,29 +1980,6 @@ export default function PetitionDetailClient({ initialPetition }) {
                     petition={petition} 
                 />
 
-                {/* Petition Views & Engagement Section */}
-                <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3.5">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#3650AD]/10 to-[#F43676]/20 flex items-center justify-center shrink-0">
-                                <Eye className="w-6 h-6 text-[#3650AD]" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-[#1a1a2e] text-lg">Petition Views</h3>
-                                <p className="text-xs text-gray-500">Total views and community engagement on this petition</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 bg-gray-50 sm:bg-transparent px-4 py-2.5 sm:p-0 rounded-xl">
-                            <div className="text-left sm:text-right">
-                                <span className="text-2xl sm:text-3xl font-extrabold text-[#1a1a2e]">
-                                    {(petition.views || 0).toLocaleString()}
-                                </span>
-                                <span className="text-xs text-gray-500 font-medium ml-1.5 sm:ml-0 sm:block">Views</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Share This Petition */}
                 <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg">
                     <div className="flex items-center gap-3 mb-5">
@@ -2320,6 +2345,17 @@ export default function PetitionDetailClient({ initialPetition }) {
                             window.location.reload();
                         }
                     }}
+                />
+            )}
+
+            {/* Petition View Insights Modal */}
+            {showInsightsModal && (
+                <PetitionInsightsModal
+                    petitionId={petition._id}
+                    petitionTitle={petition.title}
+                    isOpen={showInsightsModal}
+                    onClose={() => setShowInsightsModal(false)}
+                    user={user}
                 />
             )}
 

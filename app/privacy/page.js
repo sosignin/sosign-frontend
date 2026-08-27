@@ -1,173 +1,238 @@
 "use client";
 
-import React from 'react';
+import React from "react";
+import Link from "next/link";
+import {
+  FaShieldHalved,
+  FaLock,
+  FaDatabase,
+  FaUserCheck,
+  FaEnvelope,
+  FaFileShield,
+  FaCircleCheck,
+  FaHandHoldingDollar,
+  FaIdCard,
+} from "react-icons/fa6";
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-pink-50/30 py-12 px-4 md:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-[#002050] to-[#1a3a6e] rounded-3xl p-8 md:p-12 mb-10 relative overflow-hidden shadow-xl">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#F43676] rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-[#f8fafc] py-12 px-4 md:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto space-y-8">
+        {/* Header Hero Section */}
+        <div className="bg-gradient-to-br from-[#002050] via-[#1a3a6e] to-[#302D55] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl">
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="absolute -top-10 -right-10 w-60 h-60 bg-white rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-[#F43676] rounded-full blur-3xl"></div>
           </div>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-center text-white leading-tight relative z-10">
-            Privacy Policy
-          </h1>
-          <p className="text-center text-white/80 mt-4 text-lg relative z-10">
-            Your privacy matters to us
-          </p>
+
+          <div className="relative z-10 max-w-3xl mx-auto text-center space-y-3">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/10">
+              <FaShieldHalved className="text-xs" /> Data Protection & Privacy Standard
+            </span>
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
+              Privacy Policy
+            </h1>
+            <p className="text-sm md:text-base text-gray-300 leading-relaxed max-w-2xl mx-auto">
+              How SoSign collects, protects, processes, and respects your personal, KYC, payment, and advocacy data.
+            </p>
+            <p className="text-xs text-pink-300/90 font-mono pt-2">
+              Compliant with the Digital Personal Data Protection (DPDP) Act, 2023 & IT (SPDI) Rules, 2011
+            </p>
+          </div>
         </div>
 
-        {/* Content Section */}
-        <div className="bg-white shadow-lg rounded-3xl p-6 md:p-10 space-y-8">
-          {/* Privacy Section */}
-          <section>
-            <h2 className="text-2xl font-bold text-[#002050] mb-4 flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-[#F43676] rounded-full"></span>
-              PRIVACY
+        {/* Content Container */}
+        <div className="bg-white shadow-sm rounded-3xl p-6 md:p-10 space-y-10 border border-gray-200/80 text-slate-800 text-sm leading-relaxed">
+          
+          {/* Section 1: Overview & Commitment */}
+          <section className="space-y-3">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              1. Our Commitment to Your Privacy
             </h2>
-            <div className="space-y-4 text-[#302d55] leading-relaxed">
-              <p>
-                As a condition of your use of sosign.in, you agree to abide by the terms of our Privacy Policy. You agree to respect the privacy of all visitors and signers of your petition and not to disclose any information acquired from them without prior consent. The sole exception to this rule, as per our Privacy Policy, is when you are presenting the petition to its intended recipient. At that time, and only on one single occasion, you may present a disaggregated list of signers. You will not use any information collected from your petition for marketing or other mass email (spam) purposes without the explicit consent of your signers.
-              </p>
-              <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-[#F43676] p-4 rounded-r-xl">
-                <p className="text-sm text-[#302d55] uppercase font-semibold">
-                  IN NO EVENT SHALL THE COMPANY, ITS PARTNERS, OR ITS SUPPLIERS BE LIABLE TO ANY USER OR ANY THIRD PARTY FOR ANY DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DIRECT, INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL, EXEMPLARY OR LOST PROFITS) RESULTING FROM VIOLATIONS OF PRIVACY ARISING FROM YOUR PETITION, WHETHER BASED ON WARRANTY, CONTRACT, TORT, OR ANY OTHER LEGAL THEORY, AND WHETHER OR NOT THE COMPANY IS ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. YOU WILL BE SOLELY RESPONSIBLE FOR ANY VIOLATIONS OF PRIVACY AND MAY BE HELD IN BREACH OF sosign.in TERMS OF USE.
+            <p>
+              At <strong>SoSign</strong> (operated by <strong>Leoheart iTECH Mumbai</strong>), we believe in transparent, citizen-led advocacy underpinned by uncompromising privacy protections. This Privacy Policy details the types of information we collect, how it is processed, with whom it is shared, and your statutory rights under Indian data protection laws.
+            </p>
+          </section>
+
+          {/* Section 2: Information We Collect */}
+          <section className="space-y-4 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              2. Information We Collect
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                  <FaIdCard className="text-[#F43676]" />
+                  A. KYC & Government Identity Information:
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  When you voluntarily verify your profile or sign verified petitions:
                 </p>
+                <ul className="text-xs text-slate-600 list-disc pl-4 space-y-1">
+                  <li><strong>Aadhaar:</strong> Masked reference (XXXX-XXXX-1234), demographic name/age validation via OTP. Raw biometric and unmasked Aadhaar numbers are <strong>never stored</strong>.</li>
+                  <li><strong>PAN & Voter ID:</strong> PAN status from Income Tax records and Voter EPIC number for constituency validation.</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                  <FaHandHoldingDollar className="text-emerald-600" />
+                  B. Crowdfunding & Financial Transaction Data:
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  For creators and donors participating in fundraisers:
+                </p>
+                <ul className="text-xs text-slate-600 list-disc pl-4 space-y-1">
+                  <li><strong>Donors:</strong> Transaction amount, payment status, anonymized token via certified payment gateways (Razorpay/Cashfree). We do not store credit card CVVs or bank PINs.</li>
+                  <li><strong>Beneficiaries:</strong> Bank account number, IFSC code, and hospital billing documents for fund release audits.</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                  <FaDatabase className="text-blue-600" />
+                  C. Account & Signature Information:
+                </h4>
+                <ul className="text-xs text-slate-600 list-disc pl-4 space-y-1">
+                  <li>Name, email address, mobile number, and city/state.</li>
+                  <li>Petitions created, signatures recorded, comments posted, and followed causes.</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                  <FaFileShield className="text-purple-600" />
+                  D. Notable Signer Proofs & Media:
+                </h4>
+                <ul className="text-xs text-slate-600 list-disc pl-4 space-y-1">
+                  <li>Uploaded authorization letters, official tweets, and video statement proof files submitted for public figure signature verifications.</li>
+                </ul>
               </div>
             </div>
           </section>
 
-          {/* Important Note Section */}
-          <section>
-            <div className="bg-gradient-to-r from-[#002050]/5 to-[#1a3a6e]/5 rounded-2xl p-6 border border-[#002050]/10">
-              <h3 className="text-lg font-bold text-[#002050] mb-3 flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#F43676]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                PLEASE NOTE
+          {/* Section 3: Purpose of Processing */}
+          <section className="space-y-3 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              3. How We Use Your Information
+            </h2>
+            <p>
+              We process your personal data strictly for lawful, explicitly stated purposes:
+            </p>
+            <ul className="text-xs text-slate-700 space-y-2 list-disc pl-5">
+              <li><strong>Petition Delivery:</strong> Aggregating verified signature counts for submission to target decision-makers, ministries, and civic authorities.</li>
+              <li><strong>Anti-Fraud & Audit Trails:</strong> Detecting duplicate signatures, bot registrations, and illegal fundraising schemes.</li>
+              <li><strong>Fund Disbursement:</strong> Executing secure donor-to-beneficiary fund transfers and audit compliance.</li>
+              <li><strong>Service Communications:</strong> Notifying you of petition milestones, victory updates, policy replies from decision-makers, and security alerts.</li>
+            </ul>
+          </section>
+
+          {/* Section 4: Data Sharing & Disclosures */}
+          <section className="space-y-3 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              4. When Information is Shared
+            </h2>
+            <p>
+              SoSign <strong>does not sell, rent, or trade your personal or KYC data</strong> to third-party commercial marketing brokers. Information is disclosed only under these circumstances:
+            </p>
+            <div className="space-y-2 text-xs text-slate-700">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <strong>1. Petition Recipients (Decision Makers):</strong> When a petition is handed over to a government body or leader, a list of signers (names and general city/district) is presented. Your phone number and government ID numbers are NEVER disclosed to decision-makers.
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <strong>2. Regulated Service Providers:</strong> Licensed payment gateways (Razorpay/Cashfree), SMS/OTP gateways, and UIDAI-approved KYC APIs operating under strict contractual confidentiality and data security obligations.
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <strong>3. Lawful Government & Police Requests:</strong> If mandated by a valid judicial warrant, court order, or written summons from an authorized law enforcement agency investigating cybercrime, defamation, or national security offenses under the Information Technology Act.
+              </div>
+            </div>
+          </section>
+
+          {/* Section 5: Data Security & Retention */}
+          <section className="space-y-3 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              5. Data Security, Encryption & Storage
+            </h2>
+            <p>
+              We implement industry-leading technical and administrative safeguards compliant with <strong>Rule 8 of the Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011</strong>:
+            </p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-700 list-none pl-0">
+              <li className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center gap-2">
+                <FaLock className="text-emerald-600 shrink-0" />
+                <span>256-bit TLS encryption in transit and AES-256 at rest</span>
+              </li>
+              <li className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center gap-2">
+                <FaShieldHalved className="text-emerald-600 shrink-0" />
+                <span>Strict role-based access control (RBAC) on production databases</span>
+              </li>
+              <li className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center gap-2">
+                <FaUserCheck className="text-emerald-600 shrink-0" />
+                <span>Automated masking of Aadhaar and sensitive ID identifiers</span>
+              </li>
+              <li className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center gap-2">
+                <FaCircleCheck className="text-emerald-600 shrink-0" />
+                <span>Data stored in secure data centers located within India</span>
+              </li>
+            </ul>
+          </section>
+
+          {/* Section 6: User Rights */}
+          <section className="space-y-3 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              6. Your Rights Under DPDP Act, 2023
+            </h2>
+            <p>
+              As a citizen and data principal, you have statutory rights regarding your personal data:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <strong className="text-slate-900 block font-bold">Right to Access & Rectify</strong>
+                <p className="text-slate-600">You can view and update your profile information, email, and password directly through your account dashboard.</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <strong className="text-slate-900 block font-bold">Right to Erasure & Deletion</strong>
+                <p className="text-slate-600">You may request the permanent deletion of your account and unlinking of non-statutory petition signatures.</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <strong className="text-slate-900 block font-bold">Right to Withdraw Consent</strong>
+                <p className="text-slate-600">You can withdraw consent for newsletters or marketing communications at any time with one click.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 7: Grievance Officer (Commented out for now) */}
+          {/* <section className="space-y-3 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              7. Privacy Grievance Officer Contact
+            </h2>
+            <div className="p-5 bg-gradient-to-r from-blue-50 to-pink-50 border border-blue-200/80 rounded-2xl space-y-2">
+              <h3 className="font-extrabold text-[#002050] text-xs uppercase tracking-wider flex items-center gap-2">
+                <FaEnvelope className="text-[#F43676]" />
+                Data Protection & Privacy Officer
               </h3>
-              <p className="text-[#302d55] leading-relaxed mb-4">
-                In line with its Privacy Policy, the company may at its sole discretion share personally identifiable information (including but not limited to name, email, and IP information) if it believes such sharing to be legally necessary. Such sharing may occur in direct response to a request from a legal authority or without a direct request if we believe such sharing to be legally warranted. In the event we respond to a specific request, we may at our sole discretion waive the requirement of service of summons and respond to a request received in a verbal, emailed or other fashion.
+              <p className="text-xs text-slate-700">
+                For questions regarding data processing, privacy rights, or data deletion requests, contact:
               </p>
-              <p className="text-sm text-[#302d55] uppercase font-semibold bg-white/60 p-3 rounded-lg">
-                IN NO EVENT SHALL THE COMPANY, ITS PARTNERS, OR ITS SUPPLIERS BE LIABLE TO ANY USER OR ANY THIRD PARTY FOR ANY DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DIRECT, INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL, EXEMPLARY OR LOST PROFITS) RESULTING FROM VIOLATIONS OF PRIVACY ARISING FROM YOUR PETITION, WHETHER BASED ON WARRANTY, CONTRACT, TORT, OR ANY OTHER LEGAL THEORY, AND WHETHER OR NOT THE COMPANY IS ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-              </p>
-            </div>
-          </section>
-
-          {/* Termination Section */}
-          <section>
-            <h2 className="text-2xl font-bold text-[#002050] mb-4 flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-[#F43676] rounded-full"></span>
-              TERMINATION AND ACCESS RESTRICTION
-            </h2>
-            <div className="space-y-4 text-[#302d55] leading-relaxed">
-              <p>
-                The Company reserves the right, at its sole discretion, to terminate your access to any or all Angle Three Associates or sosign Sites/Services and the related services or any portion thereof at any time, without notice.
-              </p>
-              <p>
-                The Company may also terminate or suspend your access to sosign Site/Service(s) for inactivity, which is defined as failing to log into a particular service for an extended period of time, as determined by the Company. Upon termination of the sosign Site/Service, your right to use the sosign.in Site/Service immediately ceases.
-              </p>
-            </div>
-          </section>
-
-          {/* Jurisdiction Section */}
-          <section>
-            <h2 className="text-2xl font-bold text-[#002050] mb-4 flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-[#F43676] rounded-full"></span>
-              JURISDICTION
-            </h2>
-            <p className="text-[#302d55] leading-relaxed">
-              The Company makes no claims that the Materials are appropriate for any particular purpose or audience. Recognizing the global nature of the Internet, you agree to comply with all local rules regarding online conduct and acceptable Materials. Specifically, you agree to comply with all applicable laws regarding the transmission of technical data exported from Indian States or the country in which you reside. You are responsible for compliance with the laws of your jurisdiction.
-            </p>
-          </section>
-
-          {/* Links Section */}
-          <section>
-            <h2 className="text-2xl font-bold text-[#002050] mb-4 flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-[#F43676] rounded-full"></span>
-              LINKS TO THIRD PARTY SITES
-            </h2>
-            <div className="space-y-4 text-[#302d55] leading-relaxed">
-              <p>
-                The website may contain links to third party Web sites (&quot;Linked Sites&quot;). The Linked Sites are not under the control of the Company and the Company is not responsible for the contents of any Linked Site, including without limitation any link contained in a Linked Site, or any changes or updates to a Linked Site. The Company is providing these links to you only as a convenience, and the inclusion of any link does not imply endorsement by the Company of the site or any association with its operators. You are responsible for viewing and abiding by the privacy statements and terms of use posted at the Linked Sites.
-              </p>
-              <p>
-                Any dealings with third parties (including advertisers) included within the sosign.in website or participation in promotions, including the delivery of and the payment for goods and services, and any other terms, conditions, warranties or representations associated with such dealings or promotions, are solely between you and the advertiser or other third party. The Company shall not be responsible or liable for any part of any such dealings or promotions.
-              </p>
-            </div>
-          </section>
-
-          {/* Petition Hosts Section */}
-          <section>
-            <h2 className="text-2xl font-bold text-[#002050] mb-4 flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-[#F43676] rounded-full"></span>
-              PETITION HOSTS
-            </h2>
-            <div className="space-y-4 text-[#302d55] leading-relaxed">
-              <p>
-                We make every effort to ensure that individuals or groups hosting petitions at sosign.in respect these Terms of Use and our Privacy Policy. However, we cannot assume responsibility for any violations of these Terms of Use or our Privacy Policy by users. In the event of a concern that a petition host may have committed a violation, we encourage you to contact us directly.
-              </p>
-              <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-[#F43676] p-4 rounded-r-xl">
-                <p className="text-sm text-[#302d55] uppercase font-semibold">
-                  IN NO EVENT SHALL THE COMPANY, ITS PARTNERS, OR ITS SUPPLIERS BE LIABLE TO ANY USER OR ANY THIRD PARTY FOR ANY DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DIRECT, INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL, EXEMPLARY OR LOST PROFITS) RESULTING FROM VIOLATIONS OF PRIVACY OR TERMS OF USE ARISING, WHETHER BASED ON WARRANTY, CONTRACT, TORT, OR ANY OTHER LEGAL THEORY, AND WHETHER OR NOT THE COMPANY IS ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-                </p>
+              <div className="text-xs font-medium text-slate-800 space-y-0.5 bg-white p-3 rounded-xl border border-gray-200">
+                <p><strong>Entity:</strong> Leoheart iTECH Mumbai (SoSign Privacy Cell)</p>
+                <p><strong>Email:</strong> <a href="mailto:privacy@sosign.in" className="text-[#F43676] font-bold underline">privacy@sosign.in</a> / <a href="mailto:grievance@sosign.in" className="text-blue-600 underline">grievance@sosign.in</a></p>
+                <p><strong>Location:</strong> Mumbai, Maharashtra, India</p>
               </div>
             </div>
-          </section>
+          </section> */}
 
-          {/* Edits Section */}
-          <section>
-            <h2 className="text-2xl font-bold text-[#002050] mb-4 flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-[#F43676] rounded-full"></span>
-              EDITS AND MISREPRESENTATIONS
-            </h2>
-            <p className="text-[#302d55] leading-relaxed">
-              The Company offers its users tools to edit the text of petitions. These tools are intended to be used only for light edits and minor changes or additions/deletions. If in the opinion of the Company a user substantially edits a petition so as to change or misrepresent its original meaning, The Company reserves the right to remove a petition or suspend an account. This right may be exercised at the sole discretion of The Company.
-            </p>
-          </section>
-
-          {/* Payments Section */}
-          <section>
-            <h2 className="text-2xl font-bold text-[#002050] mb-4 flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-[#F43676] rounded-full"></span>
-              PAYMENTS, CONTRIBUTIONS AND DONATIONS
-            </h2>
-            <div className="space-y-4 text-[#302d55] leading-relaxed">
-              <p>
-                At several points on the website (notably but not limited to the home page and the page users see after signing a petition) the company may ask its users to consider making a payment, contribution or donation to the Company (collectively, &quot;Payments&quot;). These Payments are entirely optional and are never required to join sosign.in as a member or to sign a petition. They are what allow the company to offer a service to thousands of users around the world. It is always clearly stated that the Payment is directed toward the Company and not to the petition hosts or their associated causes.
-              </p>
-              <div className="bg-gradient-to-r from-[#002050]/5 to-[#1a3a6e]/5 border border-[#002050]/20 p-4 rounded-xl">
-                <p className="text-sm text-[#302d55] font-semibold uppercase">
-                  IN AGREEING TO THESE TERMS OF SERVICE, YOU EXPRESSLY AGREE THAT THE COMPANY SHALL HAVE THE RIGHT TO REQUEST SUCH PAYMENTS AND THAT THE PROCEEDS OF SUCH PAYMENTS SHALL BE EXCLUSIVELY MAINTAINED BY THE COMPANY AND NOT BY ANY USER OF SOSIGN.IN OR OTHER INDIVIDUAL OR ENTITY.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Violations Section */}
-          <section>
-            <h2 className="text-2xl font-bold text-[#002050] mb-4 flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-[#F43676] rounded-full"></span>
-              VIOLATIONS
-            </h2>
-            <div className="space-y-4 text-[#302d55] leading-relaxed">
-              <p>
-                Please report any violations of these Terms through our Contact page.
-              </p>
-              <p>
-                If any provision of this Agreement is found to be invalid by any court having competent jurisdiction, the invalidity of such provision shall not affect the validity of the remaining provisions of this Agreement, which shall remain in full force and effect.
-              </p>
-            </div>
-          </section>
-
-          {/* Footer */}
-          <div className="pt-8 mt-8 border-t border-gray-200">
-            <p className="text-center text-lg font-bold text-[#F43676]">
-              Thank you for trusting sosign.in with your voice for change!
+          {/* Footer Callout */}
+          <div className="pt-4 text-center border-t border-gray-200">
+            <p className="text-sm font-bold text-[#F43676]">
+              SoSign is dedicated to safeguarding your digital identity while empowering your democratic voice.
             </p>
           </div>
         </div>

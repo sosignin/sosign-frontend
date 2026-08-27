@@ -267,21 +267,15 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom Branding Section */}
-      {/* <div className="border-t border-[#4a4775] py-6 text-center text-sm text-gray-400">
-        <p>© 2025, <span className="font-semibold text-white">Sosign</span>. All rights reserved.</p>
-        <p className="mt-2 text-xs">
-          Developed by Haldar AI & IT.
-        </p>
-      </div> */}
-
-      {/* Scroll to Top Button */}
-      {/* <button
-        onClick={scrollToTop}
-        className="absolute bottom-6 right-6 w-10 h-10 bg-[#F43676] rounded-full flex items-center justify-center hover:bg-[#e02a60] transition-colors shadow-lg"
-      >
-        <FaArrowUp className="text-white text-sm" />
-      </button> */}
+      {/* Bottom Copyright Section */}
+      <div className="border-t border-[#43406b] py-6 text-center text-sm text-gray-400">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p>© {new Date().getFullYear()} <span className="font-bold text-white">SoSign</span>. All rights reserved.</p>
+          <p className="text-xs text-gray-400">
+            Empowering voices & verified community change.
+          </p>
+        </div>
+      </div>
     </footer>
   );
 }
