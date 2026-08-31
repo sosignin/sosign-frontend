@@ -15,6 +15,8 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState("/");
+  const [appRedirectUrl, setAppRedirectUrl] = useState(""); // Deep-link redirect for mobile app
+  const [showAppReturn, setShowAppReturn] = useState(false); // Show "Return to App" button
 
   // State for login form
   const [loginEmail, setLoginEmail] = useState("");
@@ -180,6 +182,19 @@ function LoginContent() {
     setOtp("");
     setSessionId("");
     handleSendOtp();
+  };
+
+  // Build deep link and redirect back to mobile app
+  const redirectToApp = (userData) => {
+    if (!appRedirectUrl) return false;
+    const sep = appRedirectUrl.includes('?') ? '&' : '?';
+    const deepLink = appRedirectUrl + sep
+      + 'token=' + encodeURIComponent(userData.token || '')
+      + '&user=' + encodeURIComponent(JSON.stringify(userData));
+    setShowAppReturn(deepLink);
+    // Auto-redirect after brief delay
+    setTimeout(() => { window.location.href = deepLink; }, 800);
+    return true;
   };
 
   const handleLoginSubmit = async (e) => {
@@ -1029,9 +1044,57 @@ function LoginFallback() {
           </div>
         </div>
       </div>
-    </div>
+    
+      {/* Mobile App Return Overlay */}
+      {showAppReturn && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'linear-gradient(135deg, #1E1B4B 0%, #302D55 50%, #0F172A 100%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '28px', padding: '36px 28px',
+            maxWidth: '400px', width: '100%', textAlign: 'center',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+          }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: '#ECFDF5', width: '64px', height: '64px', borderRadius: '20px',
+              marginBottom: '20px', border: '1.5px solid #A7F3D0'
+            }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6 9 17l-5-5"/>
+              </svg>
+            </div>
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#1E1B4B', marginBottom: '8px' }}>
+              Authenticated Successfully!
+            </h2>
+            <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '24px', lineHeight: '1.6' }}>
+              Welcome {user?.name || 'User'}. Tap the button below to return to the SoSign App.
+            </p>
+            <a
+              href={showAppReturn}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '100%', padding: '16px 20px',
+                background: 'linear-gradient(135deg, #F43676 0%, #E11D48 100%)',
+                color: '#fff', border: 'none', borderRadius: '16px',
+                fontWeight: 800, fontSize: '15px', cursor: 'pointer',
+                textDecoration: 'none',
+                boxShadow: '0 10px 20px rgba(244,54,118,0.35)'
+              }}
+            >
+              &#128073; Return to SoSign App
+            </a>
+          </div>
+        </div>
+      )}
+</div>
   );
 }
+
+
+
 
 export default function LoginPage() {
   return (

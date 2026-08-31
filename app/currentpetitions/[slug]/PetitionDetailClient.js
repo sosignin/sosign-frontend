@@ -1459,11 +1459,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                                         <p className="font-extrabold text-gray-900 truncate">
                                             {petition.petitionStarter.name || "Anonymous Activist"}
                                         </p>
-                                        {petition.petitionStarter.location && (
-                                            <p className="text-xs text-gray-500 truncate">
-                                                📍 {petition.petitionStarter.location}
-                                            </p>
-                                        )}
+                                        <p className="text-xs text-gray-500 truncate">
+                                            {petition.petitionStarter?.user?.designation || petition.petitionStarter?.designation || "Campaign Author & Activist"}
+                                        </p>
                                     </div>
                                 </div>
                                 {(petition.petitionStarter.user || petition.createdBy) && (
