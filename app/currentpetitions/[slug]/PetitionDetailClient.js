@@ -903,6 +903,46 @@ export default function PetitionDetailClient({ initialPetition }) {
     const heroImage = heroImages[activeImageIndex] ?? heroImages[0] ?? null;
     const hasMultipleHeroImages = heroImages.length > 1;
 
+    // Helper to format/sanitize social media URLs
+    const formatSocialUrl = (url, platform) => {
+        if (!url || typeof url !== "string") return "";
+        let clean = url.trim();
+        if (!clean) return "";
+        if (clean.startsWith("http://") || clean.startsWith("https://")) {
+            return clean;
+        }
+        if (clean.startsWith("@")) {
+            clean = clean.substring(1);
+        }
+        if (platform === "facebook" && !clean.includes("facebook.com")) {
+            return `https://facebook.com/${clean}`;
+        }
+        if (platform === "twitter" && !clean.includes("twitter.com") && !clean.includes("x.com")) {
+            return `https://x.com/${clean}`;
+        }
+        if (platform === "instagram" && !clean.includes("instagram.com")) {
+            return `https://instagram.com/${clean}`;
+        }
+        if (platform === "youtube" && !clean.includes("youtube.com")) {
+            return `https://youtube.com/@${clean}`;
+        }
+        if (platform === "linkedin" && !clean.includes("linkedin.com")) {
+            return `https://linkedin.com/in/${clean}`;
+        }
+        return `https://${clean}`;
+    };
+
+    // Consolidated Petition Starter Social Links (from petition.socialLinks OR petition.petitionStarter.user.socialLinks)
+    const starterSocialLinks = {
+        facebook: petition?.socialLinks?.facebook?.trim() || petition?.petitionStarter?.user?.socialLinks?.facebook?.trim() || "",
+        twitter: petition?.socialLinks?.twitter?.trim() || petition?.petitionStarter?.user?.socialLinks?.twitter?.trim() || "",
+        instagram: petition?.socialLinks?.instagram?.trim() || petition?.petitionStarter?.user?.socialLinks?.instagram?.trim() || "",
+        youtube: petition?.socialLinks?.youtube?.trim() || petition?.petitionStarter?.user?.socialLinks?.youtube?.trim() || "",
+        linkedin: petition?.socialLinks?.linkedin?.trim() || petition?.petitionStarter?.user?.socialLinks?.linkedin?.trim() || "",
+        website: petition?.socialLinks?.website?.trim() || petition?.petitionStarter?.user?.socialLinks?.website?.trim() || "",
+    };
+    const hasStarterSocialLinks = Object.values(starterSocialLinks).some((link) => Boolean(link && String(link).trim()));
+
     return (
         <div className="min-h-screen bg-[#f0f2f5] pb-12">
 
@@ -1440,40 +1480,136 @@ export default function PetitionDetailClient({ initialPetition }) {
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Petition Starter / Campaign Author */}
                     {petition.petitionStarter && (
-                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#F43676]/10 to-[#F43676]/20 flex items-center justify-center">
-                                    <PenTool className="w-5 h-5 text-[#F43676]" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-lg text-[#1a1a2e]">Petition Starter</h3>
-                                    <p className="text-xs text-gray-500">Campaign Author & Activist</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between gap-4 p-3 bg-pink-50/50 rounded-xl border border-pink-100">
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#3650AD] to-[#F43676] text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
-                                        {(petition.petitionStarter.name || "U").charAt(0).toUpperCase()}
+                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#F43676]/10 to-[#F43676]/20 flex items-center justify-center">
+                                        <PenTool className="w-5 h-5 text-[#F43676]" />
                                     </div>
-                                    <div className="min-w-0">
-                                        <p className="font-extrabold text-gray-900 truncate">
-                                            {petition.petitionStarter.name || "Anonymous Activist"}
-                                        </p>
-                                        <p className="text-xs text-gray-500 truncate">
-                                            {petition.petitionStarter?.user?.designation || petition.petitionStarter?.designation || "Campaign Author & Activist"}
-                                        </p>
+                                    <div>
+                                        <h3 className="font-bold text-lg text-[#1a1a2e]">Petition Starter</h3>
+                                        <p className="text-xs text-gray-500">Campaign Author & Activist</p>
                                     </div>
                                 </div>
-                                {(petition.petitionStarter.user || petition.createdBy) && (
-                                    <Link
-                                        href={`/profile/${petition.petitionStarter.user?._id || petition.petitionStarter.user || petition.createdBy}`}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F43676] hover:bg-pink-700 text-white font-bold text-xs shrink-0 shadow-xs transition transform hover:scale-105"
-                                    >
-                                        <span>View Profile</span>
-                                        <ChevronRight className="w-3.5 h-3.5" />
-                                    </Link>
-                                )}
+                                <div className="flex items-center justify-between gap-4 p-3.5 bg-pink-50/50 rounded-xl border border-pink-100">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        {petition.petitionStarter?.user?.profilePicture ? (
+                                            <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-sm">
+                                                <img
+                                                    src={petition.petitionStarter.user.profilePicture}
+                                                    alt={petition.petitionStarter.name || "Petition Starter"}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#3650AD] to-[#F43676] text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
+                                                {(petition.petitionStarter.name || "U").charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="font-extrabold text-gray-900 truncate">
+                                                {petition.petitionStarter.name || "Anonymous Activist"}
+                                            </p>
+                                            <p className="text-xs text-gray-500 truncate">
+                                                {petition.petitionStarter?.user?.designation || petition.petitionStarter?.designation || "Campaign Author & Activist"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {(petition.petitionStarter.user || petition.createdBy) && (
+                                        <Link
+                                            href={`/profile/${petition.petitionStarter.user?._id || petition.petitionStarter.user || petition.createdBy}`}
+                                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F43676] hover:bg-pink-700 text-white font-bold text-xs shrink-0 shadow-xs transition transform hover:scale-105"
+                                        >
+                                            <span>View Profile</span>
+                                            <ChevronRight className="w-3.5 h-3.5" />
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* Petition Starter Social Media Accounts */}
+                            {hasStarterSocialLinks && (
+                                <div className="mt-4 pt-3.5 border-t border-gray-100">
+                                    <p className="text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <FaGlobe className="text-[#F43676] text-xs" />
+                                        <span>Follow / Connect with Starter:</span>
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {starterSocialLinks.facebook && (
+                                            <a
+                                                href={formatSocialUrl(starterSocialLinks.facebook, "facebook")}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-[#1877F2] hover:bg-[#1877F2] hover:text-white transition-all shadow-xs border border-blue-100/80 group"
+                                                title="Visit Facebook Profile"
+                                            >
+                                                <FaFacebook className="text-sm group-hover:scale-110 transition-transform" />
+                                                <span>Facebook</span>
+                                            </a>
+                                        )}
+                                        {starterSocialLinks.twitter && (
+                                            <a
+                                                href={formatSocialUrl(starterSocialLinks.twitter, "twitter")}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-sky-50 text-[#1DA1F2] hover:bg-[#1DA1F2] hover:text-white transition-all shadow-xs border border-sky-100/80 group"
+                                                title="Visit Twitter / X Profile"
+                                            >
+                                                <FaTwitter className="text-sm group-hover:scale-110 transition-transform" />
+                                                <span>Twitter / X</span>
+                                            </a>
+                                        )}
+                                        {starterSocialLinks.instagram && (
+                                            <a
+                                                href={formatSocialUrl(starterSocialLinks.instagram, "instagram")}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-pink-50 text-[#E4405F] hover:bg-gradient-to-tr hover:from-amber-500 hover:via-pink-500 hover:to-purple-600 hover:text-white transition-all shadow-xs border border-pink-100/80 group"
+                                                title="Visit Instagram Profile"
+                                            >
+                                                <FaInstagram className="text-sm group-hover:scale-110 transition-transform" />
+                                                <span>Instagram</span>
+                                            </a>
+                                        )}
+                                        {starterSocialLinks.youtube && (
+                                            <a
+                                                href={formatSocialUrl(starterSocialLinks.youtube, "youtube")}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-50 text-[#FF0000] hover:bg-[#FF0000] hover:text-white transition-all shadow-xs border border-red-100/80 group"
+                                                title="Visit YouTube Channel"
+                                            >
+                                                <FaYoutube className="text-sm group-hover:scale-110 transition-transform" />
+                                                <span>YouTube</span>
+                                            </a>
+                                        )}
+                                        {starterSocialLinks.linkedin && (
+                                            <a
+                                                href={formatSocialUrl(starterSocialLinks.linkedin, "linkedin")}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-[#0A66C2] hover:bg-[#0A66C2] hover:text-white transition-all shadow-xs border border-blue-100/80 group"
+                                                title="Visit LinkedIn Profile"
+                                            >
+                                                <FaLinkedin className="text-sm group-hover:scale-110 transition-transform" />
+                                                <span>LinkedIn</span>
+                                            </a>
+                                        )}
+                                        {starterSocialLinks.website && (
+                                            <a
+                                                href={formatSocialUrl(starterSocialLinks.website, "website")}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-xs border border-emerald-100/80 group"
+                                                title="Visit Official Website"
+                                            >
+                                                <FaGlobe className="text-sm group-hover:scale-110 transition-transform" />
+                                                <span>Website</span>
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -1806,15 +1942,15 @@ export default function PetitionDetailClient({ initialPetition }) {
                         )}
 
                         {/* Petitioner Social Links & Follow Card */}
-                        {petition.socialLinks && Object.values(petition.socialLinks).some(link => Boolean(link && String(link).trim())) && (
+                        {hasStarterSocialLinks && (
                             <div className="mt-4 pt-4 border-t border-gray-100">
                                 <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                                     <FaGlobe className="text-purple-600" /> Follow Petitioner Pages
                                 </p>
                                 <div className="flex flex-wrap gap-2">
-                                    {petition.socialLinks.facebook && (
+                                    {starterSocialLinks.facebook && (
                                         <a
-                                            href={petition.socialLinks.facebook.startsWith('http') ? petition.socialLinks.facebook : `https://${petition.socialLinks.facebook}`}
+                                            href={formatSocialUrl(starterSocialLinks.facebook, "facebook")}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white transition-all shadow-sm group"
@@ -1823,9 +1959,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                                             <span>Facebook</span>
                                         </a>
                                     )}
-                                    {petition.socialLinks.instagram && (
+                                    {starterSocialLinks.instagram && (
                                         <a
-                                            href={petition.socialLinks.instagram.startsWith('http') ? petition.socialLinks.instagram : `https://${petition.socialLinks.instagram}`}
+                                            href={formatSocialUrl(starterSocialLinks.instagram, "instagram")}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-pink-50 text-pink-700 hover:bg-pink-600 hover:text-white transition-all shadow-sm group"
@@ -1834,9 +1970,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                                             <span>Instagram</span>
                                         </a>
                                     )}
-                                    {petition.socialLinks.twitter && (
+                                    {starterSocialLinks.twitter && (
                                         <a
-                                            href={petition.socialLinks.twitter.startsWith('http') ? petition.socialLinks.twitter : `https://${petition.socialLinks.twitter}`}
+                                            href={formatSocialUrl(starterSocialLinks.twitter, "twitter")}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 hover:bg-sky-500 hover:text-white transition-all shadow-sm group"
@@ -1845,9 +1981,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                                             <span>Twitter / X</span>
                                         </a>
                                     )}
-                                    {petition.socialLinks.youtube && (
+                                    {starterSocialLinks.youtube && (
                                         <a
-                                            href={petition.socialLinks.youtube.startsWith('http') ? petition.socialLinks.youtube : `https://${petition.socialLinks.youtube}`}
+                                            href={formatSocialUrl(starterSocialLinks.youtube, "youtube")}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-600 hover:text-white transition-all shadow-sm group"
@@ -1856,9 +1992,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                                             <span>YouTube</span>
                                         </a>
                                     )}
-                                    {petition.socialLinks.linkedin && (
+                                    {starterSocialLinks.linkedin && (
                                         <a
-                                            href={petition.socialLinks.linkedin.startsWith('http') ? petition.socialLinks.linkedin : `https://${petition.socialLinks.linkedin}`}
+                                            href={formatSocialUrl(starterSocialLinks.linkedin, "linkedin")}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 hover:bg-blue-800 hover:text-white transition-all shadow-sm group"
@@ -1867,9 +2003,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                                             <span>LinkedIn</span>
                                         </a>
                                     )}
-                                    {petition.socialLinks.website && (
+                                    {starterSocialLinks.website && (
                                         <a
-                                            href={petition.socialLinks.website.startsWith('http') ? petition.socialLinks.website : `https://${petition.socialLinks.website}`}
+                                            href={formatSocialUrl(starterSocialLinks.website, "website")}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-sm group"
