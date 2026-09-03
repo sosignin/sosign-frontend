@@ -1024,27 +1024,7 @@ function LoginContent() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
-function LoginFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-pink-50 px-4 py-8">
-      <div className="w-full max-w-md bg-white shadow-2xl rounded-3xl p-8 border border-pink-100">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded-xl w-3/4 mx-auto mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded-lg w-1/2 mx-auto mb-6"></div>
-          <div className="h-12 bg-gray-200 rounded-xl mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded-lg w-1/4 mx-auto mb-6"></div>
-          <div className="space-y-5">
-            <div className="h-12 bg-gray-200 rounded-xl"></div>
-            <div className="h-12 bg-gray-200 rounded-xl"></div>
-            <div className="h-12 bg-pink-100 rounded-xl"></div>
-          </div>
-        </div>
-      </div>
-    
       {/* Mobile App Return Overlay */}
       {showAppReturn && (
         <div style={{
@@ -1089,7 +1069,27 @@ function LoginFallback() {
           </div>
         </div>
       )}
-</div>
+    </div>
+  );
+}
+
+function LoginFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-pink-50 px-4 py-8">
+      <div className="w-full max-w-md bg-white shadow-2xl rounded-3xl p-8 border border-pink-100">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded-xl w-3/4 mx-auto mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded-lg w-1/2 mx-auto mb-6"></div>
+          <div className="h-12 bg-gray-200 rounded-xl mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded-lg w-1/4 mx-auto mb-6"></div>
+          <div className="space-y-5">
+            <div className="h-12 bg-gray-200 rounded-xl"></div>
+            <div className="h-12 bg-gray-200 rounded-xl"></div>
+            <div className="h-12 bg-pink-100 rounded-xl"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
