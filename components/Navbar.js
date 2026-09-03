@@ -18,7 +18,8 @@ import {
   FaBars,
   FaTimes,
   FaSpinner,
-  FaWallet
+  FaWallet,
+  FaShieldAlt,
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import NotificationCenter from "./NotificationCenter";
@@ -540,6 +541,13 @@ export default function Navbar() {
                       >
                         My Petitions
                       </Link>
+                      {/* <Link
+                        href="/my-grievances"
+                        className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        My Reported Food Stalls
+                      </Link> */}
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
@@ -680,6 +688,14 @@ export default function Navbar() {
                       <FaWallet className="text-sm text-[#F43676]" />
                       Wallet ({walletBalance.toFixed(1)} Pts)
                     </Link>
+                    {/* <Link
+                      href="/my-grievances"
+                      className="flex items-center gap-2 text-gray-700 hover:text-[#F43676] font-medium text-sm py-1.5 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <FaShieldAlt className="text-sm text-[#F43676]" />
+                      My Reported Food Stalls
+                    </Link> */}
                   </div>
                 )}
 

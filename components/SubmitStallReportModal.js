@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FaStore,
   FaSchool,
@@ -11,9 +11,40 @@ import {
   FaCheckCircle,
   FaExclamationTriangle,
   FaCity,
+  FaMicrophone,
+  FaMicrophoneSlash,
+  FaChevronRight,
+  FaChevronLeft,
+  FaShieldAlt,
+  FaInfoCircle,
 } from "react-icons/fa";
 
 import { parseGoogleLocationString } from "../utils/parseGoogleLocation";
+
+// 36 Districts of Maharashtra
+const MAHARASHTRA_DISTRICTS = [
+  "Ahmednagar", "Akola", "Amravati", "Aurangabad", "Beed", "Bhandara",
+  "Buldhana", "Chandrapur", "Dhule", "Gadchiroli", "Gondia", "Hingoli",
+  "Jalgaon", "Jalna", "Kolhapur", "Latur", "Mumbai City", "Mumbai Suburban",
+  "Nagpur", "Nanded", "Nandurbar", "Nashik", "Osmanabad", "Palghar",
+  "Parbhani", "Pune", "Raigad", "Ratnagiri", "Sangli", "Satara",
+  "Sindhudurg", "Solapur", "Thane", "Wardha", "Washim", "Yavatmal"
+];
+
+function calculateDistanceInMeters(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  const R = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
 
 export default function SubmitStallReportModal({
   petitionId,
@@ -21,15 +52,20 @@ export default function SubmitStallReportModal({
   onClose,
   onSuccess,
   token,
+  initialData,
 }) {
+  const [step, setStep] = useState(1); // 1: Type/Location, 2: Describe, 3: Review
   const [cities, setCities] = useState([]);
-  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedCity, setSelectedCity] = useState(initialData?.city || "Mumbai");
+  const [taluka, setTaluka] = useState(initialData?.taluka || "");
+  const [villageTown, setVillageTown] = useState(initialData?.villageTown || "");
+  const [landmark, setLandmark] = useState(initialData?.landmark || "");
   const [schools, setSchools] = useState([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
-  const [shopName, setShopName] = useState("");
+  const [shopName, setShopName] = useState(initialData?.shopName || "");
   const [description, setDescription] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
+  const [latitude, setLatitude] = useState(initialData?.latitude ? String(initialData.latitude) : "");
+  const [longitude, setLongitude] = useState(initialData?.longitude ? String(initialData.longitude) : "");
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   const [imageFiles, setImageFiles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -37,14 +73,19 @@ export default function SubmitStallReportModal({
   const [fetchingData, setFetchingData] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+
+  const miniMapRef = useRef(null);
+  const miniMapInstanceRef = useRef(null);
+  const miniMarkerRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // Handle Google Maps URL, DMS coordinates, or text Paste & Auto-Extraction
+  // Google Maps URL auto-parse
   const handleGoogleMapsUrlChange = (val) => {
     setGoogleMapsUrl(val);
     if (!val) return;
-
     const coords = parseGoogleLocationString(val);
     if (coords) {
       setLatitude(coords.lat.toString());
@@ -52,6 +93,7 @@ export default function SubmitStallReportModal({
     }
   };
 
+  // Fetch Cities
   useEffect(() => {
     if (!isOpen) return;
 
@@ -61,13 +103,19 @@ export default function SubmitStallReportModal({
         const res = await fetch(`${backendUrl}/api/stall-reports/cities`);
         if (res.ok) {
           const data = await res.json();
-          setCities(data.cities || []);
-          if (data.cities && data.cities.length > 0) {
-            setSelectedCity(data.cities[0]);
+          const fetchedCities = data.cities || [];
+          // Merge with MAHARASHTRA_DISTRICTS
+          const allDistricts = Array.from(
+            new Set([...MAHARASHTRA_DISTRICTS, ...fetchedCities])
+          ).sort();
+          setCities(allDistricts);
+          if (!selectedCity && allDistricts.length > 0) {
+            setSelectedCity(allDistricts[0]);
           }
         }
       } catch (err) {
         console.error("Error fetching cities:", err);
+        setCities(MAHARASHTRA_DISTRICTS);
       } finally {
         setFetchingData(false);
       }
@@ -76,22 +124,28 @@ export default function SubmitStallReportModal({
     fetchCities();
   }, [isOpen, backendUrl]);
 
+  // Fetch Schools for selected city
   useEffect(() => {
     if (!selectedCity) return;
 
     const fetchSchools = async () => {
       try {
-        const res = await fetch(`${backendUrl}/api/stall-reports/schools?city=${encodeURIComponent(selectedCity)}`);
+        const res = await fetch(
+          `${backendUrl}/api/stall-reports/schools?city=${encodeURIComponent(
+            selectedCity
+          )}`
+        );
         if (res.ok) {
           const data = await res.json();
           setSchools(data.schools || []);
           if (data.schools && data.schools.length > 0) {
             setSelectedSchoolId(data.schools[0]._id);
-            // Default coords to school coords
-            if (data.schools[0].location?.coordinates) {
+            if (!latitude && !longitude && data.schools[0].location?.coordinates) {
               setLongitude(String(data.schools[0].location.coordinates[0]));
               setLatitude(String(data.schools[0].location.coordinates[1]));
             }
+          } else {
+            setSelectedSchoolId("");
           }
         }
       } catch (err) {
@@ -106,8 +160,140 @@ export default function SubmitStallReportModal({
     setSelectedSchoolId(schoolId);
     const chosen = schools.find((s) => s._id === schoolId);
     if (chosen && chosen.location?.coordinates) {
-      setLongitude(String(chosen.location.coordinates[0]));
-      setLatitude(String(chosen.location.coordinates[1]));
+      // Default coordinates close to school if user hasn't set custom GPS
+      if (!latitude || !longitude) {
+        setLongitude(String(chosen.location.coordinates[0]));
+        setLatitude(String(chosen.location.coordinates[1]));
+      }
+    }
+  };
+
+  const currentSchool = schools.find((s) => s._id === selectedSchoolId);
+
+  // Calculate live distance to current school
+  const liveDistance = React.useMemo(() => {
+    if (!currentSchool?.location?.coordinates || !latitude || !longitude) {
+      return null;
+    }
+    const schoolLng = currentSchool.location.coordinates[0];
+    const schoolLat = currentSchool.location.coordinates[1];
+    return calculateDistanceInMeters(
+      schoolLat,
+      schoolLng,
+      parseFloat(latitude),
+      parseFloat(longitude)
+    );
+  }, [currentSchool, latitude, longitude]);
+
+  // Mini-map initialization & sync
+  useEffect(() => {
+    if (!isOpen || step !== 2) return;
+
+    const initMiniMap = () => {
+      if (typeof window === "undefined" || !window.google || !window.google.maps) {
+        return;
+      }
+      if (!miniMapRef.current) return;
+
+      const latNum = parseFloat(latitude) || currentSchool?.location?.coordinates?.[1] || 19.076;
+      const lngNum = parseFloat(longitude) || currentSchool?.location?.coordinates?.[0] || 72.8777;
+      const center = { lat: latNum, lng: lngNum };
+
+      if (!miniMapInstanceRef.current) {
+        const map = new window.google.maps.Map(miniMapRef.current, {
+          center,
+          zoom: 17,
+          mapTypeId: "roadmap",
+          disableDefaultUI: true,
+          zoomControl: true,
+          gestureHandling: "greedy",
+        });
+        miniMapInstanceRef.current = map;
+
+        const marker = new window.google.maps.Marker({
+          position: center,
+          map,
+          draggable: true,
+          title: "Stall Location (Drag to adjust)",
+        });
+        miniMarkerRef.current = marker;
+
+        marker.addListener("dragend", (e) => {
+          const newLat = e.latLng.lat().toFixed(6);
+          const newLng = e.latLng.lng().toFixed(6);
+          setLatitude(newLat);
+          setLongitude(newLng);
+        });
+
+        map.addListener("click", (e) => {
+          const newLat = e.latLng.lat().toFixed(6);
+          const newLng = e.latLng.lng().toFixed(6);
+          setLatitude(newLat);
+          setLongitude(newLng);
+          marker.setPosition(e.latLng);
+        });
+      } else {
+        miniMapInstanceRef.current.setCenter(center);
+        if (miniMarkerRef.current) {
+          miniMarkerRef.current.setPosition(center);
+        }
+      }
+    };
+
+    const timer = setTimeout(initMiniMap, 200);
+    return () => clearTimeout(timer);
+  }, [isOpen, step, latitude, longitude, currentSchool]);
+
+  // Voice recognition mic toggle
+  const handleToggleVoiceInput = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome or Safari.");
+      return;
+    }
+
+    if (isRecording) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsRecording(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-IN"; // Supports English / Hindi / Marathi accents
+      recognition.interimResults = true;
+      recognition.continuous = false;
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map((result) => result[0].transcript)
+          .join("");
+        setDescription((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      };
+
+      recognition.onerror = (event) => {
+        console.warn("Speech recognition error:", event.error);
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error("Speech recognition error:", err);
+      setIsRecording(false);
     }
   };
 
@@ -120,7 +306,6 @@ export default function SubmitStallReportModal({
     }
     const newFiles = files.slice(0, remaining);
     setImageFiles((prev) => [...prev, ...newFiles]);
-    // Reset file input so user can select again
     e.target.value = "";
   };
 
@@ -137,18 +322,25 @@ export default function SubmitStallReportModal({
     setError("");
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLatitude(position.coords.latitude.toFixed(6));
-        setLongitude(position.coords.longitude.toFixed(6));
+        const lat = position.coords.latitude.toFixed(6);
+        const lng = position.coords.longitude.toFixed(6);
+        setLatitude(lat);
+        setLongitude(lng);
         setGpsLoading(false);
+
+        if (miniMapInstanceRef.current && window.google) {
+          const pos = new window.google.maps.LatLng(parseFloat(lat), parseFloat(lng));
+          miniMapInstanceRef.current.setCenter(pos);
+          miniMapInstanceRef.current.setZoom(18);
+          if (miniMarkerRef.current) {
+            miniMarkerRef.current.setPosition(pos);
+          }
+        }
       },
       (err) => {
         setGpsLoading(false);
         if (err.code === 1) {
-          setError("Location permission denied. Please allow location access in your browser settings.");
-        } else if (err.code === 2) {
-          setError("Location unavailable. Please check your device's GPS.");
-        } else if (err.code === 3) {
-          setError("Location request timed out. Please try again.");
+          setError("Location permission denied. Please enable GPS permissions.");
         } else {
           setError("Could not retrieve GPS location: " + err.message);
         }
@@ -158,14 +350,20 @@ export default function SubmitStallReportModal({
   };
 
   const resetForm = () => {
+    setStep(1);
     setShopName("");
     setDescription("");
+    setTaluka("");
+    setVillageTown("");
+    setLandmark("");
     setLatitude("");
     setLongitude("");
     setGoogleMapsUrl("");
     setImageFiles([]);
     setError("");
     setSuccess("");
+    miniMapInstanceRef.current = null;
+    miniMarkerRef.current = null;
   };
 
   const handleClose = () => {
@@ -173,8 +371,33 @@ export default function SubmitStallReportModal({
     onClose();
   };
 
+  const handleNext = () => {
+    setError("");
+    if (step === 1) {
+      if (!selectedCity) {
+        setError("Please select a District.");
+        return;
+      }
+      if (!selectedSchoolId && schools.length > 0) {
+        setError("Please select the nearby School.");
+        return;
+      }
+      setStep(2);
+    } else if (step === 2) {
+      if (!shopName.trim()) {
+        setError("Please enter the Shop / Stall name.");
+        return;
+      }
+      if (!latitude || !longitude) {
+        setError("Please pinpoint the stall GPS coordinates or capture your location.");
+        return;
+      }
+      setStep(3);
+    }
+  };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setError("");
     setSuccess("");
 
@@ -185,9 +408,19 @@ export default function SubmitStallReportModal({
 
     try {
       setLoading(true);
+      const authToken =
+        token ||
+        (typeof window !== "undefined"
+          ? JSON.parse(localStorage.getItem("user") || "{}")?.token || ""
+          : "");
+
       const formData = new FormData();
-      formData.append("petitionId", petitionId);
+      formData.append("petitionId", petitionId || "");
       formData.append("city", selectedCity);
+      formData.append("district", selectedCity);
+      formData.append("taluka", taluka);
+      formData.append("villageTown", villageTown);
+      formData.append("landmark", landmark);
       formData.append("schoolId", selectedSchoolId);
       formData.append("shopName", shopName);
       formData.append("description", description);
@@ -200,7 +433,7 @@ export default function SubmitStallReportModal({
       const res = await fetch(`${backendUrl}/api/stall-reports`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${authToken}`,
         },
         body: formData,
       });
@@ -208,17 +441,19 @@ export default function SubmitStallReportModal({
       const data = await res.json();
 
       if (res.ok) {
-        setSuccess("Report submitted successfully! Admin will review and verify the 50m radius violation.");
+        setSuccess(
+          "Grievance submitted successfully! Verification notice generated."
+        );
         resetForm();
         setTimeout(() => {
           if (onSuccess) onSuccess();
           onClose();
-        }, 2000);
+        }, 1800);
       } else {
-        setError(data.message || "Failed to submit report.");
+        setError(data.message || "Failed to submit grievance.");
       }
     } catch (err) {
-      setError("Error submitting report: " + err.message);
+      setError("Error submitting grievance: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -226,201 +461,400 @@ export default function SubmitStallReportModal({
 
   if (!isOpen) return null;
 
-  const currentSchool = schools.find((s) => s._id === selectedSchoolId);
-
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 border border-pink-100 my-8">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b pb-3">
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl space-y-4 border border-pink-100/90 my-6 relative">
+        {/* Top Header Card (Pink & White Website Theme) */}
+        <div className="bg-gradient-to-r from-[#d81b60] via-[#F43676] to-[#e02a60] text-white p-4 rounded-2xl flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-pink-50 text-[#F43676] flex items-center justify-center">
-              <FaStore className="text-xl" />
+            <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white text-lg">
+              <FaShieldAlt />
             </div>
             <div>
-              <h3 className="font-extrabold text-gray-900 text-lg">Report 50m Junk Food Stall</h3>
-              <p className="text-xs text-gray-500">Crowd-source illegal food stalls near schools in Maharashtra</p>
+              <h3 className="font-extrabold text-sm sm:text-base leading-tight">
+                Report School Buffer Food Stall
+              </h3>
+              <p className="text-[11px] text-pink-50 font-normal">
+                50m School Buffer Zone Vigilance & Enforcement
+              </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={handleClose}
-            className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-pink-50 hover:text-[#F43676] flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer text-xs"
           >
             <FaTimes />
           </button>
         </div>
 
-        {fetchingData ? (
-          <div className="py-12 text-center text-gray-500">
-            <FaSpinner className="animate-spin text-2xl mb-2 text-[#F43676] mx-auto" />
-            <p className="text-xs font-semibold">Loading Maharashtra cities & schools...</p>
+        {/* Stepper (Location -> Describe -> Review) */}
+        <div className="flex items-center justify-between px-2 pt-1 border-b border-pink-100 pb-3">
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                step > 1
+                  ? "bg-emerald-500 text-white"
+                  : step === 1
+                  ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
+                  : "bg-gray-100 text-gray-400"
+              }`}
+            >
+              {step > 1 ? "✓" : "1"}
+            </div>
+            <span
+              className={`text-xs font-bold ${
+                step === 1 ? "text-[#F43676]" : "text-gray-500"
+              }`}
+            >
+              Location
+            </span>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-pink-50 border border-pink-200 text-pink-700 text-xs p-3 rounded-xl flex items-center gap-2">
-                <FaExclamationTriangle className="text-[#F43676] shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
 
-            {success && (
-              <div className="bg-green-50 border border-green-200 text-green-700 text-xs p-3 rounded-xl flex items-center gap-2">
-                <FaCheckCircle className="text-green-600 shrink-0" />
-                <span>{success}</span>
-              </div>
-            )}
+          <div
+            className={`flex-1 h-0.5 mx-2 ${
+              step > 1 ? "bg-emerald-500" : "bg-gray-200"
+            }`}
+          />
 
-            {/* City Selection */}
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
-                <FaCity className="text-[#F43676]" /> Select City (Maharashtra) *
-              </label>
-              <select
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-                className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#F43676] bg-white font-medium"
-              >
-                {cities.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                step > 2
+                  ? "bg-emerald-500 text-white"
+                  : step === 2
+                  ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
+                  : "bg-gray-100 text-gray-400"
+              }`}
+            >
+              {step > 2 ? "✓" : "2"}
+            </div>
+            <span
+              className={`text-xs font-bold ${
+                step === 2 ? "text-[#F43676]" : "text-gray-500"
+              }`}
+            >
+              Describe
+            </span>
+          </div>
+
+          <div
+            className={`flex-1 h-0.5 mx-2 ${
+              step > 2 ? "bg-emerald-500" : "bg-gray-200"
+            }`}
+          />
+
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                step === 3
+                  ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
+                  : "bg-gray-100 text-gray-400"
+              }`}
+            >
+              3
+            </div>
+            <span
+              className={`text-xs font-bold ${
+                step === 3 ? "text-[#F43676]" : "text-gray-500"
+              }`}
+            >
+              Review
+            </span>
+          </div>
+        </div>
+
+        {/* Error / Success Alerts */}
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl flex items-center gap-2">
+            <FaExclamationTriangle className="text-rose-500 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs p-3 rounded-xl flex items-center gap-2">
+            <FaCheckCircle className="text-emerald-600 shrink-0" />
+            <span>{success}</span>
+          </div>
+        )}
+
+        {/* STEP 1: District, Taluka, School & Locality */}
+        {step === 1 && (
+          <div className="space-y-3.5 animate-in fade-in duration-200">
+            <div className="space-y-0.5">
+              <h4 className="text-sm font-bold text-gray-900">
+                Where did this happen?
+              </h4>
+              <p className="text-xs text-gray-500">
+                Select the district and the nearest monitored school in Maharashtra.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  District *
+                </label>
+                <select
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-pink-200 focus:border-[#F43676] bg-white font-medium text-gray-900"
+                >
+                  {cities.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Taluka / Area
+                </label>
+                <input
+                  type="text"
+                  value={taluka}
+                  onChange={(e) => setTaluka(e.target.value)}
+                  placeholder="e.g. Haveli / Andheri"
+                  className="w-full text-xs p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-pink-200 focus:border-[#F43676] bg-white text-gray-900 font-medium"
+                />
+              </div>
             </div>
 
             {/* School Selection */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
-                <FaSchool className="text-[#F43676]" /> Select Nearby School *
+              <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <FaSchool className="text-[#F43676]" /> Target School *
+                </span>
+                <span className="text-[10px] text-gray-400 font-normal">
+                  {schools.length} schools mapped
+                </span>
               </label>
-              <select
-                value={selectedSchoolId}
-                onChange={(e) => handleSchoolChange(e.target.value)}
-                className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#F43676] bg-white font-medium"
-              >
-                {schools.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.name} ({s.address || s.city})
-                  </option>
-                ))}
-              </select>
-              {currentSchool && (
-                <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
-                  <FaMapMarkerAlt className="text-[#F43676] text-xs" />
-                  Address: {currentSchool.address || currentSchool.city}
-                </p>
+              {schools.length === 0 ? (
+                <div className="p-3 bg-pink-50/50 border border-pink-100 rounded-xl text-xs text-gray-500 text-center">
+                  No registered schools found for {selectedCity}. You can still proceed with coordinates.
+                </div>
+              ) : (
+                <select
+                  value={selectedSchoolId}
+                  onChange={(e) => handleSchoolChange(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-pink-200 focus:border-[#F43676] bg-white font-medium text-gray-900"
+                >
+                  {schools.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name} ({s.address || s.city})
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
 
-            {/* Stall Name & Details */}
+            {/* Village / Town and Landmark */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Junk Food Stall Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={shopName}
-                  onChange={(e) => setShopName(e.target.value)}
-                  placeholder="e.g. Raju Fast Food Corner"
-                  className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#F43676] bg-white text-gray-900 font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Details / Food Items</label>
-                <input
-                  type="text"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="e.g. Selling fried items near gate"
-                  className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#F43676] bg-white text-gray-900 font-medium"
-                />
-              </div>
-            </div>
-
-            {/* Coordinates / Geolocation & Google Maps URL Auto-Extractor */}
-            <div className="bg-pink-50/60 border border-pink-100 rounded-2xl p-4 space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <FaMapMarkerAlt className="text-[#F43676]" /> Share via Google Maps Link (Optional)
-                  </span>
-                  <span className="text-[10px] text-gray-500 font-normal">Auto-extracts Lat & Lng</span>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Village / Town
                 </label>
                 <input
                   type="text"
-                  value={googleMapsUrl}
-                  onChange={(e) => handleGoogleMapsUrlChange(e.target.value)}
-                  placeholder="Paste Google Maps link e.g. https://maps.google.com/?q=19.0345,72.8398"
-                  className="w-full text-xs p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#F43676] bg-white text-gray-900 font-medium placeholder:text-gray-400"
+                  value={villageTown}
+                  onChange={(e) => setVillageTown(e.target.value)}
+                  placeholder="e.g. Bandra West"
+                  className="w-full text-xs p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-pink-200 focus:border-[#F43676] bg-white text-gray-900 font-medium"
                 />
               </div>
 
-              <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-pink-100">
-                <span className="text-xs font-bold text-pink-950 flex items-center gap-1.5">
-                  <FaMapMarkerAlt className="text-[#F43676]" /> Stall GPS Coordinates (Within 50m) (Optional)
-                </span>
-                <div className="flex items-center gap-2">
-                  {latitude && longitude && (
-                    <a
-                      href={`https://www.google.com/maps?q=${latitude},${longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-sm flex items-center gap-1"
-                      title="Open location in Google Maps"
-                    >
-                      <FaMapMarkerAlt className="text-blue-500" />
-                      <span>Google Maps</span>
-                    </a>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleGetLiveLocation}
-                    disabled={gpsLoading}
-                    className="text-[11px] font-bold text-[#F43676] hover:text-pink-800 bg-white px-2.5 py-1 rounded-lg border border-pink-200 shadow-sm disabled:opacity-50"
-                  >
-                    {gpsLoading ? "Locating..." : "Use My Current GPS"}
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] text-gray-600 font-semibold mb-1">Latitude (Optional)</label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={latitude}
-                    onChange={(e) => setLatitude(e.target.value)}
-                    placeholder="e.g. 19.0345"
-                    className="w-full text-xs p-2.5 border border-gray-300 rounded-lg outline-none bg-white text-gray-900 font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-gray-600 font-semibold mb-1">Longitude (Optional)</label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={longitude}
-                    onChange={(e) => setLongitude(e.target.value)}
-                    placeholder="e.g. 72.8398"
-                    className="w-full text-xs p-2.5 border border-gray-300 rounded-lg outline-none bg-white text-gray-900 font-bold"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Landmark *
+                </label>
+                <input
+                  type="text"
+                  value={landmark}
+                  onChange={(e) => setLandmark(e.target.value)}
+                  placeholder="e.g. Opposite Main School Gate"
+                  className="w-full text-xs p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-pink-200 focus:border-[#F43676] bg-white text-gray-900 font-medium"
+                />
               </div>
             </div>
 
-            {/* Evidence Photos Upload */}
+            {/* Navigation Buttons */}
+            <div className="flex gap-2 pt-2 border-t border-pink-100">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="flex-1 py-2.5 border border-gray-300 font-bold text-xs text-gray-600 rounded-xl hover:bg-gray-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                className="flex-1 py-2.5 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] text-white font-bold text-xs rounded-xl shadow-md shadow-pink-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>Continue</span>
+                <FaChevronRight className="text-[10px]" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: Tell us what happened */}
+        {step === 2 && (
+          <div className="space-y-3.5 animate-in fade-in duration-200 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="space-y-0.5">
+              <h4 className="text-sm font-bold text-gray-900">
+                Tell us what happened.
+              </h4>
+              <p className="text-[11px] text-gray-500 leading-normal">
+                Write what happened in your own words - Marathi, Hindi or English. You can also use the mic. We&apos;ll pick out the details.
+              </p>
+            </div>
+
+            {/* Shop / Establishment Name */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Shop / establishment name *
+              </label>
+              <input
+                type="text"
+                required
+                value={shopName}
+                onChange={(e) => setShopName(e.target.value)}
+                placeholder="e.g. Raju Fast Food / Gupta Pan Corner"
+                className="w-full text-xs p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-pink-200 focus:border-[#F43676] bg-white text-gray-900 font-medium"
+              />
+            </div>
+
+            {/* Guidance Callout Box (Pink & White Theme) */}
+            <div className="bg-pink-50/70 border border-pink-200 rounded-2xl p-3 text-[11px] text-pink-950 space-y-1.5">
+              <div className="font-bold flex items-center gap-1.5 text-[#F43676] text-xs">
+                <span>📋</span>
+                <span>Please include, so we can act fast:</span>
+              </div>
+              <ul className="space-y-1 text-[10px] text-gray-700 pl-1 font-medium">
+                <li className="flex items-start gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span>What exactly was wrong - junk food stall within 50m of school, expired food, tobacco products</span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span>The shop / brand / vendor name</span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span>Where it is - gate number, corner, footpath or landmark</span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span>Add photo evidence or location below</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Grievance Description Textarea */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Describe your grievance *
+              </label>
+              <textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe what items are being sold, how close to the school gate they are, and why it poses a health risk..."
+                className="w-full text-xs p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-pink-200 focus:border-[#F43676] bg-white text-gray-900 font-medium resize-none"
+              />
+
+              {/* Speech mic button & live validation status */}
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={handleToggleVoiceInput}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isRecording
+                      ? "bg-rose-500 text-white animate-pulse"
+                      : "bg-pink-50 text-[#F43676] hover:bg-pink-100 border border-pink-200"
+                  }`}
+                >
+                  {isRecording ? <FaMicrophoneSlash /> : <FaMicrophone />}
+                  <span>{isRecording ? "Listening... Tap to stop" : "🎙️ or speak"}</span>
+                </button>
+
+                {description.trim().length > 10 && (
+                  <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                    <FaCheckCircle className="text-[9px]" /> Looks good - you can continue
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Location Section & Mini Map */}
+            <div className="space-y-2 border-t border-pink-100 pt-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <FaMapMarkerAlt className="text-[#F43676]" /> Your location *
+                </label>
+                <button
+                  type="button"
+                  onClick={handleGetLiveLocation}
+                  disabled={gpsLoading}
+                  className="px-3 py-1 rounded-xl bg-pink-50 hover:bg-pink-100 text-[#F43676] border border-pink-200 text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {gpsLoading ? (
+                    <FaSpinner className="animate-spin text-[#F43676]" />
+                  ) : (
+                    <span>📍</span>
+                  )}
+                  <span>Recapture my location</span>
+                </button>
+              </div>
+
+              {/* Embedded Mini-Map Container */}
+              <div className="relative rounded-2xl overflow-hidden border border-pink-200 h-44 bg-slate-100">
+                <div ref={miniMapRef} className="w-full h-full" />
+                <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-gray-700 shadow-xs border border-pink-100">
+                  Drag marker to pinpoint stall
+                </div>
+              </div>
+
+              {/* Distance Meter Status */}
+              {liveDistance !== null && (
+                <div
+                  className={`p-2 rounded-xl text-[11px] font-semibold flex items-center justify-between ${
+                    liveDistance <= 50
+                      ? "bg-rose-50 border border-rose-200 text-rose-700"
+                      : "bg-pink-50/50 border border-pink-100 text-gray-600"
+                  }`}
+                >
+                  <span>
+                    Calculated Distance: <strong>{liveDistance} meters</strong> from school
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                      liveDistance <= 50
+                        ? "bg-[#F43676] text-white"
+                        : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    {liveDistance <= 50 ? "⚠️ Inside 50m Violation" : "Outside 50m"}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Evidence Photos Upload */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-gray-700 flex items-center gap-1">
                 <FaCamera className="text-[#F43676]" /> Evidence Photos (Max 5)
               </label>
-              <div className="flex gap-2 mb-2">
+              <div className="flex items-center gap-2">
                 <label className="flex-1 cursor-pointer">
-                  <div className="flex items-center justify-center gap-2 text-xs p-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-[#F43676] hover:text-[#F43676] transition-colors">
+                  <div className="flex items-center justify-center gap-2 text-xs p-2 border-2 border-dashed border-pink-200 rounded-xl text-gray-500 hover:border-[#F43676] hover:text-[#F43676] transition-colors bg-pink-50/20">
                     <FaCamera />
-                    <span>{imageFiles.length >= 5 ? "Max 5 photos reached" : "Tap to select photos"}</span>
+                    <span>{imageFiles.length >= 5 ? "5/5 photos uploaded" : "Tap to add stall photos"}</span>
                   </div>
                   <input
                     type="file"
@@ -432,15 +866,20 @@ export default function SubmitStallReportModal({
                   />
                 </label>
               </div>
+
               {imageFiles.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto py-1">
                   {imageFiles.map((file, i) => (
                     <div key={i} className="relative group shrink-0">
-                      <img src={URL.createObjectURL(file)} alt="" className="w-16 h-14 object-cover rounded-lg border" />
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt="Evidence"
+                        className="w-14 h-12 object-cover rounded-lg border border-pink-200"
+                      />
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(i)}
-                        className="absolute -top-1.5 -right-1.5 bg-[#F43676] text-white rounded-full p-1 text-[10px]"
+                        className="absolute -top-1.5 -right-1.5 bg-[#F43676] text-white rounded-full p-0.5 text-[9px] cursor-pointer"
                       >
                         <FaTimes />
                       </button>
@@ -450,24 +889,120 @@ export default function SubmitStallReportModal({
               )}
             </div>
 
-            {/* Submit Buttons */}
-            <div className="flex gap-3 pt-3">
+            {/* Navigation Buttons */}
+            <div className="flex gap-2 pt-2 border-t border-pink-100">
               <button
                 type="button"
-                onClick={handleClose}
-                className="flex-1 py-3 border border-gray-300 font-bold text-xs text-gray-700 rounded-xl hover:bg-gray-50"
+                onClick={() => setStep(1)}
+                className="px-4 py-2.5 border border-gray-300 font-bold text-xs text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1 cursor-pointer"
               >
-                Cancel
+                <FaChevronLeft className="text-[10px]" />
+                <span>Back</span>
               </button>
               <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 py-3 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-bold text-xs rounded-xl shadow-lg hover:from-[#e02a60] hover:to-[#c41e50] flex items-center justify-center gap-2"
+                type="button"
+                onClick={handleNext}
+                className="flex-1 py-2.5 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] text-white font-bold text-xs rounded-xl shadow-md shadow-pink-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                {loading ? <FaSpinner className="animate-spin text-base" /> : "Submit Report for Verification"}
+                <span>Review & Confirm</span>
+                <FaChevronRight className="text-[10px]" />
               </button>
             </div>
-          </form>
+          </div>
+        )}
+
+        {/* STEP 3: Review & Submit */}
+        {step === 3 && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="space-y-0.5">
+              <h4 className="text-sm font-bold text-gray-900">
+                Review your grievance details
+              </h4>
+              <p className="text-xs text-gray-500">
+                Please ensure coordinates and stall details are correct before sending to enforcement.
+              </p>
+            </div>
+
+            <div className="bg-pink-50/30 p-4 rounded-2xl border border-pink-100 space-y-2 text-xs">
+              <div className="flex justify-between border-b border-pink-100 pb-2">
+                <span className="text-gray-500 font-medium">Stall Name:</span>
+                <span className="font-bold text-gray-900">{shopName}</span>
+              </div>
+
+              <div className="flex justify-between border-b border-pink-100 pb-2">
+                <span className="text-gray-500 font-medium">Target School:</span>
+                <span className="font-bold text-gray-900">{currentSchool?.name || "Target School"}</span>
+              </div>
+
+              <div className="flex justify-between border-b border-pink-100 pb-2">
+                <span className="text-gray-500 font-medium">District & Landmark:</span>
+                <span className="font-bold text-gray-900">
+                  {selectedCity} {landmark ? `• ${landmark}` : ""}
+                </span>
+              </div>
+
+              <div className="flex justify-between border-b border-pink-100 pb-2">
+                <span className="text-gray-500 font-medium">Calculated Distance:</span>
+                <span className="font-extrabold text-[#F43676]">
+                  {liveDistance !== null ? `${liveDistance} meters` : "Pending GPS"}
+                </span>
+              </div>
+
+              {description && (
+                <div className="pt-1">
+                  <span className="text-gray-500 font-medium block mb-0.5">Grievance Note:</span>
+                  <p className="text-gray-700 bg-white p-2 rounded-xl border border-pink-100 text-[11px] leading-relaxed">
+                    {description}
+                  </p>
+                </div>
+              )}
+
+              {imageFiles.length > 0 && (
+                <div className="pt-1">
+                  <span className="text-gray-500 font-medium block mb-1">
+                    Attached Photos ({imageFiles.length}):
+                  </span>
+                  <div className="flex gap-2">
+                    {imageFiles.map((file, i) => (
+                      <img
+                        key={i}
+                        src={URL.createObjectURL(file)}
+                        alt="Evidence"
+                        className="w-12 h-10 object-cover rounded-lg border border-pink-200"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Submission Buttons */}
+            <div className="flex gap-2 pt-2 border-t border-pink-100">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="px-4 py-2.5 border border-gray-300 font-bold text-xs text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1 cursor-pointer"
+              >
+                <FaChevronLeft className="text-[10px]" />
+                <span>Edit</span>
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleSubmit}
+                className="flex-1 py-2.5 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] text-white font-extrabold text-xs rounded-xl shadow-md shadow-pink-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {loading ? (
+                  <FaSpinner className="animate-spin text-sm" />
+                ) : (
+                  <>
+                    <FaCheckCircle className="text-xs" />
+                    <span>Confirm & Submit Stall Report</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -325,7 +325,7 @@ export default function PublicProfilePage() {
               {/* Bio Quote */}
               {profile.bio && (
                 <p className="text-slate-600 text-sm leading-relaxed pt-2 max-w-3xl">
-                  "{profile.bio}"
+                  &quot;{profile.bio}&quot;
                 </p>
               )}
 
