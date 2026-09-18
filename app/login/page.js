@@ -49,7 +49,6 @@ function LoginContent() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
   const [forgotError, setForgotError] = useState("");
-  const [devResetUrl, setDevResetUrl] = useState("");
   const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
   const [completingProfile, setCompletingProfile] = useState(false);
   const recaptchaVerifierRef = useRef(null);
@@ -337,7 +336,6 @@ function LoginContent() {
     e.preventDefault();
     setForgotError("");
     setForgotMessage("");
-    setDevResetUrl("");
 
     if (!forgotEmail.trim()) {
       setForgotError("Please enter your email address");
@@ -381,10 +379,7 @@ function LoginContent() {
       const data = await response.json();
 
       if (response.ok) {
-        setForgotMessage(data.message || "Password reset link has been sent to your email.");
-        if (data.resetUrl) {
-          setDevResetUrl(data.resetUrl);
-        }
+        setForgotMessage(data.message || "Password reset link has been sent to your email. Please check your inbox or spam folder.");
         setForgotEmail("");
       } else {
         setForgotError(data.message || "Failed to send reset email. Please try again.");
@@ -974,20 +969,9 @@ function LoginContent() {
               )}
 
               {forgotMessage && (
-                <div className="bg-green-50 p-3 rounded-lg space-y-2 text-left">
-                  <p className="text-green-600 text-sm">{forgotMessage}</p>
-                  {devResetUrl && (
-                    <div className="pt-1 border-t border-green-200">
-                      <a 
-                        href={devResetUrl} 
-                        className="text-[#F43676] font-bold underline hover:text-[#e02a60] text-sm break-all"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Reset Password Link (Dev Mode) →
-                      </a>
-                    </div>
-                  )}
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2">
+                  <Check size={18} className="text-green-600 flex-shrink-0" />
+                  <span>{forgotMessage}</span>
                 </div>
               )}
 
@@ -999,7 +983,6 @@ function LoginContent() {
                     setForgotEmail("");
                     setForgotError("");
                     setForgotMessage("");
-                    setDevResetUrl("");
                   }}
                   className="flex-1 py-3 rounded-xl border-2 border-gray-200 font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
                 >
