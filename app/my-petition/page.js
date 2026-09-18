@@ -89,6 +89,11 @@ const MyPetitionsPage = () => {
   // UI state
   const [activeTab, setActiveTab] = useState("created");
   const [declareVictoryLoading, setDeclareVictoryLoading] = useState(null);
+  const [victoryRequestStatus, setVictoryRequestStatus] = useState({});
+  const [showVictoryModal, setShowVictoryModal] = useState(null);
+  const [victoryOutcome, setVictoryOutcome] = useState("");
+  const [victoryStory, setVictoryStory] = useState("");
+  const [victorySubmitting, setVictorySubmitting] = useState(false);
   const [hideRequestLoading, setHideRequestLoading] = useState(null);
   const [hideRequestStatus, setHideRequestStatus] = useState({});
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -429,6 +434,27 @@ const MyPetitionsPage = () => {
     setHideRequestStatus(statuses);
   };
 
+  // Fetch victory request status for all petitions
+  const fetchVictoryRequestStatus = async (petitionIds, token) => {
+    const statuses = {};
+    for (const petitionId of petitionIds) {
+      try {
+        const response = await fetch(`/api/victory-requests/check/${petitionId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          statuses[petitionId] = data;
+        }
+      } catch (error) {
+        console.error(`Error checking victory status for ${petitionId}:`, error);
+      }
+    }
+    setVictoryRequestStatus(statuses);
+  };
+
   // Fetch my created petitions
   useEffect(() => {
     if (authLoading || !user) return;
@@ -460,7 +486,10 @@ const MyPetitionsPage = () => {
 
         if (data.petitions.length > 0) {
           const petitionIds = data.petitions.map((p) => p._id);
-          await fetchHideRequestStatus(petitionIds, userInfo.token);
+          await Promise.all([
+            fetchHideRequestStatus(petitionIds, userInfo.token),
+            fetchVictoryRequestStatus(petitionIds, userInfo.token),
+          ]);
         }
       } catch (err) {
         setError(err.message);
@@ -571,62 +600,54 @@ const MyPetitionsPage = () => {
     }
   };
 
-  const declareVictory = async (petitionId) => {
-    const petition = petitions.find((p) => p._id === petitionId);
-    if (!petition) return;
+  const openVictoryModal = (petition) => {
+    setShowVictoryModal(petition._id);
+    const existing = victoryRequestStatus[petition._id];
+    setVictoryOutcome(existing?.outcome || "Goal achieved through community support");
+    setVictoryStory(existing?.story || "");
+  };
 
-    if (!window.confirm("Are you sure you want to declare victory? This will move your petition to successful petitions.")) return;
-
+  const requestVictoryPetition = async (petitionId) => {
     try {
-      setDeclareVictoryLoading(petitionId);
+      setVictorySubmitting(true);
       const userInfo = JSON.parse(localStorage.getItem("user"));
 
-      const successfulPetitionData = {
-        petitionTitle: petition.title || "Untitled Petition",
-        totalSignatures: petition.numberOfSignatures >= 0 ? petition.numberOfSignatures : 1,
-        decisionMakers: petition.decisionMakers?.length > 0
-          ? petition.decisionMakers.map((dm) => ({
-            name: dm.name || "Unknown",
-            email: dm.email || "contact@example.com",
-            organization: dm.organization || "",
-            phone: dm.phone || "",
-          }))
-          : [{ name: "General Decision Makers", email: "contact@example.com", organization: "", phone: "" }],
-        issue: petition.petitionDetails?.problem || "No description",
-        location: petition.country || "Not specified",
-        petitionStarterName: petition.petitionStarter?.name || "Anonymous",
-        startedDate: petition.createdAt ? new Date(petition.createdAt).toISOString() : new Date().toISOString(),
-        image: petition.petitionDetails?.image || null,
-        originalPetitionId: petition._id,
-        outcome: "Goal achieved through community support",
-        category: "Other",
-      };
-
-      const successResponse = await fetch("/api/successful-petitions", {
+      const response = await fetch("/api/victory-requests", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${userInfo.token}`,
         },
-        body: JSON.stringify(successfulPetitionData),
+        body: JSON.stringify({
+          petitionId,
+          outcome: victoryOutcome.trim() || "Goal achieved through community support",
+          story: victoryStory.trim(),
+        }),
       });
 
-      if (!successResponse.ok) throw new Error("Failed to create successful petition");
+      const data = await response.json();
 
-      await fetch(`/api/petitions/${petitionId}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${userInfo.token}`,
-          "X-HTTP-Method-Override": "DELETE",
-        },
-      });
-
-      setPetitions(petitions.filter((p) => p._id !== petitionId));
-      alert("🎉 Congratulations! Your petition has been declared successful!");
+      if (response.ok) {
+        setVictoryRequestStatus((prev) => ({
+          ...prev,
+          [petitionId]: {
+            hasRequest: true,
+            status: "pending",
+            outcome: victoryOutcome,
+            story: victoryStory,
+          },
+        }));
+        setShowVictoryModal(null);
+        setVictoryOutcome("");
+        setVictoryStory("");
+        alert("🎉 Victory request submitted successfully! Awaiting admin approval.");
+      } else {
+        alert(data.message || "Failed to submit victory request");
+      }
     } catch (error) {
-      alert(`Failed to declare victory: ${error.message}`);
+      alert("Error submitting victory request. Please try again.");
     } finally {
-      setDeclareVictoryLoading(null);
+      setVictorySubmitting(false);
     }
   };
 
@@ -1119,6 +1140,115 @@ const MyPetitionsPage = () => {
         )}
       </AnimatePresence>
 
+      {/* Declare Victory Modal */}
+      <AnimatePresence>
+        {showVictoryModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-amber-100"
+            >
+              <div className="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <FaTrophy className="text-yellow-500" /> Declare Petition Victory
+                </h3>
+                <button
+                  onClick={() => setShowVictoryModal(null)}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes className="text-lg" />
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                Celebrate your campaign’s success! Submit your victory request for admin review. Once approved, your petition will be officially showcased under <strong>Successful Petitions</strong>.
+              </p>
+
+              {/* Selected Petition Overview */}
+              {(() => {
+                const selPet = petitions.find((p) => p._id === showVictoryModal);
+                return (
+                  <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-4 mb-5">
+                    <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block mb-1">
+                      Target Campaign
+                    </span>
+                    <h4 className="font-bold text-gray-900 text-sm line-clamp-1 mb-1">
+                      {selPet?.title || "Campaign"}
+                    </h4>
+                    <p className="text-xs text-gray-600">
+                      Signatures achieved: <span className="font-bold text-amber-700">{selPet?.numberOfSignatures || 0}</span>
+                    </p>
+                  </div>
+                );
+              })()}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Outcome Achieved *
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:outline-none transition-colors"
+                    placeholder="e.g. Civic authority approved repairs and commenced work"
+                    value={victoryOutcome}
+                    onChange={(e) => setVictoryOutcome(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Victory Story / Message to Supporters (Optional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="w-full border-2 border-gray-200 rounded-xl p-3 text-sm focus:border-amber-500 focus:outline-none transition-colors"
+                    placeholder="Share how the community effort succeeded, key updates, or thank the signers..."
+                    value={victoryStory}
+                    onChange={(e) => setVictoryStory(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowVictoryModal(null)}
+                  disabled={victorySubmitting}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => requestVictoryPetition(showVictoryModal)}
+                  disabled={victorySubmitting || !victoryOutcome.trim()}
+                  className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-md flex items-center gap-2 transition-all disabled:opacity-50"
+                >
+                  {victorySubmitting ? (
+                    <>
+                      <FaSpinner className="animate-spin" /> Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <FaTrophy /> Submit for Approval
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Hero Banner */}
       <div className="bg-gradient-to-r from-[#1a1a2e] via-[#2D3A8C] to-[#1a1a2e] py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -1351,18 +1481,31 @@ const MyPetitionsPage = () => {
                               >
                                 <FaComments className="text-xs" /> Comments
                               </button>
-                              <button
-                                onClick={() => declareVictory(petition._id)}
-                                disabled={declareVictoryLoading === petition._id}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-                              >
-                                {declareVictoryLoading === petition._id ? (
-                                  <FaSpinner className="animate-spin" />
-                                ) : (
-                                  <FaTrophy className="text-xs" />
-                                )}
-                                Victory
-                              </button>
+                              {/* Victory Status / Button */}
+                              {petition.isVictory || petition.status === "victory" || victoryRequestStatus[petition._id]?.status === "approved" ? (
+                                <span className="flex items-center gap-1.5 px-3 py-2 bg-emerald-100 text-emerald-800 text-sm font-semibold rounded-lg cursor-default border border-emerald-200">
+                                  <FaTrophy className="text-emerald-600 text-xs" /> Victory Approved 🎉
+                                </span>
+                              ) : victoryRequestStatus[petition._id]?.hasRequest && victoryRequestStatus[petition._id]?.status === "pending" ? (
+                                <span className="flex items-center gap-1.5 px-3 py-2 bg-amber-100 text-amber-800 text-sm font-medium rounded-lg cursor-default border border-amber-200" title="Victory request is awaiting admin approval">
+                                  <FaClock className="text-amber-600 text-xs" /> Victory Pending Approval
+                                </span>
+                              ) : victoryRequestStatus[petition._id]?.hasRequest && victoryRequestStatus[petition._id]?.status === "rejected" ? (
+                                <button
+                                  onClick={() => openVictoryModal(petition)}
+                                  className="flex items-center gap-1.5 px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-800 text-sm font-medium rounded-lg transition-colors border border-rose-200"
+                                  title={`Request rejected: ${victoryRequestStatus[petition._id]?.adminNote || "No note"}. Click to re-request.`}
+                                >
+                                  <FaTrophy className="text-rose-600 text-xs" /> Re-request Victory
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => openVictoryModal(petition)}
+                                  className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                                >
+                                  <FaTrophy className="text-xs" /> Victory
+                                </button>
+                              )}
                               {/* Hide Request Status / Button */}
                               {petition.hidden ? (
                                 <span className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg cursor-default">

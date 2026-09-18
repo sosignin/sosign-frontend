@@ -16,6 +16,16 @@ export const getPlainText = (html) => {
         .trim();
 };
 
+export const getWordCount = (htmlOrText) => {
+    if (!htmlOrText) return 0;
+    const text = typeof htmlOrText === "string" && (htmlOrText.includes("<") || htmlOrText.includes("&"))
+        ? getPlainText(htmlOrText)
+        : (typeof htmlOrText === "string" ? htmlOrText.trim() : "");
+    if (!text) return 0;
+    const words = text.split(/\s+/).filter(Boolean);
+    return words.length;
+};
+
 export default function RichPetitionEditor({
     value = "",
     onChange,
@@ -23,6 +33,8 @@ export default function RichPetitionEditor({
     placeholder = "Describe details here...",
     minChars = 0,
     maxChars = 2000,
+    maxWords = null,
+    minWords = null,
     label = "Petition Details",
     error = null,
 }) {
@@ -600,6 +612,7 @@ export default function RichPetitionEditor({
     // Clean text calculations
     const cleanText = getPlainText(htmlContent);
     const charCount = cleanText.length;
+    const wordCount = getWordCount(cleanText);
 
     // Color palettes
     const textColors = [
@@ -676,9 +689,29 @@ export default function RichPetitionEditor({
                 </div>
 
                 <div className="text-xs text-white/80 font-medium">
-                    <span>{charCount} / {maxChars} characters</span>
-                    {minChars > 0 && charCount < minChars && (
-                        <span className="text-pink-300 ml-2 font-bold">(min {minChars})</span>
+                    {maxWords ? (
+                        <>
+                            <span>{wordCount} / {maxWords} words</span>
+                            {minWords > 0 && wordCount < minWords && (
+                                <span className="text-pink-300 ml-2 font-bold">(min {minWords} words)</span>
+                            )}
+                            {minChars > 0 && charCount < minChars && !minWords && (
+                                <span className="text-pink-300 ml-2 font-bold">(min {minChars})</span>
+                            )}
+                            {wordCount > maxWords && (
+                                <span className="text-pink-300 ml-2 font-bold">(exceeds limit)</span>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <span>{charCount} / {maxChars} characters</span>
+                            {minChars > 0 && charCount < minChars && (
+                                <span className="text-pink-300 ml-2 font-bold">(min {minChars})</span>
+                            )}
+                            {charCount > maxChars && (
+                                <span className="text-pink-300 ml-2 font-bold">(exceeds limit)</span>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

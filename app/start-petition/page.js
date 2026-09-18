@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import RichPetitionEditor, { getPlainText } from "@/components/RichPetitionEditor";
+import RichPetitionEditor, { getPlainText, getWordCount } from "@/components/RichPetitionEditor";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaYoutube,
@@ -262,9 +262,9 @@ export default function StartPetitionPage() {
     problem: {
       required: true,
       minLength: 50,
-      maxLength: 2000,
+      maxWords: 2500,
       pattern: null,
-      message: "Problem description must be between 50-2000 characters",
+      message: "Problem description must be at least 50 characters and up to 2500 words",
       example:
         "Describe who is affected, what the issue is, and why it matters. Be specific about locations, numbers, and impact.",
     },
@@ -451,6 +451,28 @@ export default function StartPetitionPage() {
     // Use custom validator if provided (takes priority over pattern and length checks)
     if (rules.customValidator) {
       return rules.customValidator(plainTextValue);
+    }
+
+    // Check min words
+    if (rules.minWords) {
+      const wordCount = getWordCount(plainTextValue);
+      if (wordCount < rules.minWords) {
+        return {
+          isValid: false,
+          error: `Must be at least ${rules.minWords} words`,
+        };
+      }
+    }
+
+    // Check max words
+    if (rules.maxWords) {
+      const wordCount = getWordCount(plainTextValue);
+      if (wordCount > rules.maxWords) {
+        return {
+          isValid: false,
+          error: `Must be no more than ${rules.maxWords} words (currently ${wordCount} words)`,
+        };
+      }
     }
 
     // Check min length
@@ -2501,7 +2523,7 @@ export default function StartPetitionPage() {
                   Describe the People Involved and the Problem They Are Facing{" "}
                   <span className="text-red-500">*</span>
                   <span className="text-gray-400 text-sm ml-2">
-                    (50-2000 characters)
+                    (50 characters - 2500 words)
                   </span>
                 </h3>
                 {(() => {
@@ -2514,7 +2536,7 @@ export default function StartPetitionPage() {
                         onBlur={() => markFieldTouched("problem")}
                         placeholder="Describe who is affected, what the issue is, where it's happening, and why it matters. Be specific with facts, numbers, and real examples..."
                         minChars={50}
-                        maxChars={2000}
+                        maxWords={2500}
                         error={props.showError ? props.error : null}
                       />
                       {props.showError && (
@@ -2533,18 +2555,19 @@ export default function StartPetitionPage() {
                         )}
                       {(() => {
                         const plainText = formData.problem ? getPlainText(formData.problem) : "";
+                        const wordCount = formData.problem ? getWordCount(formData.problem) : 0;
                         return (
                           <p
                             className={`text-xs mt-1 text-right ${
                               plainText.length < 50 ? "text-orange-500"
-                              : plainText.length > 2000 ? "text-red-500"
+                              : wordCount > 2500 ? "text-red-500"
                               : "text-gray-400"
                             }`}
                           >
-                            {plainText.length}/2000 characters
+                            {wordCount}/2500 words
                             {plainText.length > 0 &&
                               plainText.length < 50 &&
-                              " (minimum 50)"}
+                              " (minimum 50 characters)"}
                           </p>
                         );
                       })()}
