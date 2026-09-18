@@ -34,7 +34,25 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const title = blog.metaTitle || blog.title || "SoSign Blog Article";
+  // Ensure clean, valid titles for SEO
+  const cleanTitle = (blog.title || "").replace(/<[^>]*>/g, '').trim();
+  const rawMetaTitle = (blog.metaTitle || "")
+    .replace(/\s*\|\s*SoSign(\s*Blog)?\s*$/i, '')
+    .trim();
+
+  // If metaTitle is provided but doesn't include the main title, combine them
+  // so searches for either the headline or the meta topic find the page
+  let finalTitle = cleanTitle || rawMetaTitle || "Article";
+  if (rawMetaTitle && cleanTitle && rawMetaTitle.toLowerCase() !== cleanTitle.toLowerCase()) {
+    if (!rawMetaTitle.toLowerCase().includes(cleanTitle.toLowerCase().slice(0, 30))) {
+      finalTitle = `${cleanTitle} - ${rawMetaTitle}`;
+    } else {
+      finalTitle = rawMetaTitle;
+    }
+  } else if (rawMetaTitle) {
+    finalTitle = rawMetaTitle;
+  }
+
   const rawDesc = blog.metaDescription || blog.excerpt || (blog.content ? blog.content.replace(/<[^>]*>/g, '') : '');
   const description = rawDesc || "Read this interesting article on the SoSign petition platform blog.";
   const image = blog.image || `${baseUrl}/blog-default-og.png`;
@@ -42,11 +60,11 @@ export async function generateMetadata({ params }) {
   const keywords = blog.metaKeywords || (blog.tags && blog.tags.length > 0 ? blog.tags.join(", ") : "");
 
   return {
-    title: blog.metaTitle ? blog.metaTitle : `${title} | SoSign Blog`,
+    title: finalTitle,
     description: description.substring(0, 160),
     keywords: keywords,
     openGraph: {
-      title: title,
+      title: finalTitle,
       description: description.substring(0, 160),
       url: blogUrl,
       siteName: "SoSign Blog",
@@ -55,7 +73,7 @@ export async function generateMetadata({ params }) {
           url: image,
           width: 1200,
           height: 630,
-          alt: title,
+          alt: finalTitle,
         },
       ],
       type: "article",
@@ -63,7 +81,7 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       card: "summary_large_image",
-      title: title,
+      title: finalTitle,
       description: description.substring(0, 160),
       images: [image],
     },

@@ -1,0 +1,15 @@
+User-Agent: *
+Allow: /
+Disallow: /login
+Disallow: /my-profile
+Disallow: /my-petition
+Disallow: /my-campaigns
+Disallow: /my-comments
+Disallow: /wallet
+Disallow: /reset-password
+Disallow: /kyc-callback
+Disallow: /api/
+Disallow: /petition-success
+Disallow: /start-crowdfunding
+
+Sitemap: https://sosign.in/sitemap.xml
