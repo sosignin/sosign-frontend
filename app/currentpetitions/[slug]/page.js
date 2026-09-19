@@ -31,7 +31,21 @@ async function getPetition(slug) {
       return null;
     }
 
-    return response.json();
+    const data = await response.json();
+    const isApproved =
+      data &&
+      (data.approved === true ||
+        data.status === "approved" ||
+        data.status === "victory" ||
+        data.isVictory === true) &&
+      data.status !== "rejected" &&
+      data.status !== "pending";
+
+    if (!isApproved) {
+      return null;
+    }
+
+    return data;
   } catch (error) {
     console.error("Error fetching petition for metadata:", error);
     return null;

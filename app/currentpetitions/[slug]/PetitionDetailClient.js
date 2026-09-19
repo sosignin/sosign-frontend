@@ -829,17 +829,36 @@ export default function PetitionDetailClient({ initialPetition }) {
         );
     }
 
-    if (error) {
-        return (
-            <div className="text-center py-20">
-                <p className="text-red-500">Error loading petition: {error}</p>
-            </div>
-        );
-    }
+    const isApproved =
+        petition &&
+        (petition.approved === true ||
+            petition.status === "approved" ||
+            petition.status === "victory" ||
+            petition.isVictory === true) &&
+        petition.status !== "rejected" &&
+        petition.status !== "pending";
 
-    if (!petition) {
+    const isAdmin = user && (user.role === "admin" || user.role === "superadmin");
+
+    if (error || !petition || (!isApproved && !isAdmin)) {
         return (
-            <div className="text-center py-20 text-gray-500">Petition not found</div>
+            <div className="min-h-[70vh] flex items-center justify-center bg-[#f0f2f5] px-4">
+                <div className="text-center max-w-lg bg-white p-8 md:p-10 rounded-3xl shadow-sm border border-gray-100">
+                    <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <XCircle className="w-8 h-8" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-[#1a1a2e] mb-2">Petition Not Available</h1>
+                    <p className="text-gray-500 mb-6 text-sm leading-relaxed">
+                        This petition is currently under review or is not approved for public viewing.
+                    </p>
+                    <Link
+                        href="/currentpetitions"
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-[#F43676] to-[#3650AD] text-white px-6 py-3 rounded-xl font-semibold text-sm hover:shadow-lg transition-all"
+                    >
+                        Browse Active Petitions
+                    </Link>
+                </div>
+            </div>
         );
     }
 

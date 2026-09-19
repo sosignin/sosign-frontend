@@ -48,15 +48,63 @@ export default function RichPetitionEditor({
     const [linkText, setLinkText] = useState("");
     const [selectedFont, setSelectedFont] = useState("Outfit");
     const [selectedSize, setSelectedSize] = useState("16px");
+    const [selectedBlock, setSelectedBlock] = useState("p");
+
+    const [showFontFamilyMenu, setShowFontFamilyMenu] = useState(false);
+    const [showFontSizeMenu, setShowFontSizeMenu] = useState(false);
+    const [showFormatMenu, setShowFormatMenu] = useState(false);
+    const toolbarRef = useRef(null);
 
     const savedRangeRef = useRef(null);
+    const lastNonCollapsedRangeRef = useRef(null);
+
+    const setStyleWithPriority = (element, prop, value) => {
+        if (!element || !element.style) return;
+        const kebabMap = {
+            fontSize: "font-size",
+            fontFamily: "font-family",
+            color: "color",
+            backgroundColor: "background-color",
+        };
+        const cssProp = kebabMap[prop] || prop.replace(/([A-Z])/g, "-$1").toLowerCase();
+        element.style.setProperty(cssProp, value, "important");
+    };
+
+    const cleanChildSpans = (element, prop) => {
+        if (!element) return;
+        const kebabMap = {
+            fontSize: "font-size",
+            fontFamily: "font-family",
+            color: "color",
+            backgroundColor: "background-color",
+        };
+        const cssProp = kebabMap[prop] || prop.replace(/([A-Z])/g, "-$1").toLowerCase();
+        const childSpans = element.querySelectorAll("span");
+        childSpans.forEach((child) => {
+            if (child.style) {
+                child.style.removeProperty(cssProp);
+                if (child.style[prop]) {
+                    child.style[prop] = "";
+                }
+            }
+        });
+    };
 
     const findStyleSpan = (node, styleProp) => {
         if (!node) return null;
+        const kebabMap = {
+            fontSize: "font-size",
+            fontFamily: "font-family",
+            color: "color",
+            backgroundColor: "background-color",
+        };
+        const cssProp = kebabMap[styleProp] || styleProp;
         let current = node.nodeType === 1 ? node : node.parentNode;
         while (current && current !== editorRef.current) {
-            if (current.tagName === "SPAN" && current.style && current.style[styleProp]) {
-                return current;
+            if (current.tagName === "SPAN" && current.style) {
+                if (current.style.getPropertyValue(cssProp) || current.style[styleProp]) {
+                    return current;
+                }
             }
             current = current.parentNode;
         }
@@ -70,12 +118,32 @@ export default function RichPetitionEditor({
 
         if (node && editorRef.current && editorRef.current.contains(node)) {
             const fontSpan = findStyleSpan(node, "fontSize");
-            if (fontSpan && fontSpan.style.fontSize) {
-                setSelectedSize(fontSpan.style.fontSize);
+            if (fontSpan) {
+                const size = fontSpan.style.getPropertyValue("font-size") || fontSpan.style.fontSize;
+                if (size) setSelectedSize(size.trim());
+            } else {
+                const block = getParentBlock(node);
+                if (block && block.style) {
+                    const blockSize = block.style.getPropertyValue("font-size") || block.style.fontSize;
+                    if (blockSize) setSelectedSize(blockSize.trim());
+                }
             }
+
             const familySpan = findStyleSpan(node, "fontFamily");
-            if (familySpan && familySpan.style.fontFamily) {
-                setSelectedFont(familySpan.style.fontFamily);
+            if (familySpan) {
+                const font = familySpan.style.getPropertyValue("font-family") || familySpan.style.fontFamily;
+                if (font) setSelectedFont(font.trim());
+            } else {
+                const block = getParentBlock(node);
+                if (block && block.style) {
+                    const blockFont = block.style.getPropertyValue("font-family") || block.style.fontFamily;
+                    if (blockFont) setSelectedFont(blockFont.trim());
+                }
+            }
+
+            const currentBlock = getParentBlock(node);
+            if (currentBlock) {
+                setSelectedBlock(currentBlock.tagName.toLowerCase());
             }
         }
     };
@@ -86,6 +154,9 @@ export default function RichPetitionEditor({
         if (sel && sel.rangeCount > 0) {
             const range = sel.getRangeAt(0);
             if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+                if (!sel.isCollapsed) {
+                    lastNonCollapsedRangeRef.current = range.cloneRange();
+                }
                 savedRangeRef.current = range.cloneRange();
                 updateToolbarStateFromSelection(range);
             }
@@ -93,18 +164,58 @@ export default function RichPetitionEditor({
     };
 
     const restoreSelection = () => {
-        if (typeof window === "undefined" || !savedRangeRef.current) return null;
+        if (typeof window === "undefined") return null;
+        const targetRange = (lastNonCollapsedRangeRef.current && editorRef.current && editorRef.current.contains(lastNonCollapsedRangeRef.current.commonAncestorContainer))
+            ? lastNonCollapsedRangeRef.current
+            : savedRangeRef.current;
+        if (!targetRange || !editorRef.current) return null;
+        if (!editorRef.current.contains(targetRange.commonAncestorContainer)) return null;
+
         const sel = window.getSelection();
         if (sel) {
             try {
                 sel.removeAllRanges();
-                sel.addRange(savedRangeRef.current);
+                sel.addRange(targetRange);
                 return sel;
             } catch (e) {
                 console.error("Failed to restore selection:", e);
             }
         }
         return null;
+    };
+
+    const handleEditorMouseUp = () => {
+        if (typeof window === "undefined") return;
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+                if (!sel.isCollapsed) {
+                    lastNonCollapsedRangeRef.current = range.cloneRange();
+                } else {
+                    lastNonCollapsedRangeRef.current = null;
+                }
+                savedRangeRef.current = range.cloneRange();
+                updateToolbarStateFromSelection(range);
+            }
+        }
+    };
+
+    const handleEditorKeyUp = (e) => {
+        if (typeof window === "undefined") return;
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+                if (!sel.isCollapsed) {
+                    lastNonCollapsedRangeRef.current = range.cloneRange();
+                } else if (!e.shiftKey) {
+                    lastNonCollapsedRangeRef.current = null;
+                }
+                savedRangeRef.current = range.cloneRange();
+                updateToolbarStateFromSelection(range);
+            }
+        }
     };
 
     const getParentBlock = (node) => {
@@ -144,7 +255,47 @@ export default function RichPetitionEditor({
                 editorRef.current.innerHTML = htmlContent;
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
+
+    // Keep non-collapsed selection saved even when user scrolls or focus moves to toolbar
+    useEffect(() => {
+        const handleSelectionChange = () => {
+            if (typeof window === "undefined" || !editorRef.current || activeTab !== "visual") return;
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+                if (editorRef.current.contains(range.commonAncestorContainer)) {
+                    if (!sel.isCollapsed) {
+                        lastNonCollapsedRangeRef.current = range.cloneRange();
+                    }
+                    savedRangeRef.current = range.cloneRange();
+                    updateToolbarStateFromSelection(range);
+                }
+            }
+        };
+
+        document.addEventListener("selectionchange", handleSelectionChange);
+        return () => {
+            document.removeEventListener("selectionchange", handleSelectionChange);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab]);
+
+    // Close open toolbar menus when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (toolbarRef.current && !toolbarRef.current.contains(e.target)) {
+                setShowFontFamilyMenu(false);
+                setShowFontSizeMenu(false);
+                setShowFormatMenu(false);
+                setShowTextColorPicker(false);
+                setShowBgColorPicker(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // Called on every input event in contentEditable
     const handleInput = () => {
@@ -314,8 +465,19 @@ export default function RichPetitionEditor({
     // Rich Text Formatting Commands using document.execCommand
     const exec = (command, val = null) => {
         if (activeTab !== "visual" || !editorRef.current) return;
-        editorRef.current.focus();
-        restoreSelection();
+        editorRef.current.focus({ preventScroll: true });
+        let sel = window.getSelection();
+        const isSelValid = sel && sel.rangeCount > 0 && editorRef.current.contains(sel.getRangeAt(0).commonAncestorContainer);
+        if ((!isSelValid || sel.isCollapsed) && lastNonCollapsedRangeRef.current && editorRef.current.contains(lastNonCollapsedRangeRef.current.commonAncestorContainer)) {
+            if (sel) {
+                try {
+                    sel.removeAllRanges();
+                    sel.addRange(lastNonCollapsedRangeRef.current);
+                } catch (e) {}
+            }
+        } else if (!isSelValid) {
+            restoreSelection();
+        }
         document.execCommand(command, false, val);
         saveSelection();
         handleInput();
@@ -326,27 +488,54 @@ export default function RichPetitionEditor({
         if (stateSetter) stateSetter(styleValue);
         if (activeTab !== "visual" || !editorRef.current) return;
 
-        editorRef.current.focus();
+        editorRef.current.focus({ preventScroll: true });
         let sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
-            sel = restoreSelection();
+        let range = null;
+
+        const currentRange = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0) : null;
+        const isCurrentValid = currentRange && editorRef.current.contains(currentRange.commonAncestorContainer);
+
+        if (isCurrentValid && !sel.isCollapsed) {
+            range = currentRange;
+            lastNonCollapsedRangeRef.current = range.cloneRange();
+            savedRangeRef.current = range.cloneRange();
+        } else if (lastNonCollapsedRangeRef.current && editorRef.current.contains(lastNonCollapsedRangeRef.current.commonAncestorContainer)) {
+            range = lastNonCollapsedRangeRef.current.cloneRange();
+            if (sel) {
+                try {
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } catch (e) {}
+            }
+        } else if (isCurrentValid) {
+            range = currentRange;
+        } else if (savedRangeRef.current && editorRef.current.contains(savedRangeRef.current.commonAncestorContainer)) {
+            range = savedRangeRef.current.cloneRange();
+            if (sel) {
+                try {
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } catch (e) {}
+            }
         }
 
-        const isSelectionValid = sel && sel.rangeCount > 0 && editorRef.current.contains(sel.getRangeAt(0).commonAncestorContainer);
+        if (!range) return;
 
-        if (!isSelectionValid || sel.isCollapsed) {
-            // Apply style to current block or whole editor if no text highlighted
-            const targetNode = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).commonAncestorContainer : null;
+        // If selection is collapsed (a caret, no text highlighted)
+        if (range.collapsed) {
+            const targetNode = range.commonAncestorContainer;
             const existingSpan = targetNode ? findStyleSpan(targetNode, styleProp) : null;
             
             if (existingSpan) {
-                existingSpan.style[styleProp] = styleValue;
+                setStyleWithPriority(existingSpan, styleProp, styleValue);
+                cleanChildSpans(existingSpan, styleProp);
             } else {
                 const currentBlock = targetNode ? getParentBlock(targetNode) : null;
                 if (currentBlock && currentBlock !== editorRef.current) {
-                    currentBlock.style[styleProp] = styleValue;
+                    setStyleWithPriority(currentBlock, styleProp, styleValue);
+                    cleanChildSpans(currentBlock, styleProp);
                 } else {
-                    editorRef.current.style[styleProp] = styleValue;
+                    setStyleWithPriority(editorRef.current, styleProp, styleValue);
                 }
             }
             saveSelection();
@@ -354,31 +543,25 @@ export default function RichPetitionEditor({
             return;
         }
 
-        const range = sel.getRangeAt(0);
-
         // Check if selection is already inside an existing style span
         const parentSpan = findStyleSpan(range.commonAncestorContainer, styleProp);
         const selectedText = range.toString().trim();
         const parentSpanText = parentSpan ? parentSpan.textContent.trim() : "";
 
-        if (parentSpan && (selectedText === parentSpanText || parentSpan.contains(range.commonAncestorContainer))) {
+        if (parentSpan && selectedText && selectedText === parentSpanText) {
             // Directly update the style on the existing span!
-            parentSpan.style[styleProp] = styleValue;
-
-            // Clear any child spans with this style prop to prevent conflicting overrides
-            const childSpans = parentSpan.querySelectorAll("span");
-            childSpans.forEach((child) => {
-                if (child.style && child.style[styleProp]) {
-                    child.style.removeProperty(styleProp);
-                }
-            });
+            setStyleWithPriority(parentSpan, styleProp, styleValue);
+            cleanChildSpans(parentSpan, styleProp);
 
             // Reselect parent span
             const newRange = document.createRange();
             newRange.selectNodeContents(parentSpan);
-            sel.removeAllRanges();
-            sel.addRange(newRange);
-            saveSelection();
+            if (sel) {
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+            }
+            lastNonCollapsedRangeRef.current = newRange.cloneRange();
+            savedRangeRef.current = newRange.cloneRange();
             handleInput();
             return;
         }
@@ -395,49 +578,57 @@ export default function RichPetitionEditor({
             const blocks = container.querySelectorAll("p, div, h1, h2, h3, h4, blockquote, li");
             let modified = false;
             blocks.forEach((block) => {
-                if (sel.containsNode(block, true)) {
-                    block.style[styleProp] = styleValue;
-                    const childSpans = block.querySelectorAll("span");
-                    childSpans.forEach((child) => {
-                        if (child.style && child.style[styleProp]) {
-                            child.style.removeProperty(styleProp);
-                        }
-                    });
-                    modified = true;
+                if (range.intersectsNode(block)) {
+                    const subBlocks = block.querySelectorAll("p, div, h1, h2, h3, h4, blockquote, li");
+                    if (subBlocks.length === 0) {
+                        setStyleWithPriority(block, styleProp, styleValue);
+                        cleanChildSpans(block, styleProp);
+                        modified = true;
+                    }
                 }
             });
 
-            if (!modified && container.style) {
-                container.style[styleProp] = styleValue;
+            if (!modified && container.style && container !== editorRef.current) {
+                setStyleWithPriority(container, styleProp, styleValue);
             }
         } else {
             // Standard inline text selection: wrap selection in <span style="...">
             try {
                 const contents = range.extractContents();
                 const span = document.createElement("span");
-                span.style[styleProp] = styleValue;
+                setStyleWithPriority(span, styleProp, styleValue);
                 span.appendChild(contents);
-
-                // Clean up nested inner spans with same style property to prevent conflict
-                const innerSpans = span.querySelectorAll("span");
-                innerSpans.forEach((child) => {
-                    if (child.style && child.style[styleProp]) {
-                        child.style.removeProperty(styleProp);
-                    }
-                });
+                cleanChildSpans(span, styleProp);
 
                 range.insertNode(span);
 
                 // Select newly wrapped span
                 const newRange = document.createRange();
                 newRange.selectNodeContents(span);
-                sel.removeAllRanges();
-                sel.addRange(newRange);
-                saveSelection();
+                if (sel) {
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                }
+                lastNonCollapsedRangeRef.current = newRange.cloneRange();
+                savedRangeRef.current = newRange.cloneRange();
             } catch (e) {
                 console.error("Inline style extract error:", e);
-                const command = styleProp === "fontFamily" ? "fontName" : styleProp === "fontSize" ? "fontSize" : styleProp === "color" ? "foreColor" : "hiliteColor";
-                document.execCommand(command, false, styleValue);
+                try {
+                    const span = document.createElement("span");
+                    setStyleWithPriority(span, styleProp, styleValue);
+                    range.surroundContents(span);
+                    cleanChildSpans(span, styleProp);
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(span);
+                    if (sel) {
+                        sel.removeAllRanges();
+                        sel.addRange(newRange);
+                    }
+                    lastNonCollapsedRangeRef.current = newRange.cloneRange();
+                    savedRangeRef.current = newRange.cloneRange();
+                } catch (e2) {
+                    console.error("surroundContents fallback error:", e2);
+                }
             }
         }
 
@@ -468,24 +659,46 @@ export default function RichPetitionEditor({
 
     // Block formatting (Heading 1..4, p, blockquote)
     const applyBlockFormat = (tag) => {
+        const targetTag = tag === "paragraph" ? "p" : tag.toLowerCase();
+        setSelectedBlock(targetTag);
         if (activeTab !== "visual" || !editorRef.current) return;
 
-        editorRef.current.focus();
+        editorRef.current.focus({ preventScroll: true });
         let sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0) {
-            sel = restoreSelection();
+        let range = null;
+
+        const currentRange = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0) : null;
+        const isCurrentValid = currentRange && editorRef.current.contains(currentRange.commonAncestorContainer);
+
+        if (isCurrentValid && !sel.isCollapsed) {
+            range = currentRange;
+        } else if (lastNonCollapsedRangeRef.current && editorRef.current.contains(lastNonCollapsedRangeRef.current.commonAncestorContainer)) {
+            range = lastNonCollapsedRangeRef.current.cloneRange();
+            if (sel) {
+                try {
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } catch (e) {}
+            }
+        } else if (isCurrentValid) {
+            range = currentRange;
+        } else if (savedRangeRef.current && editorRef.current.contains(savedRangeRef.current.commonAncestorContainer)) {
+            range = savedRangeRef.current.cloneRange();
+            if (sel) {
+                try {
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } catch (e) {}
+            }
         }
 
-        const targetTag = tag === "paragraph" ? "p" : tag.toLowerCase();
 
-        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+        if (!range || range.collapsed) {
             exec("formatBlock", targetTag);
             return;
         }
 
-        const range = sel.getRangeAt(0);
         const parentBlock = getParentBlock(range.commonAncestorContainer);
-
         const selectedText = range.toString().trim();
         const blockText = parentBlock ? parentBlock.textContent.trim() : "";
 
@@ -502,9 +715,12 @@ export default function RichPetitionEditor({
 
                 const newRange = document.createRange();
                 newRange.selectNodeContents(heading);
-                sel.removeAllRanges();
-                sel.addRange(newRange);
-                saveSelection();
+                if (sel) {
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                }
+                lastNonCollapsedRangeRef.current = newRange.cloneRange();
+                savedRangeRef.current = newRange.cloneRange();
             } catch (e) {
                 console.error("Partial block format error:", e);
                 exec("formatBlock", targetTag);
@@ -518,17 +734,38 @@ export default function RichPetitionEditor({
     const clearFormatting = () => {
         if (activeTab !== "visual" || !editorRef.current) return;
 
-        editorRef.current.focus();
+        editorRef.current.focus({ preventScroll: true });
         let sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
-            sel = restoreSelection();
+        let range = null;
+
+        const currentRange = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0) : null;
+        const isCurrentValid = currentRange && editorRef.current.contains(currentRange.commonAncestorContainer);
+
+        if (isCurrentValid && !sel.isCollapsed) {
+            range = currentRange;
+        } else if (lastNonCollapsedRangeRef.current && editorRef.current.contains(lastNonCollapsedRangeRef.current.commonAncestorContainer)) {
+            range = lastNonCollapsedRangeRef.current.cloneRange();
+            if (sel) {
+                try {
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } catch (e) {}
+            }
+        } else if (isCurrentValid) {
+            range = currentRange;
+        } else if (savedRangeRef.current && editorRef.current.contains(savedRangeRef.current.commonAncestorContainer)) {
+            range = savedRangeRef.current.cloneRange();
+            if (sel) {
+                try {
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } catch (e) {}
+            }
         }
 
-        const isSelectionValid = sel && sel.rangeCount > 0 && editorRef.current.contains(sel.getRangeAt(0).commonAncestorContainer);
-
-        if (!isSelectionValid || sel.isCollapsed) {
+        if (!range || range.collapsed) {
             // No selection: clear inline styles from whole editor or current block
-            const currentBlock = sel && sel.rangeCount > 0 ? getParentBlock(sel.getRangeAt(0).commonAncestorContainer) : null;
+            const currentBlock = range ? getParentBlock(range.commonAncestorContainer) : null;
             if (currentBlock && currentBlock !== editorRef.current) {
                 currentBlock.removeAttribute("style");
                 currentBlock.querySelectorAll("*").forEach((el) => el.removeAttribute("style"));
@@ -537,8 +774,6 @@ export default function RichPetitionEditor({
                 editorRef.current.querySelectorAll("*").forEach((el) => el.removeAttribute("style"));
             }
         } else {
-            const range = sel.getRangeAt(0);
-
             // Execute native removeFormat first
             document.execCommand("removeFormat", false, null);
 
@@ -549,7 +784,7 @@ export default function RichPetitionEditor({
 
             const styledElems = container.querySelectorAll("[style]");
             styledElems.forEach((el) => {
-                if (sel.containsNode(el, true)) {
+                if (range.intersectsNode(el)) {
                     el.removeAttribute("style");
                 }
             });
@@ -563,9 +798,9 @@ export default function RichPetitionEditor({
             }
 
             // Convert selected heading/quote blocks back to standard <p> paragraphs
-            const blocks = container.querySelectorAll("h1, h2, h3, h4, h5, h6, blockquote");
+            const blocks = container.querySelectorAll("h1, h2, h3, h4, blockquote");
             blocks.forEach((block) => {
-                if (sel.containsNode(block, true)) {
+                if (range.intersectsNode(block)) {
                     const p = document.createElement("p");
                     p.innerHTML = block.innerHTML;
                     block.parentNode.replaceChild(p, block);
@@ -645,10 +880,32 @@ export default function RichPetitionEditor({
         { label: "30px - Heading", value: "30px" },
     ];
 
+    const blockOptions = [
+        { label: "Paragraph", value: "p" },
+        { label: "Heading 2", value: "h2" },
+        { label: "Heading 3", value: "h3" },
+        { label: "Quote Block", value: "blockquote" },
+    ];
+
+    const currentFontSizeObj = fontSizes.find((s) => s.value === selectedSize);
+    const selectedSizeLabel = currentFontSizeObj ? currentFontSizeObj.label : (selectedSize || "16px");
+    const currentFontObj = fontOptions.find((f) => f.value === selectedFont);
+    const selectedFontLabel = currentFontObj ? currentFontObj.label.split(" ")[0] : "Font";
+    const currentBlockObj = blockOptions.find((b) => b.value === selectedBlock);
+    const selectedBlockLabel = currentBlockObj ? currentBlockObj.label : "Paragraph";
+
+    const closeAllMenus = () => {
+        setShowFontFamilyMenu(false);
+        setShowFontSizeMenu(false);
+        setShowFormatMenu(false);
+        setShowTextColorPicker(false);
+        setShowBgColorPicker(false);
+    };
+
     return (
-        <div className={`bg-white rounded-2xl border ${error ? 'border-red-400 ring-2 ring-red-400/20' : 'border-gray-200'} shadow-sm overflow-hidden transition-all`}>
+        <div className={`bg-white rounded-2xl border ${error ? 'border-red-400 ring-2 ring-red-400/20' : 'border-gray-200'} shadow-sm transition-all`}>
             {/* Header Tabs */}
-            <div className="bg-gradient-to-r from-[#002050] to-[#1a3a6e] text-white p-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="bg-gradient-to-r from-[#002050] to-[#1a3a6e] text-white p-3 flex flex-wrap items-center justify-between gap-3 rounded-t-2xl">
                 <div className="flex items-center gap-1.5 bg-white/10 p-1 rounded-xl border border-white/10">
                     <button
                         type="button"
@@ -718,53 +975,135 @@ export default function RichPetitionEditor({
 
             {/* Formatting Toolbar */}
             {activeTab === "visual" && (
-                <div className="bg-slate-50 border-b border-gray-200 p-2.5 flex flex-wrap items-center gap-1.5 text-xs sticky top-0 z-20">
+                <div ref={toolbarRef} className="bg-slate-50 border-b border-gray-200 p-2.5 flex flex-wrap items-center gap-1.5 text-xs sticky top-[68px] lg:top-[70px] z-20 shadow-xs">
                     {/* Font Family Selector */}
-                    <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-1">
-                        <i className="fas fa-font text-gray-500 text-[11px]"></i>
-                        <select
-                            value={selectedFont}
-                            onMouseDown={saveSelection}
-                            onChange={(e) => applyFontFamily(e.target.value)}
-                            className="bg-transparent text-xs font-medium text-gray-700 outline-none cursor-pointer pr-1"
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                saveSelection();
+                            }}
+                            onClick={() => {
+                                const next = !showFontFamilyMenu;
+                                closeAllMenus();
+                                setShowFontFamilyMenu(next);
+                            }}
+                            className="flex items-center gap-1.5 bg-white border border-gray-300 hover:border-gray-400 rounded-lg px-2.5 py-1 text-xs font-medium text-gray-700 cursor-pointer shadow-xs transition-colors"
+                            title="Font Family"
                         >
-                            {fontOptions.map((f) => (
-                                <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>
-                                    {f.label}
-                                </option>
-                            ))}
-                        </select>
+                            <i className="fas fa-font text-gray-500 text-[11px]"></i>
+                            <span className="max-w-[100px] truncate">{selectedFontLabel}</span>
+                            <i className="fas fa-chevron-down text-[9px] text-gray-400 ml-0.5"></i>
+                        </button>
+                        {showFontFamilyMenu && (
+                            <div className="absolute top-full left-0 mt-1 z-30 bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-56 max-h-60 overflow-y-auto">
+                                {fontOptions.map((f) => (
+                                    <button
+                                        key={f.value}
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                            applyFontFamily(f.value);
+                                            setShowFontFamilyMenu(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-gray-100 cursor-pointer transition-colors ${
+                                            selectedFont === f.value ? "bg-pink-50 text-[#F43676] font-semibold" : "text-gray-700"
+                                        }`}
+                                        style={{ fontFamily: f.value }}
+                                    >
+                                        <span>{f.label}</span>
+                                        {selectedFont === f.value && <i className="fas fa-check text-[10px]"></i>}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Font Size Selector */}
-                    <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-1">
-                        <i className="fas fa-text-height text-gray-500 text-[11px]"></i>
-                        <select
-                            value={selectedSize}
-                            onMouseDown={saveSelection}
-                            onChange={(e) => applyFontSize(e.target.value)}
-                            className="bg-transparent text-xs font-medium text-gray-700 outline-none cursor-pointer pr-1"
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                saveSelection();
+                            }}
+                            onClick={() => {
+                                const next = !showFontSizeMenu;
+                                closeAllMenus();
+                                setShowFontSizeMenu(next);
+                            }}
+                            className="flex items-center gap-1.5 bg-white border border-gray-300 hover:border-gray-400 rounded-lg px-2.5 py-1 text-xs font-medium text-gray-700 cursor-pointer shadow-xs transition-colors"
+                            title="Font Size"
                         >
-                            {fontSizes.map((s) => (
-                                <option key={s.value} value={s.value}>
-                                    {s.label}
-                                </option>
-                            ))}
-                        </select>
+                            <i className="fas fa-text-height text-gray-500 text-[11px]"></i>
+                            <span>{selectedSizeLabel}</span>
+                            <i className="fas fa-chevron-down text-[9px] text-gray-400 ml-0.5"></i>
+                        </button>
+                        {showFontSizeMenu && (
+                            <div className="absolute top-full left-0 mt-1 z-30 bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-44 max-h-60 overflow-y-auto">
+                                {fontSizes.map((s) => (
+                                    <button
+                                        key={s.value}
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                            applyFontSize(s.value);
+                                            setShowFontSizeMenu(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-gray-100 cursor-pointer transition-colors ${
+                                            selectedSize === s.value ? "bg-pink-50 text-[#F43676] font-semibold" : "text-gray-700"
+                                        }`}
+                                    >
+                                        <span style={{ fontSize: s.value === "30px" ? "16px" : s.value }}>{s.label}</span>
+                                        {selectedSize === s.value && <i className="fas fa-check text-[10px]"></i>}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Format Block */}
-                    <select
-                        onMouseDown={saveSelection}
-                        onChange={(e) => applyBlockFormat(e.target.value)}
-                        defaultValue="p"
-                        className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs font-medium text-gray-700 outline-none cursor-pointer"
-                    >
-                        <option value="p">Paragraph</option>
-                        <option value="h2">Heading 2</option>
-                        <option value="h3">Heading 3</option>
-                        <option value="blockquote">Quote Block</option>
-                    </select>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                saveSelection();
+                            }}
+                            onClick={() => {
+                                const next = !showFormatMenu;
+                                closeAllMenus();
+                                setShowFormatMenu(next);
+                            }}
+                            className="flex items-center gap-1.5 bg-white border border-gray-300 hover:border-gray-400 rounded-lg px-2.5 py-1 text-xs font-medium text-gray-700 cursor-pointer shadow-xs transition-colors"
+                            title="Text Format"
+                        >
+                            <span>{selectedBlockLabel}</span>
+                            <i className="fas fa-chevron-down text-[9px] text-gray-400 ml-0.5"></i>
+                        </button>
+                        {showFormatMenu && (
+                            <div className="absolute top-full left-0 mt-1 z-30 bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-36 max-h-60 overflow-y-auto">
+                                {blockOptions.map((b) => (
+                                    <button
+                                        key={b.value}
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                            applyBlockFormat(b.value);
+                                            setShowFormatMenu(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-gray-100 cursor-pointer transition-colors ${
+                                            selectedBlock === b.value ? "bg-pink-50 text-[#F43676] font-semibold" : "text-gray-700"
+                                        }`}
+                                    >
+                                        <span>{b.label}</span>
+                                        {selectedBlock === b.value && <i className="fas fa-check text-[10px]"></i>}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     <div className="h-5 w-[1px] bg-gray-300 mx-0.5"></div>
 
@@ -772,6 +1111,7 @@ export default function RichPetitionEditor({
                     <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg p-0.5">
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => exec("bold")}
                             className="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-gray-700 font-bold cursor-pointer"
                             title="Bold"
@@ -780,6 +1120,7 @@ export default function RichPetitionEditor({
                         </button>
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => exec("italic")}
                             className="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-gray-700 italic cursor-pointer"
                             title="Italic"
@@ -788,6 +1129,7 @@ export default function RichPetitionEditor({
                         </button>
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => exec("underline")}
                             className="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-gray-700 underline cursor-pointer"
                             title="Underline"
@@ -796,6 +1138,7 @@ export default function RichPetitionEditor({
                         </button>
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => exec("strikeThrough")}
                             className="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-gray-700 line-through cursor-pointer"
                             title="Strikethrough"
@@ -809,9 +1152,11 @@ export default function RichPetitionEditor({
                         <div className="relative">
                             <button
                                 type="button"
+                                onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => {
-                                    setShowTextColorPicker(!showTextColorPicker);
-                                    setShowBgColorPicker(false);
+                                    const next = !showTextColorPicker;
+                                    closeAllMenus();
+                                    setShowTextColorPicker(next);
                                 }}
                                 className="w-6 h-6 rounded hover:bg-gray-100 flex flex-col items-center justify-center text-gray-700 cursor-pointer"
                                 title="Text Color"
@@ -828,6 +1173,7 @@ export default function RichPetitionEditor({
                                             <button
                                                 key={c}
                                                 type="button"
+                                                onMouseDown={(e) => e.preventDefault()}
                                                 onClick={() => applyTextColor(c)}
                                                 className="w-5 h-5 rounded-full border border-gray-300 shadow-xs hover:scale-110 transition-transform cursor-pointer"
                                                 style={{ backgroundColor: c }}
@@ -850,9 +1196,11 @@ export default function RichPetitionEditor({
                         <div className="relative">
                             <button
                                 type="button"
+                                onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => {
-                                    setShowBgColorPicker(!showBgColorPicker);
-                                    setShowTextColorPicker(false);
+                                    const next = !showBgColorPicker;
+                                    closeAllMenus();
+                                    setShowBgColorPicker(next);
                                 }}
                                 className="w-6 h-6 rounded hover:bg-gray-100 flex flex-col items-center justify-center text-gray-700 cursor-pointer"
                                 title="Highlight Color"
@@ -869,6 +1217,7 @@ export default function RichPetitionEditor({
                                             <button
                                                 key={c}
                                                 type="button"
+                                                onMouseDown={(e) => e.preventDefault()}
                                                 onClick={() => applyBgColor(c)}
                                                 className="w-5 h-5 rounded-full border border-gray-300 shadow-xs hover:scale-110 transition-transform cursor-pointer"
                                                 style={{ backgroundColor: c }}
@@ -895,6 +1244,7 @@ export default function RichPetitionEditor({
                     <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg p-0.5">
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => exec("insertUnorderedList")}
                             className="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-gray-700 cursor-pointer"
                             title="Bullet List"
@@ -903,6 +1253,7 @@ export default function RichPetitionEditor({
                         </button>
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => exec("insertOrderedList")}
                             className="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-gray-700 cursor-pointer"
                             title="Numbered List"
@@ -915,6 +1266,7 @@ export default function RichPetitionEditor({
                     <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg p-0.5">
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => setShowLinkModal(true)}
                             className="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-[#0284c7] cursor-pointer"
                             title="Insert Link"
@@ -923,6 +1275,7 @@ export default function RichPetitionEditor({
                         </button>
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={insertCallout}
                             className="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-amber-500 cursor-pointer"
                             title="Highlight Callout Box"
@@ -931,6 +1284,7 @@ export default function RichPetitionEditor({
                         </button>
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={insertHr}
                             className="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-gray-500 cursor-pointer"
                             title="Horizontal Line"
@@ -942,7 +1296,10 @@ export default function RichPetitionEditor({
                     {/* Clear Formatting */}
                     <button
                         type="button"
-                        onMouseDown={saveSelection}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            saveSelection();
+                        }}
                         onClick={clearFormatting}
                         className="w-6 h-6 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center text-red-500 ml-auto cursor-pointer"
                         title="Clear Formatting"
@@ -953,7 +1310,7 @@ export default function RichPetitionEditor({
             )}
 
             {/* TAB CONTENT */}
-            <div className="p-3 bg-white min-h-[160px]">
+            <div className="p-3 bg-white min-h-[160px] rounded-b-2xl">
                 {activeTab === "visual" && (
                     <div
                         ref={editorRef}
@@ -964,8 +1321,8 @@ export default function RichPetitionEditor({
                             saveSelection();
                             if (onBlur) onBlur(e);
                         }}
-                        onMouseUp={saveSelection}
-                        onKeyUp={saveSelection}
+                        onMouseUp={handleEditorMouseUp}
+                        onKeyUp={handleEditorKeyUp}
                         onSelect={saveSelection}
                         className="prose max-w-none p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F43676]/20 focus:border-[#F43676] transition-all bg-white min-h-[160px] outline-none leading-relaxed text-sm text-[#302d55]"
                         data-placeholder={placeholder}

@@ -1454,91 +1454,130 @@ const MyPetitionsPage = () => {
 
                             {/* Actions */}
                             <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={() => copyToClipboard(petition.slug)}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
-                              >
-                                <FaLink className="text-xs" /> Copy Link
-                              </button>
-                              <button
-                                onClick={() => sharePetition(petition)}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-[#F43676] hover:bg-[#e02a60] text-white text-sm font-medium rounded-lg transition-colors"
-                              >
-                                <FaShare className="text-xs" /> Share
-                              </button>
-                              <button
-                                onClick={() => openEditModal(petition)}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-[#3650AD] hover:bg-[#2a4085] text-white text-sm font-medium rounded-lg transition-colors"
-                              >
-                                <FaEdit className="text-xs" /> Edit
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setShowCommentsModal(petition._id);
-                                  fetchPendingComments(petition._id);
-                                }}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors"
-                              >
-                                <FaComments className="text-xs" /> Comments
-                              </button>
-                              {/* Victory Status / Button */}
-                              {petition.isVictory || petition.status === "victory" || victoryRequestStatus[petition._id]?.status === "approved" ? (
-                                <span className="flex items-center gap-1.5 px-3 py-2 bg-emerald-100 text-emerald-800 text-sm font-semibold rounded-lg cursor-default border border-emerald-200">
-                                  <FaTrophy className="text-emerald-600 text-xs" /> Victory Approved 🎉
-                                </span>
-                              ) : victoryRequestStatus[petition._id]?.hasRequest && victoryRequestStatus[petition._id]?.status === "pending" ? (
-                                <span className="flex items-center gap-1.5 px-3 py-2 bg-amber-100 text-amber-800 text-sm font-medium rounded-lg cursor-default border border-amber-200" title="Victory request is awaiting admin approval">
-                                  <FaClock className="text-amber-600 text-xs" /> Victory Pending Approval
-                                </span>
-                              ) : victoryRequestStatus[petition._id]?.hasRequest && victoryRequestStatus[petition._id]?.status === "rejected" ? (
-                                <button
-                                  onClick={() => openVictoryModal(petition)}
-                                  className="flex items-center gap-1.5 px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-800 text-sm font-medium rounded-lg transition-colors border border-rose-200"
-                                  title={`Request rejected: ${victoryRequestStatus[petition._id]?.adminNote || "No note"}. Click to re-request.`}
-                                >
-                                  <FaTrophy className="text-rose-600 text-xs" /> Re-request Victory
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => openVictoryModal(petition)}
-                                  className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
-                                >
-                                  <FaTrophy className="text-xs" /> Victory
-                                </button>
-                              )}
-                              {/* Hide Request Status / Button */}
-                              {petition.hidden ? (
-                                <span className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg cursor-default">
-                                  <FaEyeSlash className="text-xs" /> Hidden
-                                </span>
-                              ) : hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "pending" ? (
-                                <span className="flex items-center gap-1.5 px-3 py-2 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-lg cursor-default border border-yellow-200">
-                                  <FaClock className="text-xs" /> Hide Pending
-                                </span>
-                              ) : hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "approved" ? (
-                                <span className="flex items-center gap-1.5 px-3 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-lg cursor-default border border-green-200">
-                                  <FaCheck className="text-xs" /> Hide Approved
-                                </span>
-                              ) : hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "rejected" ? (
-                                <button
-                                  onClick={() => setShowHideModal(petition._id)}
-                                  className="flex items-center gap-1.5 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition-colors border border-red-200"
-                                >
-                                  <FaTimes className="text-xs" /> Hide Rejected
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setShowHideModal(petition._id)}
-                                  className="flex items-center gap-1.5 px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 text-sm font-medium rounded-lg transition-colors"
-                                >
-                                  <FaEyeSlash className="text-xs" /> Hide
-                                </button>
-                              )}
-                              <Link href={`/currentpetitions/${petition.slug}`}>
-                                <button className="flex items-center gap-1.5 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-medium rounded-lg transition-colors">
-                                  View <FaArrowRight className="text-xs" />
-                                </button>
-                              </Link>
+                              {(() => {
+                                const isApproved =
+                                  (petition.status === "approved" || petition.approved || petition.status === "victory" || petition.isVictory) &&
+                                  petition.status !== "rejected" &&
+                                  petition.status !== "pending";
+
+                                if (!isApproved) {
+                                  return (
+                                    <>
+                                      <button
+                                        onClick={() => openEditModal(petition)}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-[#3650AD] hover:bg-[#2a4085] text-white text-sm font-medium rounded-lg transition-colors"
+                                      >
+                                        <FaEdit className="text-xs" /> Edit
+                                      </button>
+                                      {petition.status === "rejected" ? (
+                                        <span
+                                          className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-500 text-sm font-medium rounded-lg cursor-not-allowed border border-red-200"
+                                          title="Rejected petitions cannot be viewed or shared publicly"
+                                        >
+                                          <FaTimes className="text-xs text-red-400" /> Not Available
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className="flex items-center gap-1.5 px-3 py-2 bg-yellow-50 text-yellow-700 text-sm font-medium rounded-lg cursor-not-allowed border border-yellow-200"
+                                          title="This petition is awaiting admin approval before it can be viewed"
+                                        >
+                                          <FaClock className="text-xs text-yellow-500" /> Pending Approval
+                                        </span>
+                                      )}
+                                    </>
+                                  );
+                                }
+
+                                return (
+                                  <>
+                                    <button
+                                      onClick={() => copyToClipboard(petition.slug)}
+                                      className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                      <FaLink className="text-xs" /> Copy Link
+                                    </button>
+                                    <button
+                                      onClick={() => sharePetition(petition)}
+                                      className="flex items-center gap-1.5 px-3 py-2 bg-[#F43676] hover:bg-[#e02a60] text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                      <FaShare className="text-xs" /> Share
+                                    </button>
+                                    <button
+                                      onClick={() => openEditModal(petition)}
+                                      className="flex items-center gap-1.5 px-3 py-2 bg-[#3650AD] hover:bg-[#2a4085] text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                      <FaEdit className="text-xs" /> Edit
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setShowCommentsModal(petition._id);
+                                        fetchPendingComments(petition._id);
+                                      }}
+                                      className="flex items-center gap-1.5 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                      <FaComments className="text-xs" /> Comments
+                                    </button>
+                                    {/* Victory Status / Button */}
+                                    {petition.isVictory || petition.status === "victory" || victoryRequestStatus[petition._id]?.status === "approved" ? (
+                                      <span className="flex items-center gap-1.5 px-3 py-2 bg-emerald-100 text-emerald-800 text-sm font-semibold rounded-lg cursor-default border border-emerald-200">
+                                        <FaTrophy className="text-emerald-600 text-xs" /> Victory Approved 🎉
+                                      </span>
+                                    ) : victoryRequestStatus[petition._id]?.hasRequest && victoryRequestStatus[petition._id]?.status === "pending" ? (
+                                      <span className="flex items-center gap-1.5 px-3 py-2 bg-amber-100 text-amber-800 text-sm font-medium rounded-lg cursor-default border border-amber-200" title="Victory request is awaiting admin approval">
+                                        <FaClock className="text-amber-600 text-xs" /> Victory Pending Approval
+                                      </span>
+                                    ) : victoryRequestStatus[petition._id]?.hasRequest && victoryRequestStatus[petition._id]?.status === "rejected" ? (
+                                      <button
+                                        onClick={() => openVictoryModal(petition)}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-800 text-sm font-medium rounded-lg transition-colors border border-rose-200"
+                                        title={`Request rejected: ${victoryRequestStatus[petition._id]?.adminNote || "No note"}. Click to re-request.`}
+                                      >
+                                        <FaTrophy className="text-rose-600 text-xs" /> Re-request Victory
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => openVictoryModal(petition)}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                                      >
+                                        <FaTrophy className="text-xs" /> Victory
+                                      </button>
+                                    )}
+                                    {/* Hide Request Status / Button */}
+                                    {petition.hidden ? (
+                                      <span className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg cursor-default">
+                                        <FaEyeSlash className="text-xs" /> Hidden
+                                      </span>
+                                    ) : hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "pending" ? (
+                                      <span className="flex items-center gap-1.5 px-3 py-2 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-lg cursor-default border border-yellow-200">
+                                        <FaClock className="text-xs" /> Hide Pending
+                                      </span>
+                                    ) : hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "approved" ? (
+                                      <span className="flex items-center gap-1.5 px-3 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-lg cursor-default border border-green-200">
+                                        <FaCheck className="text-xs" /> Hide Approved
+                                      </span>
+                                    ) : hideRequestStatus[petition._id]?.hasRequest && hideRequestStatus[petition._id]?.status === "rejected" ? (
+                                      <button
+                                        onClick={() => setShowHideModal(petition._id)}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition-colors border border-red-200"
+                                      >
+                                        <FaTimes className="text-xs" /> Hide Rejected
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => setShowHideModal(petition._id)}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 text-sm font-medium rounded-lg transition-colors"
+                                      >
+                                        <FaEyeSlash className="text-xs" /> Hide
+                                      </button>
+                                    )}
+                                    <Link href={`/currentpetitions/${petition.slug}`}>
+                                      <button className="flex items-center gap-1.5 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-medium rounded-lg transition-colors">
+                                        View <FaArrowRight className="text-xs" />
+                                      </button>
+                                    </Link>
+                                  </>
+                                );
+                              })()}
                             </div>
 
                             {/* Comprehensive Edit Modal */}
