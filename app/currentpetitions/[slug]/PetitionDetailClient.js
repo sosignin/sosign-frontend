@@ -979,6 +979,26 @@ export default function PetitionDetailClient({ initialPetition }) {
             {/* 2. Petition Image and Sign Section BELOW */}
             <div className="w-full mt-6 overflow-hidden">
                 <div className="max-w-[1500px] mx-auto">
+                    {Boolean(petition.isVictory || petition.status === "victory") && (
+                        <div className="mb-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-4 md:p-5 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 border border-emerald-400/30">
+                            <div className="flex items-center gap-3 text-center sm:text-left">
+                                <span className="text-4xl sm:text-3xl">🏆</span>
+                                <div>
+                                    <div className="inline-block bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mb-1">
+                                        Goal Achieved & Victory Declared
+                                    </div>
+                                    <h2 className="font-extrabold text-base md:text-lg text-white">This petition successfully won its campaign!</h2>
+                                    <p className="text-emerald-100 text-xs md:text-sm">Officially closed to new signatures and archived in our Successful Petitions showcase.</p>
+                                </div>
+                            </div>
+                            <Link
+                                href="/successfulpetitions"
+                                className="flex-shrink-0 bg-white text-emerald-800 hover:bg-emerald-50 px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition shadow-sm hover:shadow-md"
+                            >
+                                View Successful Showcase →
+                            </Link>
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr]">
                         {/* Image with title overlay at bottom */}
                         <div className="relative min-h-[320px] lg:min-h-[480px] overflow-hidden lg:col-start-1 rounded-2xl">
@@ -1097,6 +1117,29 @@ export default function PetitionDetailClient({ initialPetition }) {
                                         )}
                                     </div>
 
+                            {Boolean(petition.isVictory || petition.status === "victory") ? (
+                                <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 border-2 border-emerald-400 p-6 rounded-2xl text-center space-y-4 shadow-sm">
+                                    <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">
+                                        🏆
+                                    </div>
+                                    <div>
+                                        <span className="inline-block px-3 py-1 bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider rounded-full mb-2">
+                                            Victory Achieved
+                                        </span>
+                                        <h2 className="text-2xl font-black text-emerald-950 tracking-tight">Petition Succeeded!</h2>
+                                        <p className="text-emerald-800 text-sm mt-2 leading-relaxed font-medium">
+                                            With the support of <strong className="font-bold text-emerald-900">{(petition.numberOfSignatures || 0).toLocaleString()} changemakers</strong>, this petition has successfully achieved its goal and is officially closed.
+                                        </p>
+                                    </div>
+                                    <Link
+                                        href="/successfulpetitions"
+                                        className="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white w-full py-3 px-4 rounded-xl font-bold hover:bg-emerald-700 transition shadow-sm hover:shadow-md"
+                                    >
+                                        View Successful Petitions 🏆
+                                    </Link>
+                                </div>
+                            ) : (
+                                <>
                             <h2 className="text-2xl font-black text-[#1a1a2e] tracking-tight">Sign this petition</h2>
 
                             {signSuccess && (
@@ -1367,6 +1410,9 @@ export default function PetitionDetailClient({ initialPetition }) {
                                         {signing ? "Signing..." : "Sign Petition"}
                                     </button>
                                 </div>
+                            )}
+
+                                </>
                             )}
 
                             {/* Report Objection / Takedown Request Button */}

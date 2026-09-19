@@ -93,7 +93,8 @@ export default function Content({ initialPetitions = [], initialPagination = {} 
     staleTime: 60 * 1000,
   });
 
-  const petitions = petitionsData?.petitions || [];
+  const rawPetitions = petitionsData?.petitions || [];
+  const petitions = rawPetitions.filter((p) => !p.isVictory && p.status !== "victory");
   const paginationInfo = {
     totalPages: petitionsData?.totalPages || 1,
     totalPetitions: petitionsData?.totalPetitions || 0,

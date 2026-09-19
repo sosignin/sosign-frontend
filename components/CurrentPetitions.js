@@ -130,7 +130,8 @@ export default function CurrentPetitions() {
         console.warn('Rate limit exceeded for current petitions, using fallback');
         return [];
       }
-      return data.petitions || [];
+      const rawPetitions = data.petitions || [];
+      return rawPetitions.filter((p) => !p.isVictory && p.status !== "victory");
     },
     staleTime: 5 * 60 * 1000,
   });
