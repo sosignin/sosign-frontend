@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     FaFacebook,
     FaTwitter,
@@ -47,6 +47,7 @@ import {
     ImageIcon,
     MapPin,
     ChevronDown,
+    ChevronUp,
     ChevronLeft,
     ChevronRight,
     Languages,
@@ -54,7 +55,10 @@ import {
     Eye,
     Play,
     TrendingUp,
-    ExternalLink
+    ExternalLink,
+    Maximize2,
+    Columns,
+    BookOpen
 } from "lucide-react";
 
 function VideoProductCard({ video, vIdx, onPlay, getYoutubeId }) {
@@ -220,6 +224,55 @@ export default function PetitionDetailClient({ initialPetition }) {
     const [currentLanguage, setCurrentLanguage] = useState("en");
     const [isLangOpen, setIsLangOpen] = useState(false);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+    // Problem & Solution unified card states
+    const [probSolTab, setProbSolTab] = useState("problem"); // "problem" | "solution" | "split"
+    const [isProbSolExpanded, setIsProbSolExpanded] = useState(false);
+    const [showProbSolReaderModal, setShowProbSolReaderModal] = useState(false);
+    const [readerFontSize, setReaderFontSize] = useState("base"); // "sm" | "base" | "lg" | "xl"
+    const probSolCardRef = useRef(null);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape" && showProbSolReaderModal) {
+                setShowProbSolReaderModal(false);
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [showProbSolReaderModal]);
+
+    useEffect(() => {
+        if (showProbSolReaderModal) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [showProbSolReaderModal]);
+
+    useEffect(() => {
+        if (!petition?.petitionDetails?.problem && petition?.petitionDetails?.solution) {
+            setProbSolTab("solution");
+        } else {
+            setProbSolTab("problem");
+        }
+    }, [petition?.petitionDetails?.problem, petition?.petitionDetails?.solution]);
+
+    const calculateReadTime = (htmlContent) => {
+        if (!htmlContent) return 1;
+        const text = htmlContent.replace(/<[^>]*>?/gm, " ").trim();
+        const words = text.split(/\s+/).filter(Boolean).length;
+        return Math.max(1, Math.ceil(words / 200));
+    };
+
+    const countWords = (htmlContent) => {
+        if (!htmlContent) return 0;
+        const text = htmlContent.replace(/<[^>]*>?/gm, " ").trim();
+        return text.split(/\s+/).filter(Boolean).length;
+    };
 
     useEffect(() => {
         // Define callback before script loads
@@ -1902,37 +1955,235 @@ export default function PetitionDetailClient({ initialPetition }) {
                         </div>
                     )}
 
-                    {/* Problem */}
-                    {petition.petitionDetails?.problem && (
-                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-500/20 flex items-center justify-center">
-                                    <AlertTriangle className="w-5 h-5 text-amber-500" />
-                                </div>
-                                <p className="font-bold text-[#1a1a2e]">Problem</p>
-                            </div>
-                            <div
-                                className="prose max-w-none text-[#1a1a2e]"
-                                dangerouslySetInnerHTML={{ __html: petition.petitionDetails.problem }}
-                            />
-                        </div>
-                    )}
+                    {/* Unified Problem & Proposed Solution Card (Fixes excessive vertical scrolling) */}
+                    {(petition.petitionDetails?.problem || petition.petitionDetails?.solution) && (() => {
+                        const hasProblem = Boolean(petition.petitionDetails?.problem);
+                        const hasSolution = Boolean(petition.petitionDetails?.solution);
+                        const hasBoth = hasProblem && hasSolution;
+                        const currentContent = probSolTab === "solution"
+                            ? petition.petitionDetails?.solution
+                            : petition.petitionDetails?.problem;
+                        const currentReadTime = calculateReadTime(currentContent);
+                        const currentWordCount = countWords(currentContent);
 
-                    {/* Solution */}
-                    {petition.petitionDetails?.solution && (
-                        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/10 to-emerald-500/20 flex items-center justify-center">
-                                    <Lightbulb className="w-5 h-5 text-emerald-500" />
-                                </div>
-                                <p className="font-bold text-[#1a1a2e]">Solution</p>
-                            </div>
+                        return (
                             <div
-                                className="prose max-w-none text-[#1a1a2e]"
-                                dangerouslySetInnerHTML={{ __html: petition.petitionDetails.solution }}
-                            />
-                        </div>
-                    )}
+                                ref={probSolCardRef}
+                                className="col-span-1 md:col-span-2 bg-white rounded-2xl p-5 sm:p-7 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100/90 relative"
+                            >
+                                {/* Card Header */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                            probSolTab === "problem"
+                                                ? "bg-gradient-to-br from-amber-500/10 to-amber-500/20 text-amber-600 border border-amber-500/20"
+                                                : probSolTab === "solution"
+                                                ? "bg-gradient-to-br from-emerald-500/10 to-emerald-500/20 text-emerald-600 border border-emerald-500/20"
+                                                : "bg-gradient-to-br from-[#3650AD]/10 to-indigo-500/20 text-[#3650AD] border border-indigo-200/50"
+                                        }`}>
+                                            {probSolTab === "problem" ? (
+                                                <AlertTriangle className="w-5 h-5" />
+                                            ) : probSolTab === "solution" ? (
+                                                <Lightbulb className="w-5 h-5" />
+                                            ) : (
+                                                <Columns className="w-5 h-5" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h3 className="font-bold text-lg text-[#1a1a2e]">
+                                                    {hasBoth
+                                                        ? "Problem & Proposed Solution"
+                                                        : hasProblem
+                                                        ? "The Problem"
+                                                        : "Proposed Solution"}
+                                                </h3>
+                                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 flex items-center gap-1">
+                                                    <Clock className="w-3 h-3 text-gray-400" />
+                                                    ~{currentReadTime} min read
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                {hasBoth
+                                                    ? "Key challenges identified and the actionable plan to address them"
+                                                    : "Comprehensive breakdown of this initiative"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Header Controls: Tab Switcher & Reader Mode Trigger */}
+                                    <div className="flex items-center flex-wrap gap-2">
+                                        {hasBoth && (
+                                            <div className="inline-flex p-1 bg-gray-100/90 rounded-xl border border-gray-200/60 shadow-inner">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setProbSolTab("problem")}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                        probSolTab === "problem"
+                                                            ? "bg-white text-amber-700 shadow-sm border border-amber-200/60"
+                                                            : "text-gray-600 hover:text-gray-900"
+                                                    }`}
+                                                >
+                                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                                                    <span>Problem</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setProbSolTab("solution")}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                        probSolTab === "solution"
+                                                            ? "bg-white text-emerald-700 shadow-sm border border-emerald-200/60"
+                                                            : "text-gray-600 hover:text-gray-900"
+                                                    }`}
+                                                >
+                                                    <Lightbulb className="w-3.5 h-3.5 text-emerald-500" />
+                                                    <span>Solution</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setProbSolTab("split")}
+                                                    className={`hidden lg:flex px-3 py-1.5 rounded-lg text-xs font-bold transition-all items-center gap-1.5 cursor-pointer ${
+                                                        probSolTab === "split"
+                                                            ? "bg-white text-indigo-700 shadow-sm border border-indigo-200/60"
+                                                            : "text-gray-600 hover:text-gray-900"
+                                                    }`}
+                                                    title="View Problem and Solution side-by-side"
+                                                >
+                                                    <Columns className="w-3.5 h-3.5 text-indigo-500" />
+                                                    <span>Side by Side</span>
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowProbSolReaderModal(true)}
+                                            className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 font-bold text-xs flex items-center gap-1.5 transition shadow-xs hover:border-slate-300 cursor-pointer"
+                                            title="Open clean, distraction-free reading mode"
+                                        >
+                                            <Maximize2 className="w-3.5 h-3.5 text-slate-500" />
+                                            <span className="hidden sm:inline">Reader Mode</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Content Body with Clamped Height */}
+                                <div className={`relative transition-all duration-300 ${isProbSolExpanded ? "max-h-none" : "max-h-[360px] overflow-hidden"}`}>
+                                    {/* Problem View */}
+                                    {probSolTab === "problem" && (
+                                        <div className="pt-4">
+                                            {hasBoth && (
+                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200/60 mb-3">
+                                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                                                    <span>The Problem & Impact</span>
+                                                </div>
+                                            )}
+                                            <div
+                                                className="prose max-w-none text-[#1a1a2e] prose-headings:text-[#1a1a2e] prose-p:leading-relaxed prose-li:leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: petition.petitionDetails.problem }}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Solution View */}
+                                    {probSolTab === "solution" && (
+                                        <div className="pt-4">
+                                            {hasBoth && (
+                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200/60 mb-3">
+                                                    <Lightbulb className="w-3.5 h-3.5 text-emerald-600" />
+                                                    <span>Proposed Solution & Action Plan</span>
+                                                </div>
+                                            )}
+                                            <div
+                                                className="prose max-w-none text-[#1a1a2e] prose-headings:text-[#1a1a2e] prose-p:leading-relaxed prose-li:leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: petition.petitionDetails.solution }}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Side by Side Split View */}
+                                    {probSolTab === "split" && (
+                                        <div className="pt-4 grid grid-cols-1 lg:grid-cols-2 gap-6 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
+                                            <div className="lg:pr-4">
+                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200/60 mb-3">
+                                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                                                    <span>The Problem</span>
+                                                </div>
+                                                <div
+                                                    className="prose max-w-none text-[#1a1a2e] prose-headings:text-[#1a1a2e] prose-p:leading-relaxed prose-li:leading-relaxed"
+                                                    dangerouslySetInnerHTML={{ __html: petition.petitionDetails.problem }}
+                                                />
+                                            </div>
+                                            <div className="pt-6 lg:pt-0 lg:pl-6">
+                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200/60 mb-3">
+                                                    <Lightbulb className="w-3.5 h-3.5 text-emerald-600" />
+                                                    <span>The Solution</span>
+                                                </div>
+                                                <div
+                                                    className="prose max-w-none text-[#1a1a2e] prose-headings:text-[#1a1a2e] prose-p:leading-relaxed prose-li:leading-relaxed"
+                                                    dangerouslySetInnerHTML={{ __html: petition.petitionDetails.solution }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Bottom Gradient Fade when collapsed */}
+                                    {!isProbSolExpanded && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-none z-10" />
+                                    )}
+                                </div>
+
+                                {/* Card Footer with Expand/Collapse & Word Count */}
+                                <div className={`mt-4 pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 ${!isProbSolExpanded ? "relative z-20" : "border-t border-gray-100"}`}>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (isProbSolExpanded) {
+                                                setIsProbSolExpanded(false);
+                                                probSolCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                                            } else {
+                                                setIsProbSolExpanded(true);
+                                            }
+                                        }}
+                                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3650AD] to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md shadow-blue-200/60 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer group"
+                                    >
+                                        {isProbSolExpanded ? (
+                                            <>
+                                                <ChevronUp className="w-4 h-4 text-blue-200 group-hover:-translate-y-0.5 transition-transform" />
+                                                <span>Show Less</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ChevronDown className="w-4 h-4 text-blue-200 group-hover:translate-y-0.5 transition-transform" />
+                                                <span>
+                                                    {probSolTab === "problem"
+                                                        ? "Read Full Problem"
+                                                        : probSolTab === "solution"
+                                                        ? "Read Full Solution"
+                                                        : "Read Full Details"}
+                                                </span>
+                                            </>
+                                        )}
+                                    </button>
+
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                                        <span>{currentWordCount.toLocaleString()} words</span>
+                                        <span>•</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowProbSolReaderModal(true)}
+                                            className="text-[#3650AD] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                                        >
+                                            <BookOpen className="w-3.5 h-3.5" />
+                                            <span>Open Reader Mode</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {/* Country */}
                     {petition.country && (
@@ -2561,6 +2812,194 @@ export default function PetitionDetailClient({ initialPetition }) {
                     user={user}
                 />
             )}
+
+            {/* Fullscreen Problem & Solution Reader Modal */}
+            <AnimatePresence>
+                {showProbSolReaderModal && (
+                    <div 
+                        className="fixed inset-0 z-[100] bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) setShowProbSolReaderModal(false);
+                        }}
+                    >
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-gray-100"
+                        >
+                            {/* Modal Header */}
+                            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4 bg-gray-50/70">
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-gray-900 text-base truncate">
+                                        {petition.title || "Petition Overview"}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+                                        <span className="font-semibold text-indigo-600">Reader Mode</span>
+                                        <span>•</span>
+                                        <span>
+                                            ~{calculateReadTime(probSolTab === "solution" ? petition.petitionDetails?.solution : petition.petitionDetails?.problem)} min read
+                                        </span>
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {/* Font Size Adjuster */}
+                                    <div className="hidden sm:inline-flex items-center p-1 bg-white rounded-xl border border-gray-200 shadow-xs text-xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => setReaderFontSize((prev) => prev === "xl" ? "lg" : prev === "lg" ? "base" : "sm")}
+                                            disabled={readerFontSize === "sm"}
+                                            className="px-2 py-1 rounded-lg hover:bg-gray-100 font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                            title="Decrease font size"
+                                        >
+                                            A-
+                                        </button>
+                                        <span className="px-1 text-[11px] text-gray-300">|</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setReaderFontSize((prev) => prev === "sm" ? "base" : prev === "base" ? "lg" : "xl")}
+                                            disabled={readerFontSize === "xl"}
+                                            className="px-2 py-1 rounded-lg hover:bg-gray-100 font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                            title="Increase font size"
+                                        >
+                                            A+
+                                        </button>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowProbSolReaderModal(false)}
+                                        className="w-9 h-9 rounded-xl bg-white hover:bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+                                        title="Close Reader Mode (Esc)"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Modal Subheader: Switch between Problem and Solution */}
+                            {(petition.petitionDetails?.problem && petition.petitionDetails?.solution) && (
+                                <div className="px-6 py-2.5 bg-white border-b border-gray-100 flex items-center justify-between gap-3 overflow-x-auto">
+                                    <div className="inline-flex p-1 bg-gray-100 rounded-xl text-xs font-bold">
+                                        <button
+                                            type="button"
+                                            onClick={() => setProbSolTab("problem")}
+                                            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                probSolTab === "problem"
+                                                    ? "bg-white text-amber-700 shadow-sm border border-amber-200/60"
+                                                    : "text-gray-600 hover:text-gray-900"
+                                            }`}
+                                        >
+                                            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                                            <span>Problem</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setProbSolTab("solution")}
+                                            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                probSolTab === "solution"
+                                                    ? "bg-white text-emerald-700 shadow-sm border border-emerald-200/60"
+                                                    : "text-gray-600 hover:text-gray-900"
+                                            }`}
+                                        >
+                                            <Lightbulb className="w-3.5 h-3.5 text-emerald-500" />
+                                            <span>Solution</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setProbSolTab("split")}
+                                            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                probSolTab === "split"
+                                                    ? "bg-white text-indigo-700 shadow-sm border border-indigo-200/60"
+                                                    : "text-gray-600 hover:text-gray-900"
+                                            }`}
+                                        >
+                                            <Columns className="w-3.5 h-3.5 text-indigo-500" />
+                                            <span>Both Side by Side</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Modal Body */}
+                            <div className="overflow-y-auto p-6 sm:p-10">
+                                <div className={`max-w-none text-[#1a1a2e] ${
+                                    readerFontSize === "sm" ? "text-sm leading-relaxed" :
+                                    readerFontSize === "lg" ? "text-lg leading-relaxed" :
+                                    readerFontSize === "xl" ? "text-xl leading-relaxed" : "text-base leading-relaxed"
+                                }`}>
+                                    {probSolTab === "problem" && (
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-amber-100">
+                                                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                                                <h2 className="text-xl font-extrabold text-gray-900">The Problem</h2>
+                                            </div>
+                                            <div
+                                                className="prose prose-indigo max-w-none text-[#1a1a2e]"
+                                                dangerouslySetInnerHTML={{ __html: petition.petitionDetails?.problem }}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {probSolTab === "solution" && (
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-emerald-100">
+                                                <Lightbulb className="w-5 h-5 text-emerald-500" />
+                                                <h2 className="text-xl font-extrabold text-gray-900">The Solution</h2>
+                                            </div>
+                                            <div
+                                                className="prose prose-indigo max-w-none text-[#1a1a2e]"
+                                                dangerouslySetInnerHTML={{ __html: petition.petitionDetails?.solution }}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {probSolTab === "split" && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+                                            <div className="md:pr-6">
+                                                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-amber-100">
+                                                    <AlertTriangle className="w-5 h-5 text-amber-500" />
+                                                    <h2 className="text-xl font-extrabold text-gray-900">The Problem</h2>
+                                                </div>
+                                                <div
+                                                    className="prose prose-indigo max-w-none text-[#1a1a2e]"
+                                                    dangerouslySetInnerHTML={{ __html: petition.petitionDetails?.problem }}
+                                                />
+                                            </div>
+                                            <div className="pt-8 md:pt-0 md:pl-6">
+                                                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-emerald-100">
+                                                    <Lightbulb className="w-5 h-5 text-emerald-500" />
+                                                    <h2 className="text-xl font-extrabold text-gray-900">The Solution</h2>
+                                                </div>
+                                                <div
+                                                    className="prose prose-indigo max-w-none text-[#1a1a2e]"
+                                                    dangerouslySetInnerHTML={{ __html: petition.petitionDetails?.solution }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                                <p className="text-xs text-gray-500">
+                                    Press <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-300 font-mono text-[10px]">Esc</kbd> or click outside to exit
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowProbSolReaderModal(false)}
+                                    className="px-4 py-2 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold transition-all cursor-pointer"
+                                >
+                                    Close Reader
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Fullscreen Video Player Modal */}
             <AnimatePresence>
