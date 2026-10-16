@@ -2,9 +2,10 @@
 
 import { useState, useRef } from "react";
 import { FaTimes, FaCamera, FaSpinner, FaPhone, FaFacebookF, FaInstagram, FaYoutube, FaLinkedinIn, FaCheck } from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
+import { FaXTwitter, FaShieldHalved, FaDownload, FaTrashCan } from "react-icons/fa6";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
+import Link from "next/link";
 
 export default function ProfileEditModal({ isOpen, onClose }) {
     const { user, updateProfile } = useAuth();
@@ -15,9 +16,16 @@ export default function ProfileEditModal({ isOpen, onClose }) {
     const [profilePicture, setProfilePicture] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(user?.profilePicture || "");
     const [isLoading, setIsLoading] = useState(false);
+    const [profileConsent, setProfileConsent] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const fileInputRef = useRef(null);
+
+    // DPDP statutory rights states
+    const [downloadingData, setDownloadingData] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deletingAccount, setDeletingAccount] = useState(false);
+    const [deletePassword, setDeletePassword] = useState("");
 
     // OTP verification states
     const [otpSent, setOtpSent] = useState(false);
@@ -95,6 +103,73 @@ export default function ProfileEditModal({ isOpen, onClose }) {
         }
     };
 
+    // DPDP Section 11: Export Machine-Readable Personal Data
+    const handleExportData = async () => {
+        setDownloadingData(true);
+        setError("");
+        try {
+            const token = user?.token;
+            const res = await fetch(`${backendUrl}/api/users/export-my-data`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to export personal data.");
+            }
+
+            const data = await res.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `sosign-personal-data-${user?.uniqueCode || "user"}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            setSuccess("Your personal data archive has been downloaded successfully.");
+        } catch (err) {
+            console.error("Data export error:", err);
+            setError(err.message || "Failed to export data archive.");
+        } finally {
+            setDownloadingData(false);
+        }
+    };
+
+    // DPDP Section 12: Right to Erasure / Permanent Account Deletion
+    const handleDeleteAccount = async () => {
+        setDeletingAccount(true);
+        setError("");
+        try {
+            const token = user?.token;
+            const res = await fetch(`${backendUrl}/api/users/delete-account`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ confirmationPassword: deletePassword }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || "Failed to process erasure request.");
+            }
+
+            if (typeof window !== "undefined") {
+                localStorage.removeItem("user");
+                window.location.href = "/?erased=true";
+            }
+        } catch (err) {
+            console.error("Account deletion error:", err);
+            setError(err.message || "Failed to delete account. Please try again.");
+            setDeletingAccount(false);
+            setShowDeleteConfirm(false);
+        }
+    };
+
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -117,6 +192,10 @@ export default function ProfileEditModal({ isOpen, onClose }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!profileConsent) {
+            setError("Please consent to the processing of your updated profile data in accordance with the DPDP Act 2023.");
+            return;
+        }
         setIsLoading(true);
         setError("");
         setSuccess("");
@@ -298,9 +377,22 @@ export default function ProfileEditModal({ isOpen, onClose }) {
                                 )}
                             </div>
                         ) : (
-                            /* OTP verification section */
+                            /* OTP Input Form */
                             <div className="space-y-3">
-                                <p className="text-sm text-gray-500">OTP sent to +91 {mobileNumber}</p>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">OTP sent to +91 {mobileNumber}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setOtpSent(false);
+                                            setOtp("");
+                                            setOtpError("");
+                                        }}
+                                        className="text-[#F43676] hover:underline text-xs"
+                                    >
+                                        Change Number
+                                    </button>
+                                </div>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
@@ -309,15 +401,15 @@ export default function ProfileEditModal({ isOpen, onClose }) {
                                             const value = e.target.value.replace(/\D/g, '').slice(0, 6);
                                             setOtp(value);
                                         }}
-                                        maxLength={6}
-                                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#F43676] transition-colors text-center font-mono tracking-widest text-lg"
+                                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#F43676] transition-colors tracking-widest text-center font-mono font-bold"
                                         placeholder="Enter 6-digit OTP"
+                                        maxLength={6}
                                     />
                                     <button
                                         type="button"
                                         onClick={handleVerifyOtp}
                                         disabled={verifyingOtp || otp.length !== 6}
-                                        className="px-6 py-3 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
                                         {verifyingOtp ? (
                                             <FaSpinner className="animate-spin" />
@@ -326,48 +418,38 @@ export default function ProfileEditModal({ isOpen, onClose }) {
                                         )}
                                     </button>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setOtpSent(false);
-                                        setOtp("");
-                                        setSessionId("");
-                                    }}
-                                    className="text-sm text-[#F43676] hover:underline"
-                                >
-                                    Change number
-                                </button>
                                 {otpError && (
                                     <p className="text-red-500 text-sm">{otpError}</p>
                                 )}
                             </div>
                         )}
-
                     </div>
 
                     {/* Bio */}
                     <div>
                         <label className="block text-sm font-semibold text-[#002050] mb-2">
-                            Bio <span className="text-gray-400 font-normal">({bio.length}/500)</span>
+                            Bio
                         </label>
                         <textarea
                             value={bio}
-                            onChange={(e) => setBio(e.target.value.slice(0, 500))}
-                            rows={4}
+                            onChange={(e) => setBio(e.target.value)}
+                            rows={3}
+                            maxLength={500}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#F43676] transition-colors resize-none"
-                            placeholder="Tell us about yourself and your passion for change..."
+                            placeholder="Tell others about yourself..."
                         />
+                        <p className="text-xs text-gray-400 text-right mt-1">{bio.length}/500</p>
                     </div>
 
-                    {/* Social Links Section */}
+                    {/* Social Links */}
                     <div>
-                        <label className="block text-sm font-semibold text-[#002050] mb-3">
-                            Social Media Links
+                        <label className="block text-sm font-semibold text-[#002050] mb-2">
+                            Social Profiles
                         </label>
                         <div className="space-y-3">
                             {/* Facebook */}
                             <div className="relative">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#3b5998] flex items-center justify-center">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#1877F2] flex items-center justify-center">
                                     <FaFacebookF className="text-white text-xs" />
                                 </div>
                                 <input
@@ -395,7 +477,7 @@ export default function ProfileEditModal({ isOpen, onClose }) {
 
                             {/* LinkedIn */}
                             <div className="relative">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#0077b5] flex items-center justify-center">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#0A66C2] flex items-center justify-center">
                                     <FaLinkedinIn className="text-white text-xs" />
                                 </div>
                                 <input
@@ -437,6 +519,93 @@ export default function ProfileEditModal({ isOpen, onClose }) {
                         </div>
                     </div>
 
+                    {/* DPDP Act 2023: Citizen Data Protection & Statutory Rights Section */}
+                    <div className="pt-4 border-t border-gray-200 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#002050] flex items-center gap-1.5 uppercase tracking-wider">
+                                <FaShieldHalved className="text-[#3650AD]" />
+                                Data Privacy & DPDP Rights (Act, 2023)
+                            </span>
+                            <Link href="/privacy" target="_blank" className="text-[11px] text-[#3650AD] underline font-semibold">
+                                View Policy
+                            </Link>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2">
+                            {/* Right to Access */}
+                            <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center justify-between gap-2">
+                                <div>
+                                    <span className="font-bold text-slate-800 text-xs block">Right to Access (Sec 11)</span>
+                                    <span className="text-[11px] text-slate-500">Download your personal data archive (JSON)</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleExportData}
+                                    disabled={downloadingData}
+                                    className="px-3 py-1.5 bg-[#3650AD] text-white rounded-lg text-xs font-semibold hover:bg-[#2b4191] transition flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                                >
+                                    {downloadingData ? <FaSpinner className="animate-spin text-xs" /> : <FaDownload className="text-xs" />}
+                                    Download
+                                </button>
+                            </div>
+
+                            {/* Right to Erasure */}
+                            <div className="p-3 bg-rose-50/60 rounded-xl border border-rose-100 flex items-center justify-between gap-2">
+                                <div>
+                                    <span className="font-bold text-rose-900 text-xs block">Right to Erasure (Sec 12)</span>
+                                    <span className="text-[11px] text-rose-600">Permanently delete account & personal data</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-semibold hover:bg-rose-700 transition flex items-center gap-1.5 shrink-0"
+                                >
+                                    <FaTrashCan className="text-xs" />
+                                    Erase Data
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Delete Confirmation Sub-modal */}
+                        {showDeleteConfirm && (
+                            <div className="p-4 bg-rose-100 border border-rose-300 rounded-2xl space-y-3 text-xs text-rose-950">
+                                <span className="font-bold block text-sm text-rose-900">Are you absolutely sure?</span>
+                                <p className="leading-relaxed">
+                                    Under the Digital Personal Data Protection Act, this will permanently purge your profile, wallet, and unlink your identity from all signed petitions. This action cannot be reversed.
+                                </p>
+                                {user?.hasPassword && (
+                                    <div>
+                                        <label className="block text-[11px] font-bold mb-1">Enter your password to confirm:</label>
+                                        <input
+                                            type="password"
+                                            value={deletePassword}
+                                            onChange={(e) => setDeletePassword(e.target.value)}
+                                            placeholder="Your current password"
+                                            className="w-full p-2 bg-white border border-rose-300 rounded-lg outline-none text-xs"
+                                        />
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-2 pt-1">
+                                    <button
+                                        type="button"
+                                        onClick={handleDeleteAccount}
+                                        disabled={deletingAccount}
+                                        className="px-4 py-2 bg-rose-700 text-white rounded-lg font-bold hover:bg-rose-800 transition disabled:opacity-50"
+                                    >
+                                        {deletingAccount ? "Erasing..." : "Yes, Erase My Account"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDeleteConfirm(false)}
+                                        className="px-3 py-2 bg-white text-slate-700 rounded-lg font-semibold border border-slate-300 hover:bg-slate-50 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Error/Success Messages */}
                     {error && (
                         <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
@@ -449,11 +618,30 @@ export default function ProfileEditModal({ isOpen, onClose }) {
                         </div>
                     )}
 
+                    {/* DPDP Profile Update Consent Checkbox */}
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                        <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-600 leading-snug">
+                            <input
+                                type="checkbox"
+                                required
+                                checked={profileConsent}
+                                onChange={(e) => setProfileConsent(e.target.checked)}
+                                className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#F43676] focus:ring-[#F43676] cursor-pointer shrink-0"
+                            />
+                            <span>
+                                I hereby consent to <strong>LEO MEO IT Solution (SoSign)</strong> updating and processing my personal profile information in accordance with Section 6 &amp; Section 12 of the DPDP Act 2023 and the{" "}
+                                <Link href="/privacy" target="_blank" className="text-[#3650AD] underline font-semibold hover:text-[#283c82]">
+                                    Privacy Policy
+                                </Link>.
+                            </span>
+                        </label>
+                    </div>
+
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={isLoading}
-                        className="w-full py-4 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-semibold rounded-xl hover:shadow-lg transition-shadow disabled:opacity-50 flex items-center justify-center gap-2"
+                        disabled={isLoading || !profileConsent}
+                        className="w-full py-4 bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-semibold rounded-xl hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {isLoading ? (
                             <>

@@ -10,6 +10,7 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
   const [successData, setSuccessData] = useState(null);
   const [clientId, setClientId] = useState(null);
   const [oauthUrl, setOauthUrl] = useState(null);
+  const [consentAccepted, setConsentAccepted] = useState(false);
   
   const completedCalledRef = useRef(false);
   const popupRef = useRef(null);
@@ -141,6 +142,11 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
   }, [handleComplete]);
 
   const handleInitialize = async () => {
+    if (!consentAccepted) {
+      setError("Please provide your explicit statutory consent before proceeding to DigiLocker verification.");
+      return;
+    }
+
     setStatus("initializing");
     setError("");
     setClientId(null);
@@ -294,10 +300,26 @@ const AadhaarKycSection = ({ user, onKycSuccess }) => {
                 We use DigiLocker for a secure, paperless identity verification. No need to upload photos. Just login and authorize.
               </p>
             </div>
+
+            {/* DPDP Act Explicit Statutory Consent for Aadhaar KYC */}
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-blue-200 text-xs text-slate-700">
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={consentAccepted}
+                  onChange={(e) => setConsentAccepted(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
+                />
+                <span className="leading-relaxed text-[11px] text-slate-600">
+                  I voluntarily consent under Section 6 of the DPDP Act, 2023 for <strong>LEO MEO IT Solution (SoSign)</strong> to initiate DigiLocker authentication and access my masked Aadhaar credentials (name, masked Aadhaar ID, DOB, state, pincode) solely for civic identity verification. Full 12-digit Aadhaar numbers are never accessed or stored.
+                </span>
+              </label>
+            </div>
             
             <button
               onClick={handleInitialize}
-              className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+              disabled={!consentAccepted}
+              className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <img src="/digi.jpeg" alt="DigiLocker" className="w-6 h-6 object-contain rounded bg-white p-0.5" />
               Proceed to DigiLocker

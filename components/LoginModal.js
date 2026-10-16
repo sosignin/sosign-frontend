@@ -5,6 +5,7 @@ import { Eye, EyeOff, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import Image from "next/image";
+import Link from "next/link";
 import { auth, provider, formatAuthError } from "../utils/Firebase";
 import { signInWithPopup } from "firebase/auth";
 
@@ -27,6 +28,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const [createPassword, setCreatePassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [signupError, setSignupError] = useState("");
+  const [consentAccepted, setConsentAccepted] = useState(false);
 
   const { login, signup, loading, googleLogin } = useAuth();
   const router = useRouter();
@@ -54,6 +56,11 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
     if (createPassword !== confirmPassword) {
       setSignupError("Passwords do not match");
+      return;
+    }
+
+    if (!consentAccepted) {
+      setSignupError("Please agree to the Terms & Conditions and Privacy Policy.");
       return;
     }
 
@@ -308,13 +315,37 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
               </div>
             </div>
 
+            {/* DPDP Act Affirmative Consent Checkbox */}
+            <div className="pt-1">
+              <label className="flex items-start gap-2 cursor-pointer text-xs text-gray-600 select-none">
+                <input
+                  type="checkbox"
+                  checked={consentAccepted}
+                  onChange={(e) => setConsentAccepted(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#3650AD] focus:ring-[#3650AD] cursor-pointer shrink-0"
+                  required
+                />
+                <span className="leading-relaxed">
+                  I agree to the{' '}
+                  <Link href="/terms" target="_blank" className="text-[#3650AD] font-semibold underline">
+                    Terms
+                  </Link>{' '}
+                  and grant consent to processing my personal data per the{' '}
+                  <Link href="/privacy" target="_blank" className="text-[#3650AD] font-semibold underline">
+                    Privacy Policy
+                  </Link>{' '}
+                  (DPDP Act, 2023).
+                </span>
+              </label>
+            </div>
+
             {signupError && (
               <p className="text-red-500 text-sm">{signupError}</p>
             )}
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !consentAccepted}
               className="w-full bg-[#3650AD] text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
             >
               {loading ? "Creating Account..." : "Create Account"}

@@ -27,6 +27,7 @@ const MyCampaignsPage = () => {
   const [showWithdrawForm, setShowWithdrawForm] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawConsent, setWithdrawConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -60,6 +61,10 @@ const MyCampaignsPage = () => {
 
   const handleWithdrawRequest = async (e) => {
     e.preventDefault();
+    if (!withdrawConsent) {
+      alert("Please provide your consent to process your withdrawal request under the DPDP Act 2023.");
+      return;
+    }
     const availableBalance = selectedCampaign.availableBalance || 0;
     if (Number(withdrawAmount) > availableBalance) {
       alert("Amount cannot exceed available funds (including pending requests).");
@@ -78,6 +83,7 @@ const MyCampaignsPage = () => {
       alert("Withdrawal request submitted successfully!");
       setShowWithdrawForm(false);
       setWithdrawAmount("");
+      setWithdrawConsent(false);
       fetchData();
     } catch (err) {
       alert(err.response?.data?.message || "Failed to submit request.");
@@ -252,6 +258,24 @@ const MyCampaignsPage = () => {
                 <p className="text-xs text-slate-500">IFSC: {selectedCampaign.bankDetails.ifscCode}</p>
               </div>
 
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-600 leading-snug">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={withdrawConsent}
+                    onChange={(e) => setWithdrawConsent(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#F43676] focus:ring-[#F43676] cursor-pointer shrink-0"
+                  />
+                  <span>
+                    I consent to <strong>LEO MEO IT Solution (SoSign)</strong> processing my bank details for payout disbursement, statutory accounting, and compliance under the DPDP Act, 2023 and{" "}
+                    <Link href="/privacy" target="_blank" className="text-[#3650AD] underline font-bold hover:text-pink-600">
+                      Privacy Policy
+                    </Link>.
+                  </span>
+                </label>
+              </div>
+
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button" 
@@ -262,8 +286,8 @@ const MyCampaignsPage = () => {
                 </button>
                 <button 
                   type="submit"
-                  disabled={submitting}
-                  className="flex-1 py-3 bg-[#F43676] text-white font-bold rounded-xl shadow-lg hover:bg-[#e02a60] transition-colors disabled:opacity-50"
+                  disabled={submitting || !withdrawConsent}
+                  className="flex-1 py-3 bg-[#F43676] text-white font-bold rounded-xl shadow-lg hover:bg-[#e02a60] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? "Submitting..." : "Submit Request"}
                 </button>

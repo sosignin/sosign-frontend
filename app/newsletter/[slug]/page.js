@@ -32,6 +32,7 @@ export default function NewsletterDetailPage() {
 
   // Subscribe form state
   const [email, setEmail] = useState("");
+  const [consentAccepted, setConsentAccepted] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [subSuccess, setSubSuccess] = useState("");
   const [subError, setSubError] = useState("");
@@ -71,6 +72,11 @@ export default function NewsletterDetailPage() {
     e.preventDefault();
     if (!email) return;
 
+    if (!consentAccepted) {
+      setSubError("Please accept the DPDP consent checkbox to subscribe.");
+      return;
+    }
+
     setSubscribing(true);
     setSubSuccess("");
     setSubError("");
@@ -88,6 +94,7 @@ export default function NewsletterDetailPage() {
 
       setSubSuccess(data.message || "Subscribed successfully!");
       setEmail("");
+      setConsentAccepted(false);
     } catch (err) {
       setSubError(err.message || "Failed to subscribe.");
     } finally {
@@ -164,27 +171,26 @@ export default function NewsletterDetailPage() {
 
   return (
     <>
-      <head>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
-        {newsletter.keywords && newsletter.keywords.length > 0 && (
-          <meta name="keywords" content={newsletter.keywords.join(", ")} />
-        )}
-        <link rel="canonical" href={canonicalUrl} />
-        <meta property="og:title" content={newsletter.title} />
-        <meta property="og:description" content={pageDescription} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={canonicalUrl} />
-        {newsletter.coverImage && <meta property="og:image" content={newsletter.coverImage} />}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={newsletter.title} />
-        <meta name="twitter:description" content={pageDescription} />
-        {newsletter.coverImage && <meta name="twitter:image" content={newsletter.coverImage} />}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      </head>
+      {/* SEO Meta Tags (React 19 hoists these to document head automatically) */}
+      <title>{pageTitle}</title>
+      <meta name="description" content={pageDescription} />
+      {newsletter.keywords && newsletter.keywords.length > 0 && (
+        <meta name="keywords" content={newsletter.keywords.join(", ")} />
+      )}
+      <link rel="canonical" href={canonicalUrl} />
+      <meta property="og:title" content={newsletter.title} />
+      <meta property="og:description" content={pageDescription} />
+      <meta property="og:type" content="article" />
+      <meta property="og:url" content={canonicalUrl} />
+      {newsletter.coverImage && <meta property="og:image" content={newsletter.coverImage} />}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={newsletter.title} />
+      <meta name="twitter:description" content={pageDescription} />
+      {newsletter.coverImage && <meta name="twitter:image" content={newsletter.coverImage} />}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       <article className="bg-[#f0f2f5] min-h-screen py-10 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-8">
@@ -336,22 +342,46 @@ export default function NewsletterDetailPage() {
                 <span>{subSuccess}</span>
               </div>
             ) : (
-              <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto pt-2">
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter your email address..."
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 text-sm outline-none focus:border-[#F43676]"
-                />
-                <button
-                  type="submit"
-                  disabled={subscribing}
-                  className="w-full sm:w-auto px-6 py-3 bg-[#F43676] hover:bg-[#e02a60] text-white font-bold rounded-xl text-sm whitespace-nowrap transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {subscribing ? <FaSpinner className="animate-spin" /> : <FaPaperPlane />} Subscribe Free
-                </button>
+              <form onSubmit={handleSubscribe} className="flex flex-col gap-3 max-w-md mx-auto pt-2">
+                {subError && (
+                  <div className="bg-red-500/20 border border-red-400 text-red-100 p-2.5 rounded-lg text-xs">
+                    {subError}
+                  </div>
+                )}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
+                  <input
+                    type="email"
+                    required
+                    placeholder="Enter your email address..."
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 text-sm outline-none focus:border-[#F43676]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={subscribing || !consentAccepted}
+                    className="w-full sm:w-auto px-6 py-3 bg-[#F43676] hover:bg-[#e02a60] text-white font-bold rounded-xl text-sm whitespace-nowrap transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {subscribing ? <FaSpinner className="animate-spin" /> : <FaPaperPlane />} Subscribe Free
+                  </button>
+                </div>
+                <div className="bg-white/10 rounded-xl p-3 border border-white/15 text-left">
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs text-white/80 leading-snug">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={consentAccepted}
+                      onChange={(e) => setConsentAccepted(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-white/30 text-[#F43676] focus:ring-[#F43676] cursor-pointer shrink-0"
+                    />
+                    <span>
+                      I consent to <strong>LEO MEO IT Solution (SoSign)</strong> collecting my email to deliver newsletters and campaign updates per the{" "}
+                      <Link href="/privacy" target="_blank" className="underline font-semibold text-white hover:text-pink-200">
+                        Privacy Policy
+                      </Link>.
+                    </span>
+                  </label>
+                </div>
               </form>
             )}
           </div>

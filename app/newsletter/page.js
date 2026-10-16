@@ -30,6 +30,7 @@ export default function NewsletterPage() {
   // Subscription form state
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [consentAccepted, setConsentAccepted] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [subSuccess, setSubSuccess] = useState("");
   const [subError, setSubError] = useState("");
@@ -71,6 +72,11 @@ export default function NewsletterPage() {
     e.preventDefault();
     if (!email) return;
 
+    if (!consentAccepted) {
+      setSubError("Please accept the DPDP consent checkbox to subscribe.");
+      return;
+    }
+
     setSubscribing(true);
     setSubSuccess("");
     setSubError("");
@@ -89,6 +95,7 @@ export default function NewsletterPage() {
       setSubSuccess(data.message || "Subscribed successfully!");
       setEmail("");
       setName("");
+      setConsentAccepted(false);
     } catch (err) {
       setSubError(err.message || "Failed to subscribe. Please try again.");
     } finally {
@@ -128,31 +135,29 @@ export default function NewsletterPage() {
 
   return (
     <>
-      {/* SEO Head Tags */}
-      <head>
-        <title>Sosign Newsletter – Social Impact, Petition Updates & Community Victories</title>
-        <meta
-          name="description"
-          content="Subscribe to the Sosign Newsletter. Read inspiring stories of social change, trending petitions, successful campaigns, and community advocacy."
-        />
-        <meta
-          name="keywords"
-          content="sosign newsletter, petitions, social impact, civic advocacy, community stories, petition updates, online campaigns"
-        />
-        <link rel="canonical" href="https://sosign.in/newsletter" />
-        <meta property="og:title" content="Sosign Newsletter – Stories of Change & Community Action" />
-        <meta
-          property="og:description"
-          content="Subscribe for weekly insights into active petitions, public campaigns, and policy reforms driving real impact."
-        />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://sosign.in/newsletter" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      </head>
+      {/* SEO Meta Tags (React 19 hoists these to document head automatically) */}
+      <title>Sosign Newsletter – Social Impact, Petition Updates & Community Victories</title>
+      <meta
+        name="description"
+        content="Subscribe to the Sosign Newsletter. Read inspiring stories of social change, trending petitions, successful campaigns, and community advocacy."
+      />
+      <meta
+        name="keywords"
+        content="sosign newsletter, petitions, social impact, civic advocacy, community stories, petition updates, online campaigns"
+      />
+      <link rel="canonical" href="https://sosign.in/newsletter" />
+      <meta property="og:title" content="Sosign Newsletter – Stories of Change & Community Action" />
+      <meta
+        property="og:description"
+        content="Subscribe for weekly insights into active petitions, public campaigns, and policy reforms driving real impact."
+      />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://sosign.in/newsletter" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       <section className="bg-[#f0f2f5] min-h-screen py-10 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-12">
@@ -232,10 +237,29 @@ export default function NewsletterPage() {
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 text-sm outline-none focus:border-[#F43676] transition-colors"
                         />
                       </div>
+
+                      <div className="bg-white/10 rounded-xl p-3 border border-white/15">
+                        <label className="flex items-start gap-2.5 cursor-pointer text-xs text-white/80 leading-snug">
+                          <input
+                            type="checkbox"
+                            required
+                            checked={consentAccepted}
+                            onChange={(e) => setConsentAccepted(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 rounded border-white/30 text-[#F43676] focus:ring-[#F43676] cursor-pointer shrink-0"
+                          />
+                          <span>
+                            I consent to <strong>LEO MEO IT Solution (SoSign)</strong> processing my email to deliver newsletters and campaign updates per the{" "}
+                            <Link href="/privacy" target="_blank" className="underline font-semibold text-white hover:text-pink-200">
+                              Privacy Policy
+                            </Link>.
+                          </span>
+                        </label>
+                      </div>
+
                       <button
                         type="submit"
-                        disabled={subscribing}
-                        className="w-full py-3.5 bg-[#F43676] hover:bg-[#e02a60] text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                        disabled={subscribing || !consentAccepted}
+                        className="w-full py-3.5 bg-[#F43676] hover:bg-[#e02a60] text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {subscribing ? (
                           <>

@@ -88,6 +88,7 @@ const initialFormData = {
   minDonation: "100",
   legalAccepted: false,
   infoVerifiedByUser: false,
+  dpdpConsentAccepted: false,
 };
 
 export default function StartCrowdfundingPage() {
@@ -512,8 +513,8 @@ export default function StartCrowdfundingPage() {
       return;
     }
 
-    if (!formData.legalAccepted || !formData.infoVerifiedByUser) {
-      setError("Please accept the terms and verify that the info is true.");
+    if (!formData.legalAccepted || !formData.infoVerifiedByUser || !formData.dpdpConsentAccepted) {
+      setError("Please accept the terms, verify information authenticity, and grant DPDP Act consent.");
       return;
     }
 
@@ -1106,6 +1107,26 @@ export default function StartCrowdfundingPage() {
                         I accept the terms and conditions and understand that any misuse of funds will lead to immediate legal action.
                       </span>
                     </label>
+
+                    <label className="flex items-start gap-3 cursor-pointer group p-3 bg-white rounded-xl border border-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={formData.dpdpConsentAccepted}
+                        onChange={(e) => updateField("dpdpConsentAccepted", e.target.checked)}
+                        className="mt-1 w-5 h-5 rounded border-slate-300 text-[#F43676] focus:ring-[#F43676] shrink-0"
+                        required
+                      />
+                      <span className="text-xs text-slate-600 leading-relaxed group-hover:text-slate-800 transition-colors">
+                        Under Section 6 of the DPDP Act 2023, I voluntarily consent to <strong>LEO MEO IT Solution (SoSign)</strong> collecting, verifying (via Aadhaar/PAN), and publishing my campaign details and bank information for crowdfunding disbursement in compliance with the{" "}
+                        <Link href="/privacy" target="_blank" className="text-[#3650AD] underline font-semibold hover:text-[#283c82]">
+                          Privacy Policy
+                        </Link>{" "}
+                        and{" "}
+                        <Link href="/terms" target="_blank" className="text-[#3650AD] underline font-semibold hover:text-[#283c82]">
+                          Terms of Service
+                        </Link>.
+                      </span>
+                    </label>
                   </div>
                 </div>
               )}
@@ -1121,8 +1142,8 @@ export default function StartCrowdfundingPage() {
                 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="inline-flex items-center justify-center gap-2 px-10 py-3 rounded-xl bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-bold shadow-lg shadow-pink-100 hover:shadow-pink-200 transition-all disabled:opacity-70"
+                  disabled={isSubmitting || (step === 5 && (!formData.legalAccepted || !formData.infoVerifiedByUser || !formData.dpdpConsentAccepted))}
+                  className="inline-flex items-center justify-center gap-2 px-10 py-3 rounded-xl bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-bold shadow-lg shadow-pink-100 hover:shadow-pink-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <FaSpinner className="animate-spin" />

@@ -184,9 +184,10 @@ export default function PetitionDetailClient({ initialPetition }) {
         maskedAadhaar: "",
     });
 
-    // CAPTCHA state
+    // CAPTCHA & DPDP Consent state
     const [captchaVerified, setCaptchaVerified] = useState(false);
     const [captchaResetTrigger, setCaptchaResetTrigger] = useState(0);
+    const [signConsentAccepted, setSignConsentAccepted] = useState(false);
     const [isStallModalOpen, setIsStallModalOpen] = useState(false);
     const [isPetitionReportModalOpen, setIsPetitionReportModalOpen] = useState(false);
     const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
@@ -793,6 +794,12 @@ export default function PetitionDetailClient({ initialPetition }) {
         // Validate CAPTCHA
         if (!captchaVerified) {
             setSignError("Please complete the security verification");
+            return;
+        }
+
+        // Validate DPDP Affirmative Consent
+        if (!signConsentAccepted) {
+            setSignError("Please check the consent box to record your signature under the DPDP Act.");
             return;
         }
 
@@ -1467,9 +1474,28 @@ export default function PetitionDetailClient({ initialPetition }) {
                                         onVerify={(verified) => setCaptchaVerified(verified)}
                                         resetTrigger={captchaResetTrigger}
                                     />
+
+                                    {/* DPDP Act Statutory Consent for Petition Signing */}
+                                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700">
+                                        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                checked={signConsentAccepted}
+                                                onChange={(e) => setSignConsentAccepted(e.target.checked)}
+                                                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#3650AD] focus:ring-[#3650AD] cursor-pointer shrink-0"
+                                            />
+                                            <span className="text-[11px] text-slate-600 leading-relaxed">
+                                                I voluntarily consent under Section 6 of the DPDP Act, 2023 for SoSign to record my digital signature, show my name as a petitioner, and deliver my petition support to designated decision-makers as outlined in the{' '}
+                                                <Link href="/privacy" target="_blank" className="text-[#3650AD] font-semibold underline">
+                                                    Privacy Policy
+                                                </Link>.
+                                            </span>
+                                        </label>
+                                    </div>
+
                                     <button
                                         onClick={handleSignPetition}
-                                        disabled={signing || !signatureStatus.canSign || !captchaVerified ||
+                                        disabled={signing || !signatureStatus.canSign || !captchaVerified || !signConsentAccepted ||
                                             (petition.constituencySettings?.required && !constituencyNumber.trim()) ||
                                             (petition.signingRequirements?.constituency?.required && !constituencyNumber.trim()) ||
                                             (petition.signingRequirements?.aadhar?.required && 

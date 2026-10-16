@@ -33,6 +33,8 @@ function LoginContent() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [signupError, setSignupError] = useState("");
   const [isValidatingEmail, setIsValidatingEmail] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [additionalConsentAccepted, setAdditionalConsentAccepted] = useState(false);
 
   // Phone OTP verification states
   const [otpSent, setOtpSent] = useState(false);
@@ -258,6 +260,11 @@ function LoginContent() {
       return;
     }
 
+    if (!consentAccepted) {
+      setSignupError("Please indicate your consent by agreeing to the Terms and Privacy Policy.");
+      return;
+    }
+
     try {
       setIsValidatingEmail(true);
       const name = `${firstName} ${lastName}`;
@@ -312,6 +319,11 @@ function LoginContent() {
     }
     if (!phoneVerified) {
       setSignupError("Please verify your mobile number with OTP");
+      return;
+    }
+
+    if (!additionalConsentAccepted) {
+      setSignupError("Please indicate your consent by agreeing to the Terms and Privacy Policy.");
       return;
     }
 
@@ -575,13 +587,37 @@ function LoginContent() {
               )}
             </div>
 
+            {/* DPDP Act Affirmative Consent Checkbox */}
+            <div className="pt-1">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-600 select-none">
+                <input
+                  type="checkbox"
+                  checked={additionalConsentAccepted}
+                  onChange={(e) => setAdditionalConsentAccepted(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#F43676] focus:ring-[#F43676] cursor-pointer shrink-0"
+                  required
+                />
+                <span className="leading-relaxed">
+                  I agree to the{' '}
+                  <Link href="/terms" target="_blank" className="text-[#3650AD] font-semibold underline hover:text-[#F43676]">
+                    Terms &amp; Conditions
+                  </Link>{' '}
+                  and grant voluntary consent for SoSign to process my phone and profile details in compliance with the{' '}
+                  <Link href="/privacy" target="_blank" className="text-[#3650AD] font-semibold underline hover:text-[#F43676]">
+                    Privacy Policy
+                  </Link>{' '}
+                  and Section 6 of the DPDP Act, 2023.
+                </span>
+              </label>
+            </div>
+
             {signupError && (
               <p className="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">{signupError}</p>
             )}
 
             <button 
               type="submit"
-              disabled={completingProfile || !phoneVerified || !designation}
+              disabled={completingProfile || !phoneVerified || !designation || !additionalConsentAccepted}
               className="w-full bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:scale-100"
             >
               {completingProfile ? (
@@ -908,13 +944,37 @@ function LoginContent() {
               </button>
             </div>
 
+            {/* DPDP Act Affirmative Consent Checkbox */}
+            <div className="pt-2">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-600 select-none">
+                <input
+                  type="checkbox"
+                  checked={consentAccepted}
+                  onChange={(e) => setConsentAccepted(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#F43676] focus:ring-[#F43676] cursor-pointer shrink-0"
+                  required
+                />
+                <span className="leading-relaxed">
+                  I agree to the{' '}
+                  <Link href="/terms" target="_blank" className="text-[#3650AD] font-semibold underline hover:text-[#F43676]">
+                    Terms &amp; Conditions
+                  </Link>{' '}
+                  and grant voluntary consent for SoSign to process my personal details in compliance with the{' '}
+                  <Link href="/privacy" target="_blank" className="text-[#3650AD] font-semibold underline hover:text-[#F43676]">
+                    Privacy Policy
+                  </Link>{' '}
+                  under Section 6 of the DPDP Act, 2023.
+                </span>
+              </label>
+            </div>
+
             {signupError && (
               <p className="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">{signupError}</p>
             )}
 
             <button 
               type="submit"
-              disabled={isValidatingEmail || loading}
+              disabled={isValidatingEmail || loading || !consentAccepted}
               className="w-full bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:scale-100"
             >
               {isValidatingEmail ? (

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
     FaWallet,
     FaPlus,
@@ -32,6 +33,7 @@ export default function WalletPage() {
     const [currentRequest, setCurrentRequest] = useState(null);
     const [upiLink, setUpiLink] = useState("");
     const [screenshot, setScreenshot] = useState(null);
+    const [proofConsent, setProofConsent] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [activeRequests, setActiveRequests] = useState([]);
     const [customAmount, setCustomAmount] = useState("");
@@ -177,6 +179,11 @@ export default function WalletPage() {
         e.preventDefault();
         if (!screenshot || !currentRequest) return;
 
+        if (!proofConsent) {
+            setMessage({ type: "error", text: "Please consent to the processing of your payment proof per DPDP Act guidelines." });
+            return;
+        }
+
         setIsUploading(true);
         setMessage({ type: "", text: "" });
 
@@ -202,6 +209,7 @@ export default function WalletPage() {
                 setMessage({ type: "success", text: "Proof uploaded! Admin will verify your payment shortly." });
                 setCurrentRequest(null);
                 setScreenshot(null);
+                setProofConsent(false);
                 fetchWalletData();
             } else {
                 setMessage({ type: "error", text: data.message || "Upload failed" });
@@ -540,10 +548,29 @@ export default function WalletPage() {
                                         className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100"
                                         required
                                     />
+
+                                    <div className="p-3 bg-white rounded-xl border border-gray-200 text-left">
+                                        <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-600 leading-snug">
+                                            <input
+                                                type="checkbox"
+                                                required
+                                                checked={proofConsent}
+                                                onChange={(e) => setProofConsent(e.target.checked)}
+                                                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#F43676] focus:ring-[#F43676] cursor-pointer shrink-0"
+                                            />
+                                            <span>
+                                                I consent to <strong>LEO MEO IT Solution (SoSign)</strong> processing this payment proof screenshot and transaction details for recharge accounting per the{" "}
+                                                <Link href="/privacy" target="_blank" className="text-[#3650AD] underline font-bold hover:text-pink-600">
+                                                    Privacy Policy
+                                                </Link>.
+                                            </span>
+                                        </label>
+                                    </div>
+
                                     <button
                                         type="submit"
-                                        disabled={isUploading || !screenshot}
-                                        className="w-full py-3 rounded-xl bg-gray-900 text-white font-medium hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                        disabled={isUploading || !screenshot || !proofConsent}
+                                        className="w-full py-3 rounded-xl bg-gray-900 text-white font-medium hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     >
                                         {isUploading ? (
                                             <>

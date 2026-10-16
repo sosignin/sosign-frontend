@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   FaCheckCircle,
   FaTimes,
@@ -524,17 +525,20 @@ export default function ClaimRequestedSignatureModal({
               />
             </div>
 
-            {/* Good Faith Declaration */}
+            {/* Good Faith Declaration & DPDP Consent */}
             <label className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
               <input
                 type="checkbox"
                 checked={declared}
                 onChange={(e) => setDeclared(e.target.checked)}
-                className="mt-0.5 text-blue-600 focus:ring-blue-500 rounded cursor-pointer"
+                className="mt-0.5 text-blue-600 focus:ring-blue-500 rounded cursor-pointer shrink-0"
                 required
               />
               <span className="text-[11px] text-slate-700 leading-snug font-medium">
-                I solemnly declare that I am authorized to verify this signature and that all provided identity proofs are true and accurate.
+                I solemnly declare that I am authorized to claim this signature. Under Section 6 of the DPDP Act 2023, I voluntarily consent to <strong>LEO MEO IT Solution (SoSign)</strong> collecting and verifying my personal contact details and identity proofs per the{" "}
+                <Link href="/privacy" target="_blank" className="text-[#3650AD] underline font-bold hover:text-blue-800">
+                  Privacy Policy
+                </Link>.
               </span>
             </label>
 

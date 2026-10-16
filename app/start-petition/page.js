@@ -34,6 +34,7 @@ import {
 } from "react-icons/fa6";
 import { useAuth } from "../../context/AuthContext";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Captcha from "../../components/Captcha";
 import ImageCropper from "../../components/ImageCropper";
@@ -93,6 +94,7 @@ export default function StartPetitionPage() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [captchaResetTrigger, setCaptchaResetTrigger] = useState(0);
+  const [petitionConsentAccepted, setPetitionConsentAccepted] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showDraftNotification, setShowDraftNotification] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -839,7 +841,8 @@ export default function StartPetitionPage() {
     return (
       validations.every((v) => v.isValid) &&
       captchaVerified &&
-      isAnyVerified
+      isAnyVerified &&
+      petitionConsentAccepted
     );
   };
 
@@ -3816,6 +3819,29 @@ export default function StartPetitionPage() {
                   onVerify={(verified) => setCaptchaVerified(verified)}
                   resetTrigger={captchaResetTrigger}
                 />
+              </div>
+
+              {/* DPDP Act Affirmative Consent Checkbox */}
+              <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={petitionConsentAccepted}
+                    onChange={(e) => setPetitionConsentAccepted(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-gray-300 text-[#F43676] focus:ring-[#F43676] cursor-pointer shrink-0"
+                    required
+                  />
+                  <span className="text-xs text-slate-700 leading-relaxed">
+                    I declare that all statements and claims in this petition are true, and I give voluntary consent under Section 6 of the DPDP Act, 2023 for <strong>LEO MEO IT Solution (SoSign)</strong> to publish this petition publicly, display my petitioner identity, and forward petition signatures to target authorities per the{' '}
+                    <Link href="/privacy" target="_blank" className="text-[#3650AD] font-bold underline hover:text-[#F43676]">
+                      Privacy Policy
+                    </Link>{' '}
+                    and{' '}
+                    <Link href="/terms" target="_blank" className="text-[#3650AD] font-bold underline hover:text-[#F43676]">
+                      Terms
+                    </Link>.
+                  </span>
+                </label>
               </div>
 
               <motion.button

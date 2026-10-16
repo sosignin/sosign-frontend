@@ -84,7 +84,7 @@ export default function TermsPage() {
               1. Acceptance of Terms & Platform Overview
             </h2>
             <p>
-              Welcome to <strong>SoSign</strong> (accessible via <code>sosign.in</code>, mobile portals, and related web interfaces), operated by <strong>Leoheart iTECH Mumbai</strong> (&quot;SoSign&quot;, &quot;Company&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;). These Terms and Conditions (&quot;Terms&quot;) constitute a legally binding agreement between you (&quot;User&quot;, &quot;Petitioner&quot;, &quot;Signer&quot;, &quot;Donor&quot;, or &quot;Fundraiser&quot;) and SoSign.
+              Welcome to <strong>SoSign</strong> (accessible via <code>sosign.in</code>, mobile portals, and related web interfaces), operated by <strong>LEO MEO IT Solution</strong> (&quot;SoSign&quot;, &quot;Company&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;). These Terms and Conditions (&quot;Terms&quot;) constitute a legally binding agreement between you (&quot;User&quot;, &quot;Petitioner&quot;, &quot;Signer&quot;, &quot;Donor&quot;, or &quot;Fundraiser&quot;) and SoSign.
             </p>
             <p>
               By accessing, browsing, registering an account, starting or signing a petition, completing KYC verification, launching a crowdfunding campaign, or donating funds, you acknowledge that you have read, understood, and agree to be bound by these Terms and our <Link href="/privacy" className="text-[#F43676] font-bold hover:underline">Privacy Policy</Link>. If you do not agree to these Terms, you must immediately discontinue using our services.
@@ -349,7 +349,7 @@ export default function TermsPage() {
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
                 <h4 className="font-bold text-slate-900">User Indemnification:</h4>
                 <p className="text-slate-600 leading-relaxed">
-                  You agree to defend, indemnify, and hold harmless SoSign, Leoheart iTECH Mumbai, its directors, officers, employees, agents, and affiliates against any and all claims, liabilities, damages, losses, costs, or legal expenses (including reasonable attorney fees) arising from: (a) your User Content or petitions; (b) your violation of these Terms; (c) your submission of forged or unauthorized KYC credentials; (d) your infringement of third-party copyright, privacy, or defamation laws; or (e) fraudulent fundraising representations.
+                  You agree to defend, indemnify, and hold harmless SoSign, LEO MEO IT Solution, its directors, officers, employees, agents, and affiliates against any and all claims, liabilities, damages, losses, costs, or legal expenses (including reasonable attorney fees) arising from: (a) your User Content or petitions; (b) your violation of these Terms; (c) your submission of forged or unauthorized KYC credentials; (d) your infringement of third-party copyright, privacy, or defamation laws; or (e) fraudulent fundraising representations.
                 </p>
               </div>
             </div>

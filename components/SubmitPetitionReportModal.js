@@ -230,17 +230,20 @@ export default function SubmitPetitionReportModal({
                 />
               </div>
 
-              {/* Declaration Checkbox */}
+              {/* Declaration & DPDP Consent Checkbox */}
               <label className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={declared}
                   onChange={(e) => setDeclared(e.target.checked)}
-                  className="mt-0.5 text-rose-600 focus:ring-rose-500 rounded cursor-pointer"
+                  className="mt-0.5 text-rose-600 focus:ring-rose-500 rounded cursor-pointer shrink-0"
                   required
                 />
                 <span className="text-[11px] text-slate-700 leading-snug font-medium">
-                  I solemnly declare that this objection is raised in good faith and the information provided is accurate and true to the best of my knowledge.
+                  I solemnly declare that this objection is raised in good faith. I voluntarily consent under the DPDP Act, 2023 for <strong>LEO MEO IT Solution (SoSign)</strong> to process my objection, identity, and evidence for moderation and statutory grievance recordkeeping per the{" "}
+                  <Link href="/privacy" target="_blank" className="text-[#3650AD] underline font-bold hover:text-rose-600">
+                    Privacy Policy
+                  </Link>.
                 </span>
               </label>
 

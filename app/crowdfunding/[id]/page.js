@@ -18,6 +18,7 @@ import {
   FaUserDoctor,
 } from "react-icons/fa6";
 import axios from "axios";
+import Link from "next/link";
 import { useAuth } from "../../../context/AuthContext";
 
 export default function CampaignPage({ params }) {
@@ -34,6 +35,7 @@ export default function CampaignPage({ params }) {
   const [isDonating, setIsDonating] = useState(false);
   const [donationSuccess, setDonationSuccess] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [donationConsent, setDonationConsent] = useState(false);
 
   const handleShare = async () => {
     const shareData = {
@@ -78,6 +80,10 @@ export default function CampaignPage({ params }) {
 
   const handleDonate = async (e) => {
     e.preventDefault();
+    if (!donationConsent) {
+      alert("Please provide your affirmative consent to process your donation in accordance with the DPDP Act 2023.");
+      return;
+    }
     const amount = Number(donationAmount);
     
     if (!amount || amount < (campaign?.settings?.minDonation || 100)) {
@@ -106,6 +112,7 @@ export default function CampaignPage({ params }) {
         }));
         setDonationAmount("");
         setDonorName("");
+        setDonationConsent(false);
         
         setTimeout(() => setDonationSuccess(false), 5000);
       }
@@ -277,10 +284,32 @@ export default function CampaignPage({ params }) {
                   />
                 </div>
 
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-600 leading-snug">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={donationConsent}
+                      onChange={(e) => setDonationConsent(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#F43676] focus:ring-[#F43676] cursor-pointer flex-shrink-0"
+                    />
+                    <span>
+                      I consent to LEO MEO IT Solution (SoSign) processing my payment information and personal details for donation accounting and statutory compliance in accordance with the{" "}
+                      <Link href="/privacy" target="_blank" className="text-[#3650AD] underline font-semibold hover:text-[#283c82]">
+                        Privacy Policy
+                      </Link>{" "}
+                      and{" "}
+                      <Link href="/terms" target="_blank" className="text-[#3650AD] underline font-semibold hover:text-[#283c82]">
+                        Terms of Service
+                      </Link>.
+                    </span>
+                  </label>
+                </div>
+
                 <button
                   type="submit"
-                  disabled={isDonating}
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-bold shadow-lg shadow-pink-200 hover:shadow-pink-300 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                  disabled={isDonating || !donationConsent}
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white font-bold shadow-lg shadow-pink-200 hover:shadow-pink-300 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isDonating ? <FaSpinner className="animate-spin" /> : <FaHeart />}
                   {isDonating ? "Processing..." : "Donate Now"}
