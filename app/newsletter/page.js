@@ -15,7 +15,9 @@ import {
   FaNewspaper,
   FaShareAlt,
   FaThumbtack,
+  FaLanguage,
 } from "react-icons/fa";
+import DpdpMultilingualNoticeModal from "../../components/DpdpMultilingualNoticeModal";
 
 export default function NewsletterPage() {
   const [newsletters, setNewsletters] = useState([]);
@@ -31,6 +33,7 @@ export default function NewsletterPage() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [consentAccepted, setConsentAccepted] = useState(false);
+  const [showMultilingualNotice, setShowMultilingualNotice] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [subSuccess, setSubSuccess] = useState("");
   const [subError, setSubError] = useState("");
@@ -93,6 +96,23 @@ export default function NewsletterPage() {
       if (!res.ok) throw new Error(data.message || "Subscription failed");
 
       setSubSuccess(data.message || "Subscribed successfully!");
+
+      // Log DPDP Act Section 6(10) statutory consent proof
+      fetch(`${backendUrl}/api/consent/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userEmail: email,
+          userName: name || email.split("@")[0],
+          consentType: "marketing_communications",
+          purpose: "Voluntary subscription to SoSign newsletters and campaign updates under DPDP Act 2023",
+          noticeLanguage: "en",
+          granted: true,
+          method: "newsletter_checkbox",
+          metadata: { source: "newsletter_page" },
+        }),
+      }).catch((e) => console.debug("Consent logging notice:", e));
+
       setEmail("");
       setName("");
       setConsentAccepted(false);
@@ -254,6 +274,18 @@ export default function NewsletterPage() {
                             </Link>.
                           </span>
                         </label>
+                        <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-white/70">
+                          <span className="flex items-center gap-1">
+                            <FaLanguage className="text-pink-300" /> 8th Schedule Indian Languages
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowMultilingualNotice(true)}
+                            className="text-pink-300 font-semibold hover:underline hover:text-white"
+                          >
+                            View Notice (बहुभाषी सूचना)
+                          </button>
+                        </div>
                       </div>
 
                       <button
@@ -447,6 +479,12 @@ export default function NewsletterPage() {
           )}
         </div>
       </section>
+
+      {/* DPDP Act Section 5(3) Multilingual Notice Modal */}
+      <DpdpMultilingualNoticeModal
+        isOpen={showMultilingualNotice}
+        onClose={() => setShowMultilingualNotice(false)}
+      />
     </>
   );
 }

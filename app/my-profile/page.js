@@ -10,6 +10,8 @@ import { successfulPetitions } from "../../components/SuccessfulPetitionsData";
 import ProfileEditModal from "../../components/ProfileEditModal";
 import PasswordModal from "../../components/PasswordModal";
 import AadhaarKycSection from "../../components/AadhaarKycSection";
+import DataDeletionSection from "../../components/DataDeletionSection";
+import UserConsentPreferencesSection from "../../components/UserConsentPreferencesSection";
 import { FaShieldAlt, FaKey } from "react-icons/fa";
 
 const MyProfilePage = () => {
@@ -265,6 +267,18 @@ const MyProfilePage = () => {
                     localStorage.setItem("user", JSON.stringify(updated));
                   }}
                 />
+
+                {/* DPDP Act User Consent & Privacy Management (Section 6) */}
+                <UserConsentPreferencesSection
+                  user={user}
+                  onUpdateUser={(updatedUser) => {
+                    setUser(updatedUser);
+                    localStorage.setItem("user", JSON.stringify(updatedUser));
+                  }}
+                />
+
+                {/* DPDP Act Account & Data Deletion Section */}
+                <DataDeletionSection user={user} />
               </div>
 
               {/* Action Buttons */}

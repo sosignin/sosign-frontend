@@ -25,7 +25,9 @@ import {
   Check,
   AlertTriangle,
   ArrowRight,
+  Languages,
 } from 'lucide-react';
+import DpdpMultilingualNoticeModal from '@/components/DpdpMultilingualNoticeModal';
 
 function ContactFormContent() {
   const searchParams = useSearchParams();
@@ -54,6 +56,7 @@ function ContactFormContent() {
   const [escalateError, setEscalateError] = useState('');
   const [showDpbGuide, setShowDpbGuide] = useState(false);
   const [contactConsent, setContactConsent] = useState(false);
+  const [showMultilingualNotice, setShowMultilingualNotice] = useState(false);
 
   useEffect(() => {
     if (initialType === 'privacy' || initialType === 'grievance') {
@@ -103,6 +106,27 @@ function ContactFormContent() {
         });
         setSubmittedData({ ...formData, ticketId: data.ticketId });
         setTrackingId(data.ticketId);
+
+        // Log DPDP Act Section 6(10) proof of consent
+        fetch(`${config.API_BASE_URL}/api/consent/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userName: formData.name,
+            userEmail: formData.email,
+            consentType: formData.category === 'privacy_grievance' || formData.category.startsWith('data_') ? 'grievance_submission' : 'registration',
+            purpose: `Voluntary submission of ${formData.category} inquiry under DPDP Act 2023`,
+            noticeLanguage: 'en',
+            granted: true,
+            method: 'contact_form_checkbox',
+            metadata: {
+              category: formData.category,
+              subject: formData.subject,
+              ticketId: data.ticketId,
+            },
+          }),
+        }).catch((err) => console.debug('Consent logging notice:', err));
+
         setFormData({ name: '', email: '', subject: '', message: '', category: 'general' });
       } else {
         setStatus({
@@ -492,6 +516,19 @@ function ContactFormContent() {
                   </Link>.
                 </span>
               </label>
+              <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 flex items-center gap-1">
+                  <Languages className="w-3.5 h-3.5 text-[#3650AD]" />
+                  Eighth Schedule Indian Languages
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowMultilingualNotice(true)}
+                  className="text-[#3650AD] font-bold hover:underline hover:text-[#F43676]"
+                >
+                  View Notice (बहुभाषी सूचना)
+                </button>
+              </div>
             </div>
 
             <button
@@ -796,6 +833,12 @@ function ContactFormContent() {
           </div>
         </div>
       </div>
+
+      {/* DPDP Act Section 5(3) Multilingual Notice Modal */}
+      <DpdpMultilingualNoticeModal
+        isOpen={showMultilingualNotice}
+        onClose={() => setShowMultilingualNotice(false)}
+      />
     </div>
   );
 }

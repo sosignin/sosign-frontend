@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ShieldCheck, Cookie, Settings, Check, X, ChevronRight } from "lucide-react";
+import { ShieldCheck, Cookie, Settings, Check, X, ChevronRight, Globe } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import DpdpMultilingualNoticeModal from "./DpdpMultilingualNoticeModal";
 
 const CONSENT_STORAGE_KEY = "sosign_dpdp_consent_v1";
 const POLICY_VERSION = "2026.1-DPDP";
@@ -12,10 +13,12 @@ export default function CookieConsentBanner() {
   const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+  // Under DPDP Act Sec 6: MUST NOT BE PRE-TICKED
   const [preferences, setPreferences] = useState({
-    necessary: true, // Always true
-    analytics: true,
-    marketing: true,
+    necessary: true, // Always true (security/auth)
+    analytics: false, // Un-ticked by default
+    marketing: false, // Un-ticked by default
   });
 
   useEffect(() => {
@@ -41,9 +44,27 @@ export default function CookieConsentBanner() {
       localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(consentRecord));
       setVisible(false);
 
-      // If user is logged in, sync consent to backend for statutory record keeping
+      // Statutory Consent Proof Log under DPDP Act Sec 6(10)
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      fetch(`${backendUrl}/api/consent/log`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {}),
+        },
+        body: JSON.stringify({
+          consentType: "cookie_banner",
+          purpose: "Citizen cookie and analytics consent preferences under DPDP Act 2023",
+          noticeVersion: POLICY_VERSION,
+          noticeLanguage: "en",
+          granted: Boolean(prefs.analytics || prefs.marketing),
+          method: "granular_switch",
+          metadata: prefs,
+        }),
+      }).catch((err) => console.debug("Consent log err:", err));
+
+      // If user is logged in, sync consent to backend for profile synchronization
       if (user && user.token) {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         fetch(`${backendUrl}/api/users/consent`, {
           method: "POST",
           headers: {
@@ -157,8 +178,18 @@ export default function CookieConsentBanner() {
             </Link>
             <span className="text-slate-300 text-xs">•</span>
             <button
+              type="button"
+              onClick={() => setIsNoticeModalOpen(true)}
+              className="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer"
+              title="View notice in 8th Schedule Indian languages"
+            >
+              <Globe className="w-3 h-3" />
+              <span>Notice (8th Schedule)</span>
+            </button>
+            <span className="text-slate-300 text-xs">•</span>
+            <button
               onClick={() => setShowSettings(!showSettings)}
-              className="text-[11px] text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1"
+              className="text-[11px] text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1 cursor-pointer"
             >
               <Settings className="w-3 h-3" />
               {showSettings ? "Hide Options" : "Customize"}
@@ -168,7 +199,7 @@ export default function CookieConsentBanner() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleEssentialOnly}
-              className="px-3 py-1.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition"
+              className="px-3 py-1.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition cursor-pointer"
             >
               Essential Only
             </button>
@@ -176,14 +207,14 @@ export default function CookieConsentBanner() {
             {showSettings ? (
               <button
                 onClick={handleSaveCustom}
-                className="px-4 py-1.5 rounded-xl bg-[#3650AD] text-white text-xs font-bold hover:bg-[#2b4191] transition shadow-sm"
+                className="px-4 py-1.5 rounded-xl bg-[#3650AD] text-white text-xs font-bold hover:bg-[#2b4191] transition shadow-sm cursor-pointer"
               >
                 Save Preferences
               </button>
             ) : (
               <button
                 onClick={handleAcceptAll}
-                className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#3650AD] to-[#F43676] text-white text-xs font-bold hover:opacity-95 transition shadow-sm"
+                className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#3650AD] to-[#F43676] text-white text-xs font-bold hover:opacity-95 transition shadow-sm cursor-pointer"
               >
                 Accept All
               </button>
@@ -191,6 +222,12 @@ export default function CookieConsentBanner() {
           </div>
         </div>
       </div>
+
+      {/* DPDP Act Section 5(3) Multilingual Notice Modal */}
+      <DpdpMultilingualNoticeModal
+        isOpen={isNoticeModalOpen}
+        onClose={() => setIsNoticeModalOpen(false)}
+      />
     </div>
   );
 }

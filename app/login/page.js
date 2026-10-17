@@ -9,11 +9,13 @@ import Image from "next/image";
 import { auth, provider, formatAuthError } from "../../utils/Firebase";
 import { signInWithPopup } from "firebase/auth";
 import axios from "axios";
+import DpdpMultilingualNoticeModal from "../../components/DpdpMultilingualNoticeModal";
 
 function LoginContent() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState("/");
   const [appRedirectUrl, setAppRedirectUrl] = useState(""); // Deep-link redirect for mobile app
   const [showAppReturn, setShowAppReturn] = useState(false); // Show "Return to App" button
@@ -963,7 +965,14 @@ function LoginContent() {
                   <Link href="/privacy" target="_blank" className="text-[#3650AD] font-semibold underline hover:text-[#F43676]">
                     Privacy Policy
                   </Link>{' '}
-                  under Section 6 of the DPDP Act, 2023.
+                  under Section 6 of the DPDP Act, 2023.{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowNoticeModal(true)}
+                    className="text-[#3650AD] font-semibold underline hover:text-[#F43676] cursor-pointer inline"
+                  >
+                    [View 8th Schedule Notice (बहुभाषी सूचना)]
+                  </button>
                 </span>
               </label>
             </div>
@@ -1112,6 +1121,12 @@ function LoginContent() {
           </div>
         </div>
       )}
+
+      {/* DPDP Act Section 5(3) Multilingual Notice Modal */}
+      <DpdpMultilingualNoticeModal
+        isOpen={showNoticeModal}
+        onClose={() => setShowNoticeModal(false)}
+      />
     </div>
   );
 }

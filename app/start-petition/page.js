@@ -31,7 +31,9 @@ import {
   FaInstagram,
   FaLinkedin,
   FaGlobe,
+  FaLanguage,
 } from "react-icons/fa6";
+import DpdpMultilingualNoticeModal from "../../components/DpdpMultilingualNoticeModal";
 import { useAuth } from "../../context/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
@@ -95,6 +97,7 @@ export default function StartPetitionPage() {
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [captchaResetTrigger, setCaptchaResetTrigger] = useState(0);
   const [petitionConsentAccepted, setPetitionConsentAccepted] = useState(false);
+  const [showMultilingualNotice, setShowMultilingualNotice] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showDraftNotification, setShowDraftNotification] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -3842,6 +3845,19 @@ export default function StartPetitionPage() {
                     </Link>.
                   </span>
                 </label>
+                <div className="mt-2.5 pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 flex items-center gap-1.5">
+                    <FaLanguage className="text-[#3650AD]" />
+                    Eighth Schedule Indian Languages
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowMultilingualNotice(true)}
+                    className="text-[#3650AD] font-bold hover:underline hover:text-[#F43676]"
+                  >
+                    View Notice (बहुभाषी सूचना)
+                  </button>
+                </div>
               </div>
 
               <motion.button
@@ -3917,6 +3933,12 @@ export default function StartPetitionPage() {
           )}
         </div>
       </div>
+
+      {/* DPDP Act Section 5(3) Multilingual Notice Modal */}
+      <DpdpMultilingualNoticeModal
+        isOpen={showMultilingualNotice}
+        onClose={() => setShowMultilingualNotice(false)}
+      />
     </section>
   );
 }

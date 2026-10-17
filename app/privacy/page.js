@@ -21,9 +21,12 @@ import {
   FaTriangleExclamation,
   FaArrowRight,
 } from "react-icons/fa6";
+import { FaLanguage, FaGlobe } from "react-icons/fa";
+import { EIGHTH_SCHEDULE_LANGUAGES, STATUTORY_NOTICES } from "@/components/DpdpMultilingualNoticeModal";
 
 export default function PrivacyPage() {
   const [activeTab, setActiveTab] = useState("all");
+  const [noticeLang, setNoticeLang] = useState("en");
 
   return (
     <div className="min-h-screen bg-[#f8fafc] py-12 px-4 md:px-6 lg:px-8">
@@ -85,6 +88,73 @@ export default function PrivacyPage() {
         {/* Content Container */}
         <div className="bg-white shadow-sm rounded-3xl p-6 md:p-10 space-y-10 border border-gray-200/80 text-slate-800 text-sm leading-relaxed">
           
+          {/* Plain-Language Citizen Explainer (DPDP Section 5 Compliance) */}
+          <div className="p-6 bg-gradient-to-br from-blue-50 via-slate-50 to-pink-50 border-2 border-blue-200/80 rounded-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="p-2 bg-[#3650AD] text-white rounded-xl text-sm">
+                  <FaShieldHalved />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-[#002050]">
+                    Statutory Privacy Notice (DPDP Act 2023 - Section 5)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Accessible in English and Eighth Schedule Indian languages per Section 5(3)
+                  </p>
+                </div>
+              </div>
+
+              <span className="text-emerald-700 font-bold bg-emerald-100/70 px-2.5 py-0.5 rounded-full border border-emerald-300 text-xs self-start sm:self-auto">
+                DPDP Act 2023 Compliant
+              </span>
+            </div>
+
+            {/* Eighth Schedule Language Switcher Tabs */}
+            <div className="pt-1">
+              <div className="flex items-center gap-1.5 mb-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <FaLanguage className="text-[#3650AD] text-sm" />
+                <span>Read Notice in Eighth Schedule Languages (भाषा चुनें):</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 p-1.5 bg-white/80 rounded-xl border border-slate-200">
+                {EIGHTH_SCHEDULE_LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    type="button"
+                    onClick={() => setNoticeLang(lang.code)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                      noticeLang === lang.code
+                        ? "bg-[#3650AD] text-white shadow-sm"
+                        : "bg-gray-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                    }`}
+                  >
+                    <span>{lang.nativeName}</span>
+                    <span className="text-[10px] opacity-75 font-normal">({lang.name})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Localized Notice Content Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
+              {(STATUTORY_NOTICES[noticeLang] || STATUTORY_NOTICES.en).sections.map((sec, idx) => (
+                <div key={idx} className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-1 shadow-2xs">
+                  <strong className="text-slate-900 block font-bold text-xs">{sec.heading}</strong>
+                  <p className="text-slate-600 leading-relaxed text-[11px]">{sec.content}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs border-t border-slate-200/80">
+              <span className="text-slate-600">
+                <strong>Data Fiduciary:</strong> LEO MEO IT Solution (SoSign) | <strong>Grievance Email:</strong> grievance@sosign.in
+              </span>
+              <span className="text-slate-500 text-[11px]">
+                Language selected: {EIGHTH_SCHEDULE_LANGUAGES.find(l => l.code === noticeLang)?.nativeName || "English"}
+              </span>
+            </div>
+          </div>
+
           {/* Section 1: Data Fiduciary Identity & Scope */}
           <section className="space-y-3">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">

@@ -23,6 +23,7 @@ import SubmitStallReportModal from "../../../components/SubmitStallReportModal";
 import SubmitPetitionReportModal from "../../../components/SubmitPetitionReportModal";
 import ClaimRequestedSignatureModal from "../../../components/ClaimRequestedSignatureModal";
 import PetitionInsightsModal from "../../../components/PetitionInsightsModal";
+import DpdpMultilingualNoticeModal from "../../../components/DpdpMultilingualNoticeModal";
 import {
     FileText,
     Users,
@@ -188,6 +189,7 @@ export default function PetitionDetailClient({ initialPetition }) {
     const [captchaVerified, setCaptchaVerified] = useState(false);
     const [captchaResetTrigger, setCaptchaResetTrigger] = useState(0);
     const [signConsentAccepted, setSignConsentAccepted] = useState(false);
+    const [showMultilingualNotice, setShowMultilingualNotice] = useState(false);
     const [isStallModalOpen, setIsStallModalOpen] = useState(false);
     const [isPetitionReportModalOpen, setIsPetitionReportModalOpen] = useState(false);
     const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
@@ -1485,12 +1487,25 @@ export default function PetitionDetailClient({ initialPetition }) {
                                                 className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#3650AD] focus:ring-[#3650AD] cursor-pointer shrink-0"
                                             />
                                             <span className="text-[11px] text-slate-600 leading-relaxed">
-                                                I voluntarily consent under Section 6 of the DPDP Act, 2023 for SoSign to record my digital signature, show my name as a petitioner, and deliver my petition support to designated decision-makers as outlined in the{' '}
-                                                <Link href="/privacy" target="_blank" className="text-[#3650AD] font-semibold underline">
+                                                I voluntarily consent under Section 6 of the DPDP Act, 2023 for <strong>LEO MEO IT Solution (SoSign)</strong> to record my digital signature, show my name as a petitioner, and deliver my petition support to designated decision-makers as outlined in the{' '}
+                                                <Link href="/privacy" target="_blank" className="text-[#3650AD] font-semibold underline hover:text-[#F43676]">
                                                     Privacy Policy
                                                 </Link>.
                                             </span>
                                         </label>
+                                        <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                                            <span className="text-slate-500 flex items-center gap-1">
+                                                <Languages className="w-3.5 h-3.5 text-[#3650AD]" />
+                                                Eighth Schedule Indian Languages
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowMultilingualNotice(true)}
+                                                className="text-[#3650AD] font-bold hover:underline hover:text-[#F43676]"
+                                            >
+                                                View Notice (बहुभाषी सूचना)
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <button
@@ -3114,6 +3129,12 @@ export default function PetitionDetailClient({ initialPetition }) {
                     );
                 })()}
             </AnimatePresence>
+
+            {/* DPDP Act Section 5(3) Multilingual Notice Modal */}
+            <DpdpMultilingualNoticeModal
+                isOpen={showMultilingualNotice}
+                onClose={() => setShowMultilingualNotice(false)}
+            />
         </div>
     );
 }
