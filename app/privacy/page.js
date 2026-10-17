@@ -486,7 +486,7 @@ export default function PrivacyPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white p-4 rounded-xl border border-slate-200">
                 <div className="space-y-1">
-                  <p><strong>Designation:</strong> Data Protection & Grievance Redressal Officer</p>
+                  <p><strong>Designated Officer:</strong> Mr. Narendra Kumar (Data Protection & Grievance Redressal Officer)</p>
                   <p><strong>Entity:</strong> LEO MEO IT Solution (SoSign Division)</p>
                   <p><strong>Postal Address:</strong> NESCO Center, Western Express Highway, Goregaon East, Mumbai, Maharashtra 400063, India</p>
                 </div>
@@ -508,27 +508,246 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 9: Incident Response & Breach Notification */}
-          <section className="space-y-3 pt-2">
+          {/* Section 9: Personal Data Breach Management & Response Plan (DPDP Act Sec 2(u), 8(5) & 8(6)) */}
+          <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              9. Personal Data Breach Management (Section 8(6) & CERT-In)
+              9. Personal Data Breach Management & Statutory Response Plan (Sections 2(u), 8(5) & 8(6))
             </h2>
-            <p>
-              In the event of a confirmed personal data security incident or breach, SoSign adheres strictly to <strong>Section 8(6) of the DPDP Act</strong> and <strong>CERT-In cybersecurity directions</strong>:
+
+            {/* Subsection 9.1: Statutory Definition */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+              <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+                <FaShieldHalved className="text-[#3650AD]" />
+                9.1 What Counts as a Personal Data Breach? [DPDP Act Section 2(u)]
+              </h3>
+              <p className="text-xs text-slate-700 leading-relaxed">
+                Under <strong>Section 2(u) of the Digital Personal Data Protection Act, 2023</strong>, a <em>&quot;personal data breach&quot;</em> is strictly defined as:
+              </p>
+              <blockquote className="p-3 bg-white border-l-4 border-[#F43676] rounded-r-xl text-xs italic text-slate-800 shadow-sm">
+                &ldquo;Any unauthorised processing of personal data or accidental disclosure, acquisition, sharing, use, alteration, destruction of or loss of access to personal data, that compromises the confidentiality, integrity or availability of personal data.&rdquo;
+              </blockquote>
+              <p className="text-xs text-slate-600">
+                At SoSign, any incident that threatens the confidentiality, integrity, or accessibility of citizen records—including email addresses, contact details, signature records, or masked KYC proofs—is classified and handled immediately under our statutory Breach SOP.
+              </p>
+            </div>
+
+            {/* Subsection 9.2: 5-Stage Breach Response Plan */}
+            <div className="space-y-3">
+              <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+                <FaScaleBalanced className="text-[#F43676]" />
+                9.2 Five-Stage Data Breach Incident Response Plan (SOP)
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                  <span className="font-bold text-[#3650AD] block">Stage 1: Detection & Triage (SLA: &lt; 1 hr)</span>
+                  <p className="text-slate-600 text-[11px]">
+                    Automated anomaly detection, SIEM log analysis, or grievance intake triage according to Section 2(u) categories with severity rating (Low, Medium, High, Critical).
+                  </p>
+                </div>
+
+                <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                  <span className="font-bold text-rose-600 block">Stage 2: Rapid Containment & Harm Reduction (SLA: 2–4 hrs)</span>
+                  <p className="text-slate-600 text-[11px]">
+                    Under Section 8(5), immediate revocation of active JWT authentication sessions, isolation of compromised endpoints, mandatory credential reset flags, and firewall hardening.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                  <span className="font-bold text-purple-600 block">Stage 3: Forensic Harm Assessment (SLA: 6–12 hrs)</span>
+                  <p className="text-slate-600 text-[11px]">
+                    Log audits to determine exact impacted records, evaluate confidentiality/integrity vectors, verify encrypted KYC boundaries, and draft root-cause analysis (RCA).
+                  </p>
+                </div>
+
+                <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                  <span className="font-bold text-emerald-600 block">Stage 4: Statutory DPBI & User Notices (Without Delay)</span>
+                  <p className="text-slate-600 text-[11px]">
+                    Statutory Section 8(6) intimation to the Data Protection Board of India and CERT-In, paired with direct email and in-app alerts to each affected Data Principal.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+                <span className="font-bold text-slate-800 block">Stage 5: Eradication, Hardening & Post-Mortem Audit (Within 7 Days)</span>
+                <p className="text-slate-600 text-[11px]">
+                  Regression penetration tests, credential re-issuance, permanent security patches, and regulatory incident registry retention for mandatory Board audits.
+                </p>
+              </div>
+            </div>
+
+            {/* Subsection 9.3: Statutory Intimations */}
+            <div className="p-4 bg-blue-50/60 border border-blue-200 rounded-2xl space-y-2 text-xs">
+              <h3 className="font-bold text-blue-900 uppercase tracking-wider flex items-center gap-2">
+                <FaEnvelope className="text-blue-600" />
+                9.3 Mandatory Notifications to Users & Data Protection Board of India (Section 8(6))
+              </h3>
+              <p className="text-slate-700">
+                In strict adherence to <strong>Section 8(6) of the DPDP Act</strong> and <strong>CERT-In Directions</strong>, whenever a breach is confirmed:
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-slate-700 text-[11px]">
+                <li>
+                  <strong>Notice to Data Protection Board of India (DPBI):</strong> We submit formal intimation containing the incident reference, nature of the breach, affected volume, rapid containment actions taken, and the contact coordinates of our Grievance Redressal Officer.
+                </li>
+                <li>
+                  <strong>Notice to Affected Citizens (Data Principals):</strong> We communicate directly via registered email and in-app alerts, explaining the incident in plain language, describing the remedial measures taken, and offering actionable steps to secure accounts.
+                </li>
+              </ul>
+            </div>
+
+            {/* Subsection 9.4: Rapid Harm Reduction */}
+            <div className="p-4 bg-rose-50/60 border border-rose-200 rounded-2xl space-y-2 text-xs">
+              <h3 className="font-bold text-rose-900 uppercase tracking-wider flex items-center gap-2">
+                <FaLock className="text-rose-600" />
+                9.4 Proactive Harm Reduction Safeguards (Section 8(5))
+              </h3>
+              <p className="text-slate-700">
+                To prevent downstream damage following an incident, our rapid harm reduction protocols immediately execute:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                <div className="p-2.5 bg-white border border-rose-100 rounded-lg">
+                  <strong className="text-slate-900 block mb-0.5">Session Invalidation</strong>
+                  All active login tokens for affected accounts are instantaneously terminated.
+                </div>
+                <div className="p-2.5 bg-white border border-rose-100 rounded-lg">
+                  <strong className="text-slate-900 block mb-0.5">Forced Password Reset</strong>
+                  Accounts are placed on secure re-authentication requiring a fresh password.
+                </div>
+                <div className="p-2.5 bg-white border border-rose-100 rounded-lg">
+                  <strong className="text-slate-900 block mb-0.5">Citizen Advisory</strong>
+                  Guidance on spotting phishing, revoking third-party access, and securing digital identity.
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 10: Child Data Protection & Verifiable Parental Consent (DPDP Act Section 9) */}
+          <section className="space-y-4 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              10. Child Data Safeguards & Parental Consent (Section 9)
+            </h2>
+            <p className="text-xs text-slate-700 leading-relaxed">
+              In strict adherence to <strong>Section 9 of the Digital Personal Data Protection Act, 2023</strong>, SoSign enforces rigorous safeguards to protect children (defined under Indian law as individuals under 18 years of age):
             </p>
-            <ul className="text-xs text-slate-700 list-disc pl-5 space-y-1.5">
-              <li>Immediate containment and forensic isolation within our encrypted network infrastructure.</li>
-              <li>Timely notification to the <strong>Data Protection Board of India (DPBI)</strong> and the <strong>Indian Computer Emergency Response Team (CERT-In)</strong> containing the nature of the breach, affected categories, and remedial steps taken.</li>
-              <li>Prompt communication to affected Data Principals with recommended safety actions and direct contact to our Grievance Cell.</li>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3.5 bg-purple-50/60 border border-purple-200 rounded-xl space-y-1">
+                <span className="font-bold text-purple-900 block">Verifiable Parental Consent</span>
+                <p className="text-slate-600 text-[11px]">
+                  Before processing any personal data of a minor, we require verifiable consent from the parent or lawful guardian via affirmative email/SMS verification.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-purple-50/60 border border-purple-200 rounded-xl space-y-1">
+                <span className="font-bold text-purple-900 block">Zero Behavioral Tracking</span>
+                <p className="text-slate-600 text-[11px]">
+                  Per Section 9(3), we strictly prohibit tracking, behavioral monitoring, or analytics profiling of any child account on our platform.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-purple-50/60 border border-purple-200 rounded-xl space-y-1">
+                <span className="font-bold text-purple-900 block">No Targeted Advertising</span>
+                <p className="text-slate-600 text-[11px]">
+                  Targeted advertising directed at children is completely banned. Minors only have access to non-targeted civic engagement and public interest petitions.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 11: Vendor & Data Processor Governance (Sections 8(2) & 8(7)) */}
+          <section className="space-y-4 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              11. Vendor & Data Processor Governance (Sections 8(2) & 8(7))
+            </h2>
+            <p className="text-xs text-slate-700 leading-relaxed">
+              When SoSign engages third-party vendors (Data Processors) such as payment gateways, SMS/email relays, or government KYC gateways, we mandate strict compliance under <strong>Section 8(2)</strong>:
+            </p>
+            <ul className="text-xs text-slate-700 list-disc pl-5 space-y-1 text-[11px]">
+              <li><strong>Data Processing Agreements (DPAs):</strong> Every vendor must execute a binding DPA guaranteeing equivalent technical safeguards and statutory confidentiality.</li>
+              <li><strong>Technical Security Standards:</strong> Vendors must maintain verified certifications, including ISO 27001, SOC 2 Type II, and PCI-DSS Level 1.</li>
+              <li><strong>Obligation to Return or Delete (Section 8(7)):</strong> Our contracts mandate that vendors must irreversibly erase or return personal data once the processing purpose concludes or upon citizen account deletion.</li>
+              <li><strong>Regular Compliance Monitoring:</strong> We conduct bi-annual audits of vendor security postures and log flow-through erasure dispatches.</li>
             </ul>
           </section>
 
-          {/* Section 10: Updates to this Policy */}
+          {/* Section 12: Cross-Border Data Transfer & Localization (Section 16) */}
+          <section className="space-y-4 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              12. Cross-Border Personal Data Transfers & Localization (Section 16)
+            </h2>
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
+              <p className="text-slate-700">
+                SoSign prioritizes domestic data sovereignty under <strong>Section 16 of the DPDP Act 2023</strong>:
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-slate-700 text-[11px]">
+                <li><strong>Primary In-Country Storage:</strong> All citizen account credentials, signature records, and masked KYC identifiers are hosted exclusively within certified Indian data centers (AWS ap-south-1 Mumbai / NIC Cloud).</li>
+                <li><strong>Government Restrictions Compliance:</strong> We verify and guarantee that no personal data is ever transferred to foreign countries or territories restricted or blacklisted by the Central Government.</li>
+                <li><strong>CDN Edge Optimization:</strong> Public petition media assets (images, banners) served via global edge networks (Cloudinary) utilize Standard Contractual Clauses (SCC) with end-to-end TLS 1.3 encryption and contain zero personal identification records.</li>
+              </ul>
+            </div>
+          </section>
+
+          {/* Section 13: Internal Policies & Data Retention Schedule */}
+          <section className="space-y-4 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              13. Internal Data Protection Policies & Retention Schedule (DRAS)
+            </h2>
+            <p className="text-xs text-slate-700">
+              SoSign maintains formal internal policies, including an <strong>Internal Data Protection Policy (IDPP)</strong>, <strong>Vendor Security Policy</strong>, and a strict <strong>Data Retention & Archival Schedule (DRAS)</strong>:
+            </p>
+            <div className="overflow-x-auto text-xs">
+              <table className="w-full text-left border border-slate-200 rounded-xl overflow-hidden">
+                <thead className="bg-slate-100 text-slate-700 font-bold">
+                  <tr>
+                    <th className="p-2.5 border-b">Category</th>
+                    <th className="p-2.5 border-b">Retention Period</th>
+                    <th className="p-2.5 border-b">Disposal Protocol</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-[11px] text-slate-600">
+                  <tr>
+                    <td className="p-2.5 font-bold text-slate-900">Masked KYC Records</td>
+                    <td className="p-2.5">Account Lifespan + 5 Years (PMLA / SPDI Rules)</td>
+                    <td className="p-2.5">Cryptographic deletion upon account erasure</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2.5 font-bold text-slate-900">Access & Security Logs</td>
+                    <td className="p-2.5">180 Days (CERT-In Mandatory Directions)</td>
+                    <td className="p-2.5">Automated rolling archival purge</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2.5 font-bold text-slate-900">Consent Proofs</td>
+                    <td className="p-2.5">Lifespan of Account + 3 Years</td>
+                    <td className="p-2.5">Statutory compliance ledger archive</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2.5 font-bold text-slate-900">Inactive Accounts</td>
+                    <td className="p-2.5">24 Months Zero Activity</td>
+                    <td className="p-2.5">Notice dispatched, followed by automated erasure</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-3 bg-gradient-to-r from-blue-50 to-pink-50 rounded-xl border border-blue-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <span>Have questions about our data retention or wish to exercise your statutory rights?</span>
+              <Link
+                href="/grievance"
+                className="px-3.5 py-1.5 bg-[#3650AD] text-white rounded-lg font-bold hover:bg-[#2b4191] transition"
+              >
+                Visit Grievance Portal
+              </Link>
+            </div>
+          </section>
+
+          {/* Section 14: Updates to this Policy */}
           <section className="space-y-3 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              10. Changes to this Privacy Notice
+              14. Changes to this Privacy Notice
             </h2>
             <p>
               We periodically review this policy to reflect platform updates, statutory notifications, or rules framed under the DPDP Act. When material revisions occur, we notify users via banner notice, email notification, or account alerts before changes take effect.

@@ -29,6 +29,10 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [signupError, setSignupError] = useState("");
   const [consentAccepted, setConsentAccepted] = useState(false);
+  const [isMinor, setIsMinor] = useState(false);
+  const [guardianName, setGuardianName] = useState("");
+  const [guardianEmail, setGuardianEmail] = useState("");
+  const [guardianRelationship, setGuardianRelationship] = useState("Parent");
 
   const { login, signup, loading, googleLogin } = useAuth();
   const router = useRouter();
@@ -64,9 +68,19 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
       return;
     }
 
+    if (isMinor && (!guardianName.trim() || !guardianEmail.trim())) {
+      setSignupError("Please provide Guardian Name and Email for Verifiable Parental Consent (DPDP Act Section 9).");
+      return;
+    }
+
     try {
       const name = `${firstName} ${lastName}`;
-      await signup(name, designation, signupEmail, mobile, createPassword);
+      await signup(name, designation, signupEmail, mobile, createPassword, {
+        isMinor,
+        guardianName: isMinor ? guardianName.trim() : "",
+        guardianEmail: isMinor ? guardianEmail.trim() : "",
+        relationship: isMinor ? guardianRelationship : "",
+      });
       onClose(); // Close modal after successful signup
       if (onLoginSuccess) {
         onLoginSuccess();
@@ -313,6 +327,69 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                   )}
                 </button>
               </div>
+            </div>
+
+            {/* DPDP Act Section 9 - Age Declaration & Verifiable Parental Consent */}
+            <div className="pt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+              <span className="font-bold text-slate-800 block">Age Verification (DPDP Act Section 9)</span>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-700">
+                  <input
+                    type="radio"
+                    name="ageGroup"
+                    checked={!isMinor}
+                    onChange={() => setIsMinor(false)}
+                    className="text-[#3650AD] focus:ring-[#3650AD]"
+                  />
+                  <span>18 years or older</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-700">
+                  <input
+                    type="radio"
+                    name="ageGroup"
+                    checked={isMinor}
+                    onChange={() => setIsMinor(true)}
+                    className="text-[#3650AD] focus:ring-[#3650AD]"
+                  />
+                  <span>Under 18 (Minor)</span>
+                </label>
+              </div>
+
+              {isMinor && (
+                <div className="pt-2 space-y-2 border-t border-slate-200">
+                  <span className="text-[11px] text-purple-700 font-semibold block">
+                    🛡️ Verifiable Parental Consent is required for minors under Indian law.
+                  </span>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Parent/Guardian Full Name *"
+                      value={guardianName}
+                      onChange={(e) => setGuardianName(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-purple-500"
+                      required={isMinor}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="email"
+                      placeholder="Guardian Email *"
+                      value={guardianEmail}
+                      onChange={(e) => setGuardianEmail(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-purple-500"
+                      required={isMinor}
+                    />
+                    <select
+                      value={guardianRelationship}
+                      onChange={(e) => setGuardianRelationship(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-purple-500 font-medium"
+                    >
+                      <option value="Parent">Parent</option>
+                      <option value="Legal Guardian">Legal Guardian</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* DPDP Act Affirmative Consent Checkbox */}
