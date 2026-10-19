@@ -140,7 +140,7 @@ export default function Navbar() {
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className={`w-full bg-white border-b sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg border-transparent' : 'border-gray-200'}`}
+      className={`w-full bg-white border-b sticky top-0 z-50 transition-all duration-300 print:hidden ${isScrolled ? 'shadow-lg border-transparent' : 'border-gray-200'}`}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-5 xl:px-6">
         <div className={`flex justify-between items-center gap-2 transition-all duration-300 ${isScrolled ? 'h-[68px]' : 'h-[92px]'}`}>

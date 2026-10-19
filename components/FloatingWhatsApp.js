@@ -12,7 +12,7 @@ export default function FloatingWhatsApp() {
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(defaultMessage)}`;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2 group pointer-events-auto">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2 group pointer-events-auto print:hidden">
       {/* Help Tooltip Banner */}
       {showTooltip && (
         <div className="relative bg-white text-slate-800 px-4 py-2.5 rounded-2xl shadow-xl border border-emerald-100 flex items-center gap-3 text-xs font-semibold animate-bounce-subtle max-w-xs backdrop-blur-md">

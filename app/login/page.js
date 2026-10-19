@@ -38,6 +38,12 @@ function LoginContent() {
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [additionalConsentAccepted, setAdditionalConsentAccepted] = useState(false);
 
+  // Age verification & 18+ confirmation states (children not permitted)
+  const [age, setAge] = useState("");
+  const [isAdultConfirmed, setIsAdultConfirmed] = useState(false);
+  const [additionalAge, setAdditionalAge] = useState("");
+  const [additionalIsAdultConfirmed, setAdditionalIsAdultConfirmed] = useState(false);
+
   // Phone OTP verification states
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
@@ -225,6 +231,23 @@ function LoginContent() {
       setSignupError("Designation is required");
       return;
     }
+    if (!age.trim()) {
+      setSignupError("Age is required");
+      return;
+    }
+    const parsedAge = parseInt(age, 10);
+    if (isNaN(parsedAge) || parsedAge < 18) {
+      setSignupError("You must be at least 18 years old to use SoSign. Children are not permitted to use this website.");
+      return;
+    }
+    if (parsedAge > 120) {
+      setSignupError("Please enter a valid age.");
+      return;
+    }
+    if (!isAdultConfirmed) {
+      setSignupError("Please confirm that you are 18 years of age or older.");
+      return;
+    }
     if (!signupEmail.trim()) {
       setSignupError("Email is required");
       return;
@@ -270,7 +293,11 @@ function LoginContent() {
     try {
       setIsValidatingEmail(true);
       const name = `${firstName} ${lastName}`;
-      await signup(name, designation, signupEmail, mobile, createPassword);
+      await signup(name, designation, signupEmail, mobile, createPassword, {
+        age: parsedAge,
+        isAdultConfirmed: true,
+        isMinor: false,
+      });
       router.push(redirectUrl);
     } catch (error) {
       setSignupError(formatAuthError(error));
@@ -315,6 +342,23 @@ function LoginContent() {
       setSignupError("Designation is required");
       return;
     }
+    if (!additionalAge.trim()) {
+      setSignupError("Age is required");
+      return;
+    }
+    const parsedAddAge = parseInt(additionalAge, 10);
+    if (isNaN(parsedAddAge) || parsedAddAge < 18) {
+      setSignupError("You must be at least 18 years old to use SoSign. Children are not permitted to use this website.");
+      return;
+    }
+    if (parsedAddAge > 120) {
+      setSignupError("Please enter a valid age.");
+      return;
+    }
+    if (!additionalIsAdultConfirmed) {
+      setSignupError("Please confirm that you are 18 years of age or older.");
+      return;
+    }
     if (!mobile.trim()) {
       setSignupError("Mobile number is required");
       return;
@@ -335,6 +379,8 @@ function LoginContent() {
       const formData = new FormData();
       formData.append("designation", designation);
       formData.append("mobileNumber", mobile);
+      formData.append("age", parsedAddAge.toString());
+      formData.append("isAdultConfirmed", "true");
 
       await updateProfile(formData);
       router.push(redirectUrl);
@@ -417,8 +463,16 @@ function LoginContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-pink-50 px-4 py-8">
       <div className="w-full max-w-md bg-white shadow-2xl rounded-3xl p-8 border border-pink-100">
+        {/* 18+ Platform Restriction Badge */}
+        <div className="flex justify-center mb-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-[#F43676] border border-rose-200">
+            <span className="w-2 h-2 rounded-full bg-[#F43676]"></span>
+            18+ Platform Only • Children Not Permitted
+          </span>
+        </div>
+
         {/* Toggle Heading */}
-        <h2 className="text-3xl font-bold text-center mb-6 text-[#1a1a2e]">
+        <h2 className="text-3xl font-bold text-center mb-2 text-[#1a1a2e]">
           {isLogin ? "Welcome Back!" : "Join SoSign"}
         </h2>
         <p className="text-center text-gray-500 mb-6 text-sm">
@@ -457,29 +511,60 @@ function LoginContent() {
             <div className="text-center mb-4">
               <h3 className="text-xl font-bold text-[#1a1a2e]">Complete Your Profile</h3>
               <p className="text-sm text-gray-500 mt-1">
-                Just a few more details to get you started
+                Just a few more details to get you started (18+ only)
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Designation
-              </label>
-              <select
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-[#F43676] focus:outline-none transition-colors bg-white"
-                value={designation}
-                onChange={(e) => setDesignation(e.target.value)}
-                required
-              >
-                <option value="">Select your designation</option>
-                <option value="Individual">Individual</option>
-                <option value="Personal">Personal</option>
-                <option value="Politician">Politician</option>
-                <option value="NGO">NGO</option>
-                <option value="Political Party">Political Party</option>
-                <option value="Social Worker">Social Worker</option>
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Designation
+                </label>
+                <select
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-[#F43676] focus:outline-none transition-colors bg-white text-sm"
+                  value={designation}
+                  onChange={(e) => setDesignation(e.target.value)}
+                  required
+                >
+                  <option value="">Select designation</option>
+                  <option value="Individual">Individual</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Politician">Politician</option>
+                  <option value="NGO">NGO</option>
+                  <option value="Political Party">Political Party</option>
+                  <option value="Social Worker">Social Worker</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Age <span className="text-xs font-normal text-rose-500">(18+ only)</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter age (e.g. 24)"
+                  min="1"
+                  max="120"
+                  className={`w-full border-2 rounded-xl px-4 py-3 focus:outline-none transition-colors text-sm ${
+                    additionalAge && parseInt(additionalAge, 10) < 18
+                      ? 'border-red-400 bg-red-50 text-red-700'
+                      : 'border-gray-200 focus:border-[#F43676]'
+                  }`}
+                  value={additionalAge}
+                  onChange={(e) => setAdditionalAge(e.target.value)}
+                  required
+                />
+              </div>
             </div>
+
+            {additionalAge && parseInt(additionalAge, 10) < 18 && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs flex items-start gap-2">
+                <span className="text-base leading-none">🚫</span>
+                <span>
+                  <strong>Access Restricted:</strong> You must be at least 18 years of age to use SoSign. Children and minors under 18 are not permitted to use this website.
+                </span>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -589,6 +674,23 @@ function LoginContent() {
               )}
             </div>
 
+            {/* 18+ Age Confirmation Checkbox */}
+            <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 select-none">
+                <input
+                  type="checkbox"
+                  checked={additionalIsAdultConfirmed}
+                  onChange={(e) => setAdditionalIsAdultConfirmed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#F43676] focus:ring-[#F43676] cursor-pointer shrink-0"
+                  required
+                />
+                <span className="leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">I confirm that I am 18 years of age or older.</strong>{" "}
+                  I understand that children and minors under 18 are not permitted to use this platform.
+                </span>
+              </label>
+            </div>
+
             {/* DPDP Act Affirmative Consent Checkbox */}
             <div className="pt-1">
               <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-600 select-none">
@@ -619,7 +721,7 @@ function LoginContent() {
 
             <button 
               type="submit"
-              disabled={completingProfile || !phoneVerified || !designation || !additionalConsentAccepted}
+              disabled={completingProfile || !phoneVerified || !designation || !additionalConsentAccepted || !additionalIsAdultConfirmed || !additionalAge || parseInt(additionalAge, 10) < 18}
               className="w-full bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:scale-100"
             >
               {completingProfile ? (
@@ -706,7 +808,7 @@ function LoginContent() {
             </button>
 
             <p className="text-xs text-gray-500 text-center leading-relaxed">
-              By joining or logging in, you accept{" "}
+              By joining or logging in, you confirm that you are 18+ and accept{" "}
               <Link href="/terms" className="text-[#F43676] cursor-pointer hover:underline">
                 sosign.in Terms of Service
               </Link>{" "}
@@ -714,7 +816,7 @@ function LoginContent() {
               <Link href="/privacy" className="text-[#F43676] cursor-pointer hover:underline">
                 Privacy Policy
               </Link>
-              .
+              . Children under 18 are not permitted to use this platform.
             </p>
 
             <p className="text-sm text-center text-gray-600 pt-2">
@@ -758,25 +860,56 @@ function LoginContent() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Designation
-              </label>
-              <select
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-[#F43676] focus:outline-none transition-colors bg-white"
-                value={designation}
-                onChange={(e) => setDesignation(e.target.value)}
-                required
-              >
-                <option value="">Select your designation</option>
-                <option value="Individual">Individual</option>
-                <option value="Personal">Personal</option>
-                <option value="Politician">Politician</option>
-                <option value="NGO">NGO</option>
-                <option value="Political Party">Political Party</option>
-                <option value="Social Worker">Social Worker</option>
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Designation
+                </label>
+                <select
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-[#F43676] focus:outline-none transition-colors bg-white text-sm"
+                  value={designation}
+                  onChange={(e) => setDesignation(e.target.value)}
+                  required
+                >
+                  <option value="">Select your designation</option>
+                  <option value="Individual">Individual</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Politician">Politician</option>
+                  <option value="NGO">NGO</option>
+                  <option value="Political Party">Political Party</option>
+                  <option value="Social Worker">Social Worker</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Age <span className="text-xs font-normal text-rose-500">(18+ only)</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter age (e.g. 24)"
+                  min="1"
+                  max="120"
+                  className={`w-full border-2 rounded-xl px-4 py-3 focus:outline-none transition-colors text-sm ${
+                    age && parseInt(age, 10) < 18
+                      ? 'border-red-400 bg-red-50 text-red-700'
+                      : 'border-gray-200 focus:border-[#F43676]'
+                  }`}
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  required
+                />
+              </div>
             </div>
+
+            {age && parseInt(age, 10) < 18 && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs flex items-start gap-2">
+                <span className="text-base leading-none">🚫</span>
+                <span>
+                  <strong>Access Restricted:</strong> You must be at least 18 years of age to use SoSign. Children and minors under 18 are not permitted to use this website.
+                </span>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -946,6 +1079,23 @@ function LoginContent() {
               </button>
             </div>
 
+            {/* 18+ Age Confirmation Checkbox */}
+            <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 select-none">
+                <input
+                  type="checkbox"
+                  checked={isAdultConfirmed}
+                  onChange={(e) => setIsAdultConfirmed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#F43676] focus:ring-[#F43676] cursor-pointer shrink-0"
+                  required
+                />
+                <span className="leading-relaxed">
+                  <strong className="text-gray-900 font-semibold">I confirm that I am 18 years of age or older.</strong>{" "}
+                  I understand that children and minors under 18 are strictly not permitted to use or register on this website.
+                </span>
+              </label>
+            </div>
+
             {/* DPDP Act Affirmative Consent Checkbox */}
             <div className="pt-2">
               <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-600 select-none">
@@ -983,7 +1133,7 @@ function LoginContent() {
 
             <button 
               type="submit"
-              disabled={isValidatingEmail || loading || !consentAccepted}
+              disabled={isValidatingEmail || loading || !consentAccepted || !isAdultConfirmed || !age || parseInt(age, 10) < 18}
               className="w-full bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:scale-100"
             >
               {isValidatingEmail ? (

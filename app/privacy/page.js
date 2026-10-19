@@ -20,6 +20,7 @@ import {
   FaBuildingColumns,
   FaTriangleExclamation,
   FaArrowRight,
+  FaPrint,
 } from "react-icons/fa6";
 import { FaLanguage, FaGlobe } from "react-icons/fa";
 import { EIGHTH_SCHEDULE_LANGUAGES, STATUTORY_NOTICES } from "@/components/DpdpMultilingualNoticeModal";
@@ -29,52 +30,63 @@ export default function PrivacyPage() {
   const [noticeLang, setNoticeLang] = useState("en");
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-12 px-4 md:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f8fafc] py-12 px-4 md:px-6 lg:px-8 print:py-4 print:px-2 print:bg-white">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header Hero Section */}
-        <div className="bg-gradient-to-br from-[#002050] via-[#1a3a6e] to-[#302D55] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl">
-          <div className="absolute inset-0 opacity-10 pointer-events-none">
+        <div className="bg-gradient-to-br from-[#002050] via-[#1a3a6e] to-[#302D55] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl print:bg-white print:bg-none print:text-black print:border print:border-black print:shadow-none print:p-6">
+          <div className="absolute inset-0 opacity-10 pointer-events-none print:hidden">
             <div className="absolute -top-10 -right-10 w-60 h-60 bg-white rounded-full blur-3xl"></div>
             <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-[#F43676] rounded-full blur-3xl"></div>
           </div>
 
           <div className="relative z-10 max-w-3xl mx-auto text-center space-y-3">
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-emerald-400/30">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-emerald-400/30 print:border-black print:text-black print:bg-white">
                 <FaGlobe className="text-xs" /> Offering Services to Users in India
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/10">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/10 print:border-black print:text-black print:bg-white">
                 <FaShieldHalved className="text-xs" /> Statutory Privacy Notice
               </span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight print:text-black">
               Privacy Policy & DPDP Notice
             </h1>
-            <p className="text-sm md:text-base text-gray-300 leading-relaxed max-w-2xl mx-auto">
+            <p className="text-sm md:text-base text-gray-300 leading-relaxed max-w-2xl mx-auto print:text-black">
               How SoSign provides civic advocacy services to users across India, why we collect personal and KYC data, and how we protect and process it under the Digital Personal Data Protection (DPDP) Act, 2023.
             </p>
-            <div className="inline-flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-pink-200/90 font-mono">
-              <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+            <div className="inline-flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-pink-200/90 font-mono print:text-black">
+              <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10 print:border-black print:text-black print:bg-white">
                 Digital Personal Data Protection (DPDP) Act, 2023
               </span>
-              <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+              <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10 print:border-black print:text-black print:bg-white">
                 Section 3 & 5 Territorial Scope (India)
               </span>
-              <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+              <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10 print:border-black print:text-black print:bg-white">
                 Aadhaar Act, 2016 (UIDAI Regulations)
               </span>
-              <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+              <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10 print:border-black print:text-black print:bg-white">
                 IT Act, 2000 & SPDI Rules
               </span>
             </div>
-            <p className="text-[11px] text-gray-400 pt-1">
+            <p className="text-[11px] text-gray-400 pt-1 print:text-black font-semibold">
               Last Updated & Effective Date: October 2026 | Document Reference: SOSIGN-DPDP-2026-V2 | Jurisdiction: Republic of India
             </p>
+            <div className="pt-3 flex items-center justify-center gap-3 print:hidden">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/20 hover:border-white/40 transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                title="Print or Save as PDF"
+              >
+                <FaPrint className="text-xs" />
+                <span>Print Privacy Policy</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Quick Navigation / Key Highlights */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 print:hidden">
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm text-center">
             <span className="text-[#3650AD] text-xl font-black block">Zero</span>
             <span className="text-xs text-slate-600 font-medium">Plaintext Aadhaar Storage</span>
@@ -97,29 +109,29 @@ export default function PrivacyPage() {
         <div className="bg-white shadow-sm rounded-3xl p-6 md:p-10 space-y-10 border border-gray-200/80 text-slate-800 text-sm leading-relaxed">
           
           {/* Plain-Language Citizen Explainer (DPDP Section 5 Compliance) */}
-          <div className="p-6 bg-gradient-to-br from-blue-50 via-slate-50 to-pink-50 border-2 border-blue-200/80 rounded-2xl space-y-4">
+          <div className="p-6 bg-gradient-to-br from-blue-50 via-slate-50 to-pink-50 border-2 border-blue-200/80 rounded-2xl space-y-4 print:bg-white print:bg-none print:border print:border-black print:rounded-xl print:p-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="p-2 bg-[#3650AD] text-white rounded-xl text-sm">
+                <span className="p-2 bg-[#3650AD] text-white rounded-xl text-sm print:bg-white print:text-black print:border print:border-black">
                   <FaShieldHalved />
                 </span>
                 <div>
-                  <h3 className="text-base font-black text-[#002050]">
+                  <h3 className="text-base font-black text-[#002050] print:text-black">
                     Statutory Privacy Notice (DPDP Act 2023 - Section 5)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 print:text-black">
                     Accessible in English and Eighth Schedule Indian languages per Section 5(3)
                   </p>
                 </div>
               </div>
 
-              <span className="text-emerald-700 font-bold bg-emerald-100/70 px-2.5 py-0.5 rounded-full border border-emerald-300 text-xs self-start sm:self-auto">
+              <span className="text-emerald-700 font-bold bg-emerald-100/70 px-2.5 py-0.5 rounded-full border border-emerald-300 text-xs self-start sm:self-auto print:border-black print:text-black print:bg-white">
                 DPDP Act 2023 Compliant
               </span>
             </div>
 
             {/* Eighth Schedule Language Switcher Tabs */}
-            <div className="pt-1">
+            <div className="pt-1 print:hidden">
               <div className="flex items-center gap-1.5 mb-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
                 <FaLanguage className="text-[#3650AD] text-sm" />
                 <span>Read Notice in Eighth Schedule Languages (भाषा चुनें):</span>
@@ -164,6 +176,7 @@ export default function PrivacyPage() {
           </div>
 
           {/* Dedicated Section: Services Offered to Users in India */}
+          {/*
           <div className="p-6 bg-gradient-to-br from-emerald-50 via-teal-50 to-blue-50 border-2 border-emerald-300 rounded-2xl space-y-3">
             <div className="flex items-center gap-2.5">
               <span className="p-2.5 bg-emerald-600 text-white rounded-xl text-base shadow-sm">
@@ -192,9 +205,30 @@ export default function PrivacyPage() {
               </div>
               <div className="p-3 bg-white/95 rounded-xl border border-emerald-200 space-y-1 shadow-2xs">
                 <strong className="text-emerald-900 block font-bold">In-Country Data Sovereignty</strong>
-                <p className="text-slate-600 text-[11px]">Primary databases, signature ledgers, and KYC proofs are hosted inside Indian data centers (AWS ap-south-1 Mumbai / NIC Cloud) subject to Indian laws.</p>
+                <p className="text-slate-600 text-[11px]">Primary databases, signature ledgers, and citizen personal data are stored and kept on secure servers located in India, Maharashtra (Nashik server) subject to Indian laws.</p>
               </div>
             </div>
+          </div>
+          */}
+
+          {/* Labeled Point: Purpose of the Website */}
+          <div className="p-6 bg-gradient-to-r from-pink-50/80 via-rose-50/40 to-slate-50 border-2 border-pink-200 rounded-2xl space-y-2 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 bg-[#F43676] text-white rounded-xl text-sm shadow-xs">
+                🎯
+              </span>
+              <div>
+                <h2 className="text-base font-black text-[#002050]">
+                  Purpose
+                </h2>
+                <p className="text-xs text-pink-700 font-semibold">
+                  Purpose of the Website
+                </p>
+              </div>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal pt-1">
+              The purpose of the SoSign website is to provide an accessible, secure, and transparent digital civic advocacy platform for citizens across India to create, sign, and mobilize verified public petitions, advocate for community improvements and child-health buffer zones around schools, and present authentic collective representations directly to government authorities, elected representatives, and decision-makers. Your personal data is securely stored and kept in India, Maharashtra, Nashik server.
+            </p>
           </div>
 
           {/* Section 1: Data Fiduciary Identity & Scope */}
@@ -480,9 +514,9 @@ export default function PrivacyPage() {
 
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <span className="font-bold text-slate-900 block mb-1 flex items-center gap-1.5">
-                  <FaLock className="text-emerald-600" /> Database & Cloud Hosting
+                  <FaLock className="text-emerald-600" /> Database & Server Hosting
                 </span>
-                <p className="text-slate-600"><strong>MongoDB Atlas & Cloud Hosting:</strong> Production databases operate with enterprise encryption at rest (AES-256) and TLS 1.3 in transit, hosted within certified Indian data center regions.</p>
+                <p className="text-slate-600"><strong>Database & Server Hosting:</strong> Production databases and servers are located in India, Maharashtra (Nashik server), operating with enterprise encryption at rest (AES-256) and TLS 1.3 in transit.</p>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -853,7 +887,7 @@ export default function PrivacyPage() {
                 SoSign prioritizes domestic data sovereignty under <strong>Section 16 of the DPDP Act 2023</strong>:
               </p>
               <ul className="list-disc pl-5 space-y-1 text-slate-700 text-[11px]">
-                <li><strong>Primary In-Country Storage:</strong> All citizen account credentials, signature records, and masked KYC identifiers are hosted exclusively within certified Indian data centers (AWS ap-south-1 Mumbai / NIC Cloud).</li>
+                <li><strong>Primary In-Country Storage:</strong> All citizen account credentials, signature records, and personal data are kept and hosted on secure servers located in India, Maharashtra (Nashik server).</li>
                 <li><strong>Government Restrictions Compliance:</strong> We verify and guarantee that no personal data is ever transferred to foreign countries or territories restricted or blacklisted by the Central Government.</li>
                 <li><strong>CDN Edge Optimization:</strong> Public petition media assets (images, banners) served via global edge networks (Cloudinary) utilize Standard Contractual Clauses (SCC) with end-to-end TLS 1.3 encryption and contain zero personal identification records.</li>
               </ul>
@@ -925,12 +959,27 @@ export default function PrivacyPage() {
             </p>
           </section>
 
+          {/* Bottom Print Action Bar */}
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs print:hidden">
+            <span className="text-slate-600">
+              Need an official physical or PDF copy of this Privacy Policy and DPDP Statutory Notice?
+            </span>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#302D55] hover:bg-[#1a3a6e] text-white font-semibold transition-all cursor-pointer shadow-sm shrink-0"
+            >
+              <FaPrint className="text-xs" />
+              <span>Print / Save as PDF</span>
+            </button>
+          </div>
+
           {/* Footer Callout */}
           <div className="pt-6 text-center border-t border-gray-200 space-y-2">
             <p className="text-sm font-bold text-[#F43676]">
               SoSign is dedicated to safeguarding citizen digital identity while powering democratic civic engagement across India.
             </p>
-            <div className="text-xs text-slate-500 flex items-center justify-center gap-4">
+            <div className="text-xs text-slate-500 flex items-center justify-center gap-4 print:hidden">
               <Link href="/terms" className="hover:text-slate-800 underline">Terms of Service</Link>
               <span>•</span>
               <Link href="/contact" className="hover:text-slate-800 underline">Contact Support</Link>

@@ -151,11 +151,15 @@ export default function RootLayout({ children }) {
           <VisitorTracker />
           <QueryProvider>
             <ProfileGuard>
-              <Navbar />
+              <div className="print:hidden">
+                <Navbar />
+              </div>
               <main className="flex-grow">{children}</main>
-              <FloatingWhatsApp />
-              <CookieConsentBanner />
-              <Footer />
+              <div className="print:hidden">
+                <FloatingWhatsApp />
+                <CookieConsentBanner />
+                <Footer />
+              </div>
             </ProfileGuard>
           </QueryProvider>
         </AuthProvider>

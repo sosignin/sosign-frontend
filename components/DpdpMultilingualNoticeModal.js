@@ -33,7 +33,7 @@ export const STATUTORY_NOTICES = {
       },
       {
         heading: "2. Why We Collect Data & Service in India",
-        content: "SoSign provides civic petition and democratic advocacy services to users across India. We collect personal data strictly to verify citizen identity, guarantee genuine petition signatures, prevent automated bot manipulation and duplicate voting, submit verified petitions to Indian decision-makers and government bodies, process voluntary crowdfunding via RBI-regulated payment gateways, and deliver campaign updates.",
+        content: "SoSign provides civic petition and democratic advocacy services to users across India. Your personal data is securely stored and kept on servers in India, Maharashtra (Nashik). We collect personal data strictly to verify citizen identity, guarantee genuine petition signatures, prevent automated bot manipulation and duplicate voting, submit verified petitions to Indian decision-makers and government bodies, process voluntary crowdfunding via RBI-regulated payment gateways, and deliver campaign updates.",
       },
       {
         heading: "3. Exercise of Citizen Rights (Chapter III)",

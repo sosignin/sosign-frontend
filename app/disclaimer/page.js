@@ -14,25 +14,37 @@ import {
   FaEnvelope,
   FaPhone,
   FaArrowRight,
+  FaPrint,
 } from "react-icons/fa6";
 
 export default function DisclaimerPage() {
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-10 px-4 md:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f8fafc] py-10 px-4 md:px-6 lg:px-8 print:py-4 print:px-2 print:bg-white">
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Header Hero Section */}
-        <div className="bg-gradient-to-br from-[#002050] via-[#1a3a6e] to-[#302D55] rounded-3xl p-6 md:p-8 text-white relative overflow-hidden shadow-lg">
+        <div className="bg-gradient-to-br from-[#002050] via-[#1a3a6e] to-[#302D55] rounded-3xl p-6 md:p-8 text-white relative overflow-hidden shadow-lg print:bg-white print:bg-none print:text-black print:border print:border-black print:shadow-none print:p-6">
           <div className="relative z-10 max-w-2xl mx-auto text-center space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-pink-300 text-[11px] font-bold uppercase tracking-wider border border-white/10">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-pink-300 text-[11px] font-bold uppercase tracking-wider border border-white/10 print:border-black print:text-black print:bg-white">
               <FaShieldHalved className="text-xs" /> Legal Notice & Safe Harbor
             </span>
-            <h1 className="text-2xl md:text-4xl font-black tracking-tight">
+            <h1 className="text-2xl md:text-4xl font-black tracking-tight print:text-black">
               Platform Disclaimer
             </h1>
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs md:text-sm text-slate-300 leading-relaxed print:text-black">
               Please read this disclaimer carefully before using SoSign. By accessing or using this platform, you agree to the terms outlined below.
             </p>
+            <div className="pt-2 flex items-center justify-center gap-3 print:hidden">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/20 hover:border-white/40 transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                title="Print or Save as PDF"
+              >
+                <FaPrint className="text-xs" />
+                <span>Print Disclaimer</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -131,8 +143,23 @@ export default function DisclaimerPage() {
           </Link>
         </div>
 
+        {/* Bottom Print Action Bar */}
+        <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs print:hidden">
+          <span className="text-slate-600">
+            Need an official copy of this platform disclaimer for legal reference or compliance records?
+          </span>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#302D55] hover:bg-[#1a3a6e] text-white font-semibold transition-all cursor-pointer shadow-sm shrink-0"
+          >
+            <FaPrint className="text-xs" />
+            <span>Print / Save as PDF</span>
+          </button>
+        </div>
+
         {/* Footer Navigation Bar */}
-        <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500 pt-2">
+        <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500 pt-2 print:hidden">
           <Link href="/privacy" className="hover:text-[#3650AD] underline transition">Privacy Policy</Link>
           <span>•</span>
           <Link href="/terms" className="hover:text-[#3650AD] underline transition">Terms & Conditions</Link>

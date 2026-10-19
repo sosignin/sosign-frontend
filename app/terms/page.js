@@ -17,37 +17,49 @@ import {
   FaCopyright,
   FaHandshake,
   FaFileContract,
+  FaPrint,
 } from "react-icons/fa6";
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-12 px-4 md:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f8fafc] py-12 px-4 md:px-6 lg:px-8 print:py-4 print:px-2 print:bg-white">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header Hero Section */}
-        <div className="bg-gradient-to-br from-[#002050] via-[#1a3a6e] to-[#302D55] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl">
-          <div className="absolute inset-0 opacity-10 pointer-events-none">
+        <div className="bg-gradient-to-br from-[#002050] via-[#1a3a6e] to-[#302D55] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl print:bg-white print:bg-none print:text-black print:border print:border-black print:shadow-none print:p-6">
+          <div className="absolute inset-0 opacity-10 pointer-events-none print:hidden">
             <div className="absolute -top-10 -right-10 w-60 h-60 bg-white rounded-full blur-3xl"></div>
             <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-[#F43676] rounded-full blur-3xl"></div>
           </div>
 
           <div className="relative z-10 max-w-3xl mx-auto text-center space-y-3">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 text-pink-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/10">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 text-pink-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/10 print:border-black print:text-black print:bg-white">
               <FaScaleBalanced className="text-xs" /> Official Platform Terms
             </span>
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight print:text-black">
               Terms & Conditions of Service
             </h1>
-            <p className="text-sm md:text-base text-gray-300 leading-relaxed max-w-2xl mx-auto">
+            <p className="text-sm md:text-base text-gray-300 leading-relaxed max-w-2xl mx-auto print:text-black">
               Governing Petitions, KYC Verification, Crowdfunding, Intellectual Property, Dispute Resolution, and Civic Advocacy on SoSign.
             </p>
-            <p className="text-xs text-pink-300/90 font-mono pt-2">
+            <p className="text-xs text-pink-300/90 font-mono pt-2 print:text-black font-semibold">
               Last Updated & Effective: 2026 • Governed under the Laws of India
             </p>
+            <div className="pt-2 flex items-center justify-center gap-3 print:hidden">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/20 hover:border-white/40 transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                title="Print or Save as PDF"
+              >
+                <FaPrint className="text-xs" />
+                <span>Print Terms of Service</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Quick Navigation Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs print:hidden">
           <a href="#eligibility" className="p-3.5 bg-white rounded-2xl border border-gray-200/80 hover:border-[#F43676] transition-all shadow-xs flex flex-col justify-between">
             <FaUserCheck className="text-[#F43676] text-base mb-1" />
             <span className="font-bold text-slate-800">1. Eligibility & Capacity</span>
@@ -385,6 +397,21 @@ export default function TermsPage() {
               </div>
             </div>
           </section>
+
+          {/* Bottom Print Action Bar */}
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs print:hidden">
+            <span className="text-slate-600">
+              Need a physical or PDF copy of these Terms for legal records or compliance?
+            </span>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#302D55] hover:bg-[#1a3a6e] text-white font-semibold transition-all cursor-pointer shadow-sm shrink-0"
+            >
+              <FaPrint className="text-xs" />
+              <span>Print / Save as PDF</span>
+            </button>
+          </div>
 
           {/* Bottom Callout */}
           <div className="pt-4 text-center border-t border-gray-200">

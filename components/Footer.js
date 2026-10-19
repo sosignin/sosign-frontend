@@ -17,6 +17,29 @@ const categories = [
   "Technology",
 ];
 
+// Quick links split into two equal columns
+const quickLinksCol1 = [
+  { name: "About Us", href: "/about" },
+  { name: "Current Petitions", href: "/currentpetitions" },
+  { name: "Success Stories", href: "/successfulpetitions" },
+  { name: "Start a Petition", href: "/start-petition" },
+  { name: "Blog", href: "/blog" },
+  { name: "Newsletter", href: "/newsletter" },
+  { name: "FAQs", href: "/faq" },
+  { name: "Contact", href: "/contact" },
+];
+
+const quickLinksCol2 = [
+  // { name: "Privacy Policy", href: "/privacy" },
+  // { name: "Terms & Conditions", href: "/terms" },
+  // { name: "Disclaimer", href: "/disclaimer" },
+  // { name: "Copyright Policy", href: "/copyright-policy" },
+  // { name: "Hyperlinking Policy", href: "/hyperlinking-policy" },
+  // { name: "Help Center", href: "/help" },
+  { name: "How to Start a Petition", href: "/help#start-petition" },
+  { name: "How to Report a Food Stall", href: "/help#report-stall" },
+];
+
 export default function Footer() {
   const [searchQuery, setSearchQuery] = useState("");
   const [latestPetitions, setLatestPetitions] = useState([]);
@@ -45,10 +68,10 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-[#302D55] text-white pt-12 px-6 relative">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12">
+    <footer className="bg-[#302D55] text-white pt-12 px-6 relative print:hidden">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10 pb-12">
         {/* Search & About Section */}
-        <div>
+        <div className="lg:col-span-3">
           {/* <h3 className="text-xl font-bold mb-5">Search</h3> */}
           {/* <div className="flex mb-8">
             <input
@@ -129,8 +152,8 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Categories Section 1 */}
-        <div>
+        {/* Categories Section */}
+        <div className="lg:col-span-2">
           <h3 className="text-xl font-bold mb-5">Categories</h3>
           <ul className="space-y-3">
             {categories.map((category, index) => {
@@ -151,81 +174,41 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Categories Section 2 */}
-        <div>
+        {/* Quick Links Section - Split into 2 columns */}
+        <div className="lg:col-span-4">
           <h3 className="text-xl font-bold mb-5">Quick Links</h3>
-          <ul className="space-y-3">
-            <li>
-              <Link href="/about" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                About Us
-              </Link>
-            </li>
-            <li>
-              <Link href="/currentpetitions" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                Current Petitions
-              </Link>
-            </li>
-            <li>
-              <Link href="/successfulpetitions" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                Success Stories
-              </Link>
-            </li>
-            <li>
-              <Link href="/start-petition" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                Start a Petition
-              </Link>
-            </li>
-            <li>
-              <Link href="/blog" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                Blog
-              </Link>
-            </li>
-            <li>
-              <Link href="/newsletter" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                Newsletter
-              </Link>
-            </li>
-            <li>
-              <Link href="/faq" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                FAQs
-              </Link>
-            </li>
-            <li>
-              <Link href="/contact" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                Contact
-              </Link>
-            </li>
-            <li>
-              <Link href="/privacy" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                Privacy Policy
-              </Link>
-            </li>
-            <li>
-              <Link href="/terms" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                Terms & Conditions
-              </Link>
-            </li>
-            <li>
-              <Link href="/disclaimer" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
-                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                Disclaimer
-              </Link>
-            </li>
-          </ul>
+          <div className="grid grid-cols-2 gap-x-5 sm:gap-x-6">
+            <ul className="space-y-3">
+              {quickLinksCol1.map((link) => (
+                <li key={link.name}>
+                  <Link
+                    href={link.href}
+                    className="group flex items-center gap-2 text-sm text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-1"
+                  >
+                    <span className="w-1.5 h-1.5 shrink-0 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                    <span className="leading-snug">{link.name}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <ul className="space-y-3">
+              {quickLinksCol2.map((link) => (
+                <li key={link.name}>
+                  <Link
+                    href={link.href}
+                    className="group flex items-center gap-2 text-sm text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-1"
+                  >
+                    <span className="w-1.5 h-1.5 shrink-0 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                    <span className="leading-snug">{link.name}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Latest Petitions Section */}
-        <div>
+        <div className="lg:col-span-3">
           <h3 className="text-xl font-bold mb-5">Latest Petitions</h3>
 
           <div className="space-y-4">
@@ -277,12 +260,18 @@ export default function Footer() {
       <div className="border-t border-[#43406b] py-6 text-center text-sm text-gray-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p>© {new Date().getFullYear()} <span className="font-bold text-white">SoSign</span>. All rights reserved.</p>
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs text-gray-400">
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5 text-xs text-gray-400">
             <Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link>
             <span>•</span>
             <Link href="/terms" className="hover:text-white transition">Terms & Conditions</Link>
             <span>•</span>
             <Link href="/disclaimer" className="hover:text-white transition">Disclaimer</Link>
+            <span>•</span>
+            <Link href="/copyright-policy" className="hover:text-white transition">Copyright Policy</Link>
+            <span>•</span>
+            <Link href="/hyperlinking-policy" className="hover:text-white transition">Hyperlinking Policy</Link>
+            <span>•</span>
+            <Link href="/help" className="hover:text-white transition">Help Center</Link>
             <span>•</span>
             <Link href="/contact" className="hover:text-white transition">Grievance & Contact</Link>
           </div>

@@ -194,4 +194,183 @@ h6 {
   font-size: 12.5px;
   font-weight: 700;
   color: #0f172a;
+}
+
+/* Print Media Styles: Pure Black and White Formal Document Printing */
+@page {
+  margin: 12mm 15mm 15mm 15mm;
+  size: auto;
+}
+
+@media print {
+  /* Hide Navbar, Footer, and Floating Widgets */
+  nav,
+  header,
+  footer,
+  aside,
+  .print\:hidden,
+  [data-print-hidden] {
+    display: none !important;
+  }
+
+  /* Hide floating badges, WhatsApp chat, and popups */
+  div.fixed,
+  a[href*="wa.me"],
+  button[aria-label*="WhatsApp"],
+  .pac-container {
+    display: none !important;
+  }
+
+  /* Universal reset: Strip all gradients, colored backgrounds, shadows and filters */
+  *,
+  *::before,
+  *::after {
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Force white background and black text on page root */
+  html,
+  body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10.5pt !important;
+    line-height: 1.5 !important;
+  }
+
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Force all cards, sections, hero banners and modals to white background */
+  div,
+  section,
+  article,
+  header,
+  main,
+  aside,
+  .bg-white,
+  .bg-slate-50,
+  .bg-gray-50,
+  .bg-blue-50,
+  .bg-pink-50,
+  .bg-emerald-50,
+  .bg-teal-50,
+  .bg-amber-50,
+  .bg-purple-50,
+  [class*="bg-gradient-to-"] {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+  }
+
+  /* Typography: Force pure black for all headings, labels, texts and icons */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  strong,
+  b,
+  th,
+  dt,
+  legend {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  p,
+  span,
+  li,
+  td,
+  dd,
+  label,
+  blockquote {
+    color: #000000 !important;
+  }
+
+  /* Headings with decorative accent indicator bars */
+  span[class*="bg-[#F43676]"],
+  span[class*="bg-[#3650AD]"],
+  span[class*="bg-emerald-"] {
+    background-color: #000000 !important;
+  }
+
+  /* Monochrome borders for all bordered cards and dividers */
+  [class*="border"] {
+    border-color: #94a3b8 !important;
+  }
+
+  /* Badges and pills: clean black outline on white background */
+  span[class*="rounded-full"],
+  span[class*="rounded-xl"],
+  span[class*="rounded-lg"],
+  span[class*="rounded-md"] {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #475569 !important;
+  }
+
+  /* SVG Icons in black */
+  svg,
+  svg path {
+    color: #000000 !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
+  }
+
+  /* Links */
+  a {
+    color: #000000 !important;
+    text-decoration: underline !important;
+  }
+
+  /* Tables: clean border and structure */
+  table {
+    border: 1px solid #000000 !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+    break-inside: avoid !important;
+  }
+
+  thead,
+  th {
+    background-color: #f8fafc !important;
+    color: #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+  }
+
+  td {
+    border-bottom: 1px solid #cbd5e1 !important;
+    color: #000000 !important;
+  }
+
+  /* Hero header container in print: clean bordered header */
+  div[class*="bg-gradient-to-br"] {
+    border: 1px solid #000000 !important;
+    border-radius: 8px !important;
+  }
+
+  /* Avoid awkward page breaks */
+  table,
+  pre,
+  blockquote,
+  .avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
 }
