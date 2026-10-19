@@ -215,6 +215,12 @@ export default function Footer() {
                 Terms & Conditions
               </Link>
             </li>
+            <li>
+              <Link href="/disclaimer" className="group flex items-center gap-2 text-gray-300 hover:text-[#F43676] transition-all duration-300 hover:translate-x-2">
+                <span className="w-2 h-2 bg-[#F43676] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                Disclaimer
+              </Link>
+            </li>
           </ul>
         </div>
 
@@ -271,9 +277,15 @@ export default function Footer() {
       <div className="border-t border-[#43406b] py-6 text-center text-sm text-gray-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p>© {new Date().getFullYear()} <span className="font-bold text-white">SoSign</span>. All rights reserved.</p>
-          <p className="text-xs text-gray-400">
-            Empowering voices & verified community change.
-          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs text-gray-400">
+            <Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link>
+            <span>•</span>
+            <Link href="/terms" className="hover:text-white transition">Terms & Conditions</Link>
+            <span>•</span>
+            <Link href="/disclaimer" className="hover:text-white transition">Disclaimer</Link>
+            <span>•</span>
+            <Link href="/contact" className="hover:text-white transition">Grievance & Contact</Link>
+          </div>
         </div>
       </div>
     </footer>

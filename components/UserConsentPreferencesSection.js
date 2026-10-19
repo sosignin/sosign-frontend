@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaShieldAlt, FaCheckCircle, FaTimesCircle, FaGlobe, FaSpinner, FaHistory } from "react-icons/fa";
 import DpdpMultilingualNoticeModal from "./DpdpMultilingualNoticeModal";
@@ -16,6 +16,13 @@ export default function UserConsentPreferencesSection({ user, onUpdateUser }) {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (user?.consentRecords) {
+      setMarketingConsent(Boolean(user.consentRecords.marketingConsent));
+      setAnalyticsConsent(Boolean(user.consentRecords.analyticsConsent));
+    }
+  }, [user?.consentRecords?.marketingConsent, user?.consentRecords?.analyticsConsent]);
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -33,6 +40,7 @@ export default function UserConsentPreferencesSection({ user, onUpdateUser }) {
           policyVersion: "2026.1-DPDP",
           marketingConsent: newMarketing,
           analyticsConsent: newAnalytics,
+          noticeLanguage: user?.consentRecords?.noticeLanguage || "en",
         },
         {
           headers: {

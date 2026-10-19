@@ -17,6 +17,7 @@ import {
   FaChevronLeft,
   FaShieldAlt,
   FaInfoCircle,
+  FaSearch,
 } from "react-icons/fa";
 
 import { parseGoogleLocationString } from "../utils/parseGoogleLocation";
@@ -62,6 +63,12 @@ export default function SubmitStallReportModal({
   const [landmark, setLandmark] = useState(initialData?.landmark || "");
   const [schools, setSchools] = useState([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
+  const [customSchool, setCustomSchool] = useState(null);
+  const [schoolSearchQuery, setSchoolSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [step1SchoolFilter, setStep1SchoolFilter] = useState("");
+  const [mapApiLoaded, setMapApiLoaded] = useState(false);
+
   const [shopName, setShopName] = useState(initialData?.shopName || "");
   const [description, setDescription] = useState("");
   const [latitude, setLatitude] = useState(initialData?.latitude ? String(initialData.latitude) : "");
@@ -78,9 +85,44 @@ export default function SubmitStallReportModal({
   const miniMapRef = useRef(null);
   const miniMapInstanceRef = useRef(null);
   const miniMarkerRef = useRef(null);
+  const schoolMarkerRef = useRef(null);
+  const schoolCircleRef = useRef(null);
+  const mapSearchInputRef = useRef(null);
+  const autocompleteRef = useRef(null);
+  const searchDropdownRef = useRef(null);
   const recognitionRef = useRef(null);
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
+  // Ensure Google Maps JS SDK with places and geometry is loaded
+  useEffect(() => {
+    if (!isOpen) return;
+    if (typeof window === "undefined") return;
+
+    if (window.google && window.google.maps && window.google.maps.places) {
+      setMapApiLoaded(true);
+      return;
+    }
+
+    if (document.getElementById("google-maps-sdk")) {
+      const interval = setInterval(() => {
+        if (window.google && window.google.maps && window.google.maps.places) {
+          clearInterval(interval);
+          setMapApiLoaded(true);
+        }
+      }, 150);
+      return () => clearInterval(interval);
+    }
+
+    const script = document.createElement("script");
+    script.id = "google-maps-sdk";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setMapApiLoaded(true);
+    document.head.appendChild(script);
+  }, [isOpen, GOOGLE_MAPS_API_KEY]);
 
   // Google Maps URL auto-parse
   const handleGoogleMapsUrlChange = (val) => {
@@ -160,7 +202,6 @@ export default function SubmitStallReportModal({
     setSelectedSchoolId(schoolId);
     const chosen = schools.find((s) => s._id === schoolId);
     if (chosen && chosen.location?.coordinates) {
-      // Default coordinates close to school if user hasn't set custom GPS
       if (!latitude || !longitude) {
         setLongitude(String(chosen.location.coordinates[0]));
         setLatitude(String(chosen.location.coordinates[1]));
@@ -168,7 +209,43 @@ export default function SubmitStallReportModal({
     }
   };
 
-  const currentSchool = schools.find((s) => s._id === selectedSchoolId);
+  // Resolve current active target school (from DB or Google Places / custom)
+  const currentSchool = React.useMemo(() => {
+    if (customSchool && customSchool._id === selectedSchoolId) {
+      return customSchool;
+    }
+    const found = schools.find((s) => s._id === selectedSchoolId);
+    return found || customSchool || (schools.length > 0 ? schools[0] : null);
+  }, [schools, selectedSchoolId, customSchool]);
+
+  // Filter schools for Step 1
+  const filteredStep1Schools = React.useMemo(() => {
+    if (!step1SchoolFilter.trim()) return schools;
+    const q = step1SchoolFilter.toLowerCase().trim();
+    return schools.filter(
+      (s) =>
+        s.name?.toLowerCase().includes(q) ||
+        s.address?.toLowerCase().includes(q) ||
+        s.city?.toLowerCase().includes(q)
+    );
+  }, [schools, step1SchoolFilter]);
+
+  // Filter matching schools for Step 2 Search Bar
+  const matchingSchoolsForMap = React.useMemo(() => {
+    if (!schoolSearchQuery.trim()) {
+      return schools.slice(0, 8);
+    }
+    const q = schoolSearchQuery.toLowerCase().trim();
+    return schools
+      .filter(
+        (s) =>
+          s.name?.toLowerCase().includes(q) ||
+          s.address?.toLowerCase().includes(q) ||
+          s.city?.toLowerCase().includes(q) ||
+          s.taluka?.toLowerCase().includes(q)
+      )
+      .slice(0, 10);
+  }, [schools, schoolSearchQuery]);
 
   // Calculate live distance to current school
   const liveDistance = React.useMemo(() => {
@@ -185,6 +262,162 @@ export default function SubmitStallReportModal({
     );
   }, [currentSchool, latitude, longitude]);
 
+  // Point map directly to a school, center zoom 18, render 50m buffer and place stall pin
+  const pointMapToSchool = (school, offsetStall = true) => {
+    if (!school || !school.location?.coordinates) return;
+    const schoolLng = Number(school.location.coordinates[0]);
+    const schoolLat = Number(school.location.coordinates[1]);
+    const schoolPos = { lat: schoolLat, lng: schoolLng };
+
+    // Stall location: offset slightly (~15m away at gate/footpath) if offsetStall requested
+    const stallLat = offsetStall ? (schoolLat + 0.00014).toFixed(6) : (latitude || (schoolLat + 0.00014).toFixed(6));
+    const stallLng = offsetStall ? (schoolLng + 0.00014).toFixed(6) : (longitude || (schoolLng + 0.00014).toFixed(6));
+    const stallPos = { lat: parseFloat(stallLat), lng: parseFloat(stallLng) };
+
+    setLatitude(stallLat);
+    setLongitude(stallLng);
+
+    if (miniMapInstanceRef.current && window.google && window.google.maps) {
+      const map = miniMapInstanceRef.current;
+      map.panTo(schoolPos);
+      map.setZoom(18);
+
+      // 1. School Pin Marker
+      if (!schoolMarkerRef.current) {
+        schoolMarkerRef.current = new window.google.maps.Marker({
+          position: schoolPos,
+          map,
+          title: school.name || "School",
+          icon: {
+            url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="18" fill="#4338CA" stroke="#FFFFFF" stroke-width="2.5" />
+                <text x="20" y="25" font-size="20" text-anchor="middle" fill="#FFFFFF">🏫</text>
+              </svg>
+            `),
+            scaledSize: new window.google.maps.Size(40, 40),
+            anchor: new window.google.maps.Point(20, 20),
+          },
+          zIndex: 10,
+        });
+      } else {
+        schoolMarkerRef.current.setPosition(schoolPos);
+        schoolMarkerRef.current.setTitle(school.name || "School");
+        schoolMarkerRef.current.setMap(map);
+      }
+
+      // 2. 50m Violation Buffer Zone Circle
+      if (!schoolCircleRef.current) {
+        schoolCircleRef.current = new window.google.maps.Circle({
+          map,
+          center: schoolPos,
+          radius: 50,
+          fillColor: "#F43676",
+          fillOpacity: 0.22,
+          strokeColor: "#d81b60",
+          strokeWeight: 2,
+          strokeOpacity: 0.85,
+          clickable: false,
+          zIndex: 2,
+        });
+      } else {
+        schoolCircleRef.current.setCenter(schoolPos);
+        schoolCircleRef.current.setMap(map);
+      }
+
+      // 3. Draggable Food Stall Marker
+      if (!miniMarkerRef.current) {
+        miniMarkerRef.current = new window.google.maps.Marker({
+          position: stallPos,
+          map,
+          draggable: true,
+          title: "Stall Location (Drag to adjust)",
+          zIndex: 20,
+        });
+        miniMarkerRef.current.addListener("dragend", (e) => {
+          const newLat = e.latLng.lat().toFixed(6);
+          const newLng = e.latLng.lng().toFixed(6);
+          setLatitude(newLat);
+          setLongitude(newLng);
+        });
+      } else {
+        miniMarkerRef.current.setPosition(stallPos);
+        miniMarkerRef.current.setMap(map);
+      }
+    }
+  };
+
+  const handleSelectSchoolFromSearch = (school) => {
+    setSelectedSchoolId(school._id);
+    if (school.isGooglePlace || !schools.some((s) => s._id === school._id)) {
+      setCustomSchool(school);
+    }
+    setSchoolSearchQuery(school.name);
+    setIsSearchFocused(false);
+    pointMapToSchool(school, true);
+  };
+
+  const handleCenterOnSchool = () => {
+    if (currentSchool) {
+      pointMapToSchool(currentSchool, false);
+    }
+  };
+
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        searchDropdownRef.current &&
+        !searchDropdownRef.current.contains(e.target) &&
+        mapSearchInputRef.current &&
+        !mapSearchInputRef.current.contains(e.target)
+      ) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Initialize Native Google Maps Places Autocomplete on Map Search Bar in Step 2
+  useEffect(() => {
+    if (!isOpen || step !== 2) return;
+    if (typeof window === "undefined" || !window.google || !window.google.maps || !window.google.maps.places) return;
+    if (!mapSearchInputRef.current) return;
+
+    if (!autocompleteRef.current) {
+      const autocomplete = new window.google.maps.places.Autocomplete(
+        mapSearchInputRef.current,
+        {
+          componentRestrictions: { country: "in" },
+          fields: ["geometry", "name", "formatted_address", "place_id"],
+        }
+      );
+      autocompleteRef.current = autocomplete;
+
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry || !place.geometry.location) return;
+
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        const schoolObj = {
+          _id: place.place_id || `gplace_${Date.now()}`,
+          name: place.name || place.formatted_address?.split(",")?.[0] || "Target School",
+          address: place.formatted_address || selectedCity || "Maharashtra",
+          city: selectedCity || "Maharashtra",
+          location: {
+            type: "Point",
+            coordinates: [lng, lat],
+          },
+          isGooglePlace: true,
+        };
+
+        handleSelectSchoolFromSearch(schoolObj);
+      });
+    }
+  }, [isOpen, step, mapApiLoaded]);
+
   // Mini-map initialization & sync
   useEffect(() => {
     if (!isOpen || step !== 2) return;
@@ -195,14 +428,17 @@ export default function SubmitStallReportModal({
       }
       if (!miniMapRef.current) return;
 
-      const latNum = parseFloat(latitude) || currentSchool?.location?.coordinates?.[1] || 19.076;
-      const lngNum = parseFloat(longitude) || currentSchool?.location?.coordinates?.[0] || 72.8777;
+      const schoolLat = currentSchool?.location?.coordinates?.[1];
+      const schoolLng = currentSchool?.location?.coordinates?.[0];
+
+      const latNum = parseFloat(latitude) || schoolLat || 19.076;
+      const lngNum = parseFloat(longitude) || schoolLng || 72.8777;
       const center = { lat: latNum, lng: lngNum };
 
       if (!miniMapInstanceRef.current) {
         const map = new window.google.maps.Map(miniMapRef.current, {
           center,
-          zoom: 17,
+          zoom: 18,
           mapTypeId: "roadmap",
           disableDefaultUI: true,
           zoomControl: true,
@@ -210,11 +446,13 @@ export default function SubmitStallReportModal({
         });
         miniMapInstanceRef.current = map;
 
+        // Stall Marker
         const marker = new window.google.maps.Marker({
           position: center,
           map,
           draggable: true,
           title: "Stall Location (Drag to adjust)",
+          zIndex: 20,
         });
         miniMarkerRef.current = marker;
 
@@ -232,17 +470,66 @@ export default function SubmitStallReportModal({
           setLongitude(newLng);
           marker.setPosition(e.latLng);
         });
+
+        // Draw School Marker & 50m Circle if coordinates exist
+        if (schoolLat && schoolLng) {
+          const schoolPos = { lat: schoolLat, lng: schoolLng };
+          schoolMarkerRef.current = new window.google.maps.Marker({
+            position: schoolPos,
+            map,
+            title: currentSchool.name || "Target School",
+            icon: {
+              url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                  <circle cx="20" cy="20" r="18" fill="#4338CA" stroke="#FFFFFF" stroke-width="2.5" />
+                  <text x="20" y="25" font-size="20" text-anchor="middle" fill="#FFFFFF">🏫</text>
+                </svg>
+              `),
+              scaledSize: new window.google.maps.Size(40, 40),
+              anchor: new window.google.maps.Point(20, 20),
+            },
+            zIndex: 10,
+          });
+
+          schoolCircleRef.current = new window.google.maps.Circle({
+            map,
+            center: schoolPos,
+            radius: 50,
+            fillColor: "#F43676",
+            fillOpacity: 0.22,
+            strokeColor: "#d81b60",
+            strokeWeight: 2,
+            strokeOpacity: 0.85,
+            clickable: false,
+            zIndex: 2,
+          });
+        }
       } else {
-        miniMapInstanceRef.current.setCenter(center);
-        if (miniMarkerRef.current) {
-          miniMarkerRef.current.setPosition(center);
+        // Map instance already created: synchronize markers
+        if (schoolLat && schoolLng) {
+          const schoolPos = { lat: schoolLat, lng: schoolLng };
+          if (schoolMarkerRef.current) {
+            schoolMarkerRef.current.setPosition(schoolPos);
+            schoolMarkerRef.current.setTitle(currentSchool.name || "Target School");
+            schoolMarkerRef.current.setMap(miniMapInstanceRef.current);
+          }
+          if (schoolCircleRef.current) {
+            schoolCircleRef.current.setCenter(schoolPos);
+            schoolCircleRef.current.setMap(miniMapInstanceRef.current);
+          }
+        }
+        if (miniMarkerRef.current && latitude && longitude) {
+          miniMarkerRef.current.setPosition({
+            lat: parseFloat(latitude),
+            lng: parseFloat(longitude),
+          });
         }
       }
     };
 
     const timer = setTimeout(initMiniMap, 200);
     return () => clearTimeout(timer);
-  }, [isOpen, step, latitude, longitude, currentSchool]);
+  }, [isOpen, step, mapApiLoaded]);
 
   // Voice recognition mic toggle
   const handleToggleVoiceInput = () => {
@@ -362,8 +649,21 @@ export default function SubmitStallReportModal({
     setImageFiles([]);
     setError("");
     setSuccess("");
-    miniMapInstanceRef.current = null;
+    setSchoolSearchQuery("");
+    setIsSearchFocused(false);
+    setCustomSchool(null);
+    setStep1SchoolFilter("");
+    if (schoolMarkerRef.current) {
+      schoolMarkerRef.current.setMap(null);
+      schoolMarkerRef.current = null;
+    }
+    if (schoolCircleRef.current) {
+      schoolCircleRef.current.setMap(null);
+      schoolCircleRef.current = null;
+    }
     miniMarkerRef.current = null;
+    miniMapInstanceRef.current = null;
+    autocompleteRef.current = null;
   };
 
   const handleClose = () => {
@@ -422,6 +722,14 @@ export default function SubmitStallReportModal({
       formData.append("villageTown", villageTown);
       formData.append("landmark", landmark);
       formData.append("schoolId", selectedSchoolId);
+      if (currentSchool) {
+        formData.append("schoolName", currentSchool.name || "");
+        formData.append("schoolAddress", currentSchool.address || "");
+        if (currentSchool.location?.coordinates) {
+          formData.append("schoolLongitude", currentSchool.location.coordinates[0]);
+          formData.append("schoolLatitude", currentSchool.location.coordinates[1]);
+        }
+      }
       formData.append("shopName", shopName);
       formData.append("description", description);
       formData.append("latitude", parseFloat(latitude));
@@ -638,17 +946,31 @@ export default function SubmitStallReportModal({
                   No registered schools found for {selectedCity}. You can still proceed with coordinates.
                 </div>
               ) : (
-                <select
-                  value={selectedSchoolId}
-                  onChange={(e) => handleSchoolChange(e.target.value)}
-                  className="w-full text-xs p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-pink-200 focus:border-[#F43676] bg-white font-medium text-gray-900"
-                >
-                  {schools.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name} ({s.address || s.city})
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-1.5">
+                  {schools.length > 5 && (
+                    <div className="relative">
+                      <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-400 text-[11px] pointer-events-none" />
+                      <input
+                        type="text"
+                        value={step1SchoolFilter}
+                        onChange={(e) => setStep1SchoolFilter(e.target.value)}
+                        placeholder={`Quick search ${schools.length} schools in ${selectedCity}...`}
+                        className="w-full text-xs pl-8 pr-2.5 py-1.5 border border-pink-200 rounded-xl outline-none focus:border-[#F43676] bg-pink-50/40 text-gray-800 placeholder:text-gray-400"
+                      />
+                    </div>
+                  )}
+                  <select
+                    value={selectedSchoolId}
+                    onChange={(e) => handleSchoolChange(e.target.value)}
+                    className="w-full text-xs p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-pink-200 focus:border-[#F43676] bg-white font-medium text-gray-900"
+                  >
+                    {filteredStep1Schools.map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.name} ({s.address || s.city})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </div>
 
@@ -792,38 +1114,173 @@ export default function SubmitStallReportModal({
             </div>
 
             {/* Location Section & Mini Map */}
-            <div className="space-y-2 border-t border-pink-100 pt-2">
+            <div className="space-y-2.5 border-t border-pink-100 pt-2.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
-                  <FaMapMarkerAlt className="text-[#F43676]" /> Your location *
+                <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                  <FaMapMarkerAlt className="text-[#F43676]" /> Stall & School Location *
                 </label>
-                <button
-                  type="button"
-                  onClick={handleGetLiveLocation}
-                  disabled={gpsLoading}
-                  className="px-3 py-1 rounded-xl bg-pink-50 hover:bg-pink-100 text-[#F43676] border border-pink-200 text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  {gpsLoading ? (
-                    <FaSpinner className="animate-spin text-[#F43676]" />
-                  ) : (
-                    <span>📍</span>
+                <div className="flex items-center gap-2">
+                  {currentSchool && (
+                    <button
+                      type="button"
+                      onClick={handleCenterOnSchool}
+                      title="Center and point map on selected school"
+                      className="px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <span>🎯</span>
+                      <span>Point School</span>
+                    </button>
                   )}
-                  <span>Recapture my location</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleGetLiveLocation}
+                    disabled={gpsLoading}
+                    className="px-2.5 py-1 rounded-xl bg-pink-50 hover:bg-pink-100 text-[#F43676] border border-pink-200 text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+                  >
+                    {gpsLoading ? (
+                      <FaSpinner className="animate-spin text-[#F43676]" />
+                    ) : (
+                      <span>📍</span>
+                    )}
+                    <span>Recapture my location</span>
+                  </button>
+                </div>
               </div>
 
+              {/* School Search Input Bar for Map */}
+              <div className="relative">
+                <div className="relative flex items-center">
+                  <div className="absolute left-3 text-pink-500 pointer-events-none text-xs">
+                    <FaSearch />
+                  </div>
+                  <input
+                    ref={mapSearchInputRef}
+                    type="text"
+                    value={schoolSearchQuery}
+                    onChange={(e) => {
+                      setSchoolSearchQuery(e.target.value);
+                      setIsSearchFocused(true);
+                    }}
+                    onFocus={() => setIsSearchFocused(true)}
+                    placeholder="Search school name to point on map (e.g. St. Xavier's, Podar)..."
+                    className="w-full text-xs pl-8 pr-8 py-2 border-2 border-pink-200 rounded-xl outline-none focus:border-[#F43676] focus:ring-2 focus:ring-pink-100 bg-white text-gray-900 placeholder:text-gray-400 font-medium shadow-2xs"
+                  />
+                  {schoolSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSchoolSearchQuery("");
+                        setIsSearchFocused(false);
+                      }}
+                      className="absolute right-2.5 text-gray-400 hover:text-gray-600 text-xs p-1"
+                    >
+                      <FaTimes />
+                    </button>
+                  )}
+                </div>
+
+                {/* Instant Suggestions Dropdown from Database */}
+                {isSearchFocused && (
+                  <div
+                    ref={searchDropdownRef}
+                    className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-pink-200 rounded-2xl shadow-xl z-50 max-h-56 overflow-y-auto divide-y divide-pink-50"
+                  >
+                    <div className="p-2 bg-pink-50/70 text-[10px] font-bold text-pink-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <FaSchool /> Registered Schools in {selectedCity}
+                      </span>
+                      <span className="text-gray-500 font-normal">
+                        {matchingSchoolsForMap.length} results
+                      </span>
+                    </div>
+
+                    {matchingSchoolsForMap.length === 0 ? (
+                      <div className="p-3 text-xs text-gray-500 text-center">
+                        No registered schools match &quot;{schoolSearchQuery}&quot;. You can also pick from Google Places suggestions!
+                      </div>
+                    ) : (
+                      matchingSchoolsForMap.map((sch) => {
+                        const isSelected = sch._id === selectedSchoolId;
+                        return (
+                          <button
+                            key={sch._id}
+                            type="button"
+                            onClick={() => handleSelectSchoolFromSearch(sch)}
+                            className={`w-full text-left p-2.5 text-xs hover:bg-pink-50/80 transition-colors flex items-center justify-between cursor-pointer ${
+                              isSelected ? "bg-pink-100/60 font-bold" : ""
+                            }`}
+                          >
+                            <div className="flex items-start gap-2 flex-1 pr-2">
+                              <span className="text-base shrink-0 mt-0.5">🏫</span>
+                              <div className="min-w-0">
+                                <p className="text-gray-900 font-bold truncate">
+                                  {sch.name}
+                                </p>
+                                <p className="text-[10px] text-gray-500 truncate">
+                                  {sch.address || sch.taluka || sch.city}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-pink-50 text-[#F43676] border border-pink-200">
+                              Point Map 🎯
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Active Target School Pill with 50m violation info */}
+              {currentSchool && (
+                <div className="flex items-center justify-between bg-indigo-50/90 border border-indigo-200 rounded-xl px-3 py-1.5 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm">🏫</span>
+                    <div className="truncate">
+                      <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">
+                        Target School Pinpointed
+                      </span>
+                      <span className="font-bold text-indigo-950 text-xs truncate block">
+                        {currentSchool.name}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCenterOnSchool}
+                    className="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 underline ml-2 shrink-0 cursor-pointer flex items-center gap-1"
+                  >
+                    <span>Point School</span>
+                    <span>🎯</span>
+                  </button>
+                </div>
+              )}
+
               {/* Embedded Mini-Map Container */}
-              <div className="relative rounded-2xl overflow-hidden border border-pink-200 h-44 bg-slate-100">
+              <div className="relative rounded-2xl overflow-hidden border-2 border-pink-200 h-52 bg-slate-100 shadow-inner">
                 <div ref={miniMapRef} className="w-full h-full" />
-                <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-gray-700 shadow-xs border border-pink-100">
-                  Drag marker to pinpoint stall
+                
+                {/* Floating Map Badges */}
+                <div className="absolute top-2 left-2 flex flex-col gap-1 pointer-events-none">
+                  <div className="bg-indigo-700/90 text-white backdrop-blur-xs px-2 py-0.5 rounded-md text-[10px] font-bold shadow-xs flex items-center gap-1">
+                    <span>🏫</span> School Center
+                  </div>
+                  <div className="bg-[#F43676]/90 text-white backdrop-blur-xs px-2 py-0.5 rounded-md text-[10px] font-bold shadow-xs flex items-center gap-1">
+                    <span>⭕</span> 50m Violation Zone
+                  </div>
+                </div>
+
+                <div className="absolute bottom-2 left-2 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-gray-800 shadow-sm border border-pink-100 flex items-center gap-1">
+                  <span className="text-rose-500">📍</span>
+                  <span>Drag red marker to pinpoint food stall location</span>
                 </div>
               </div>
 
               {/* Distance Meter Status */}
               {liveDistance !== null && (
                 <div
-                  className={`p-2 rounded-xl text-[11px] font-semibold flex items-center justify-between ${
+                  className={`p-2.5 rounded-xl text-[11px] font-semibold flex items-center justify-between ${
                     liveDistance <= 50
                       ? "bg-rose-50 border border-rose-200 text-rose-700"
                       : "bg-pink-50/50 border border-pink-100 text-gray-600"
@@ -833,7 +1290,7 @@ export default function SubmitStallReportModal({
                     Calculated Distance: <strong>{liveDistance} meters</strong> from school
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                    className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase ${
                       liveDistance <= 50
                         ? "bg-[#F43676] text-white"
                         : "bg-gray-200 text-gray-700"

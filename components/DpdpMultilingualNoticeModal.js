@@ -25,15 +25,15 @@ export const STATUTORY_NOTICES = {
     title: "Statutory Privacy Notice (DPDP Act, 2023 - Section 5)",
     subtitle: "Notice accompanying request for citizen personal data by SoSign (Data Fiduciary)",
     fiduciaryLabel: "Data Fiduciary:",
-    fiduciaryValue: "SoSign (LEO MEO IT Solution), Bengaluru, Karnataka, India",
+    fiduciaryValue: "SoSign (LEO MEO IT Solution), NESCO Center, Goregaon East, Mumbai, Maharashtra 400063, India",
     sections: [
       {
         heading: "1. Personal Data Collected",
         content: "Name, email address, mobile number, role/designation, digital signatures on petitions, optional Aadhaar DigiLocker verification token, uploaded profile photo, and security logs (IP address, session cookies).",
       },
       {
-        heading: "2. Specific Purpose for Processing",
-        content: "Authenticating citizen identity, recording voluntary digital petition signatures, presenting citizen concerns to designated authorities, providing statutory fraud prevention, and communicating petition milestone updates.",
+        heading: "2. Why We Collect Data & Service in India",
+        content: "SoSign provides civic petition and democratic advocacy services to users across India. We collect personal data strictly to verify citizen identity, guarantee genuine petition signatures, prevent automated bot manipulation and duplicate voting, submit verified petitions to Indian decision-makers and government bodies, process voluntary crowdfunding via RBI-regulated payment gateways, and deliver campaign updates.",
       },
       {
         heading: "3. Exercise of Citizen Rights (Chapter III)",
@@ -45,7 +45,7 @@ export const STATUTORY_NOTICES = {
       },
       {
         heading: "5. Grievance Redressal Officer (Section 8(9))",
-        content: "Grievance Officer, SoSign, Email: grievance@sosign.in. Statutory resolution within 30 days. Live ticket tracking is available on our contact page.",
+        content: "Mr. Narendra Kumar (Data Protection & Grievance Redressal Officer), SoSign, Email: grievance@sosign.in, Helpline: +91 9323677688. Statutory acknowledgment within 24 hours and resolution within 15–30 days.",
       },
       {
         heading: "6. Escalation to Data Protection Board of India (DPBI)",

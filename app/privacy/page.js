@@ -39,18 +39,26 @@ export default function PrivacyPage() {
           </div>
 
           <div className="relative z-10 max-w-3xl mx-auto text-center space-y-3">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/10">
-              <FaShieldHalved className="text-xs" /> Statutory Privacy Notice
-            </span>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-emerald-400/30">
+                <FaGlobe className="text-xs" /> Offering Services to Users in India
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/10">
+                <FaShieldHalved className="text-xs" /> Statutory Privacy Notice
+              </span>
+            </div>
             <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
               Privacy Policy & DPDP Notice
             </h1>
             <p className="text-sm md:text-base text-gray-300 leading-relaxed max-w-2xl mx-auto">
-              How SoSign collects, protects, processes, retains, and respects citizen personal and KYC data in strict compliance with Indian laws.
+              How SoSign provides civic advocacy services to users across India, why we collect personal and KYC data, and how we protect and process it under the Digital Personal Data Protection (DPDP) Act, 2023.
             </p>
             <div className="inline-flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-pink-200/90 font-mono">
               <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
                 Digital Personal Data Protection (DPDP) Act, 2023
+              </span>
+              <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+                Section 3 & 5 Territorial Scope (India)
               </span>
               <span className="bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
                 Aadhaar Act, 2016 (UIDAI Regulations)
@@ -60,7 +68,7 @@ export default function PrivacyPage() {
               </span>
             </div>
             <p className="text-[11px] text-gray-400 pt-1">
-              Last Updated & Effective Date: October 2026 | Document Reference: SOSIGN-DPDP-2026-V2
+              Last Updated & Effective Date: October 2026 | Document Reference: SOSIGN-DPDP-2026-V2 | Jurisdiction: Republic of India
             </p>
           </div>
         </div>
@@ -155,25 +163,189 @@ export default function PrivacyPage() {
             </div>
           </div>
 
+          {/* Dedicated Section: Services Offered to Users in India */}
+          <div className="p-6 bg-gradient-to-br from-emerald-50 via-teal-50 to-blue-50 border-2 border-emerald-300 rounded-2xl space-y-3">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2.5 bg-emerald-600 text-white rounded-xl text-base shadow-sm">
+                <FaGlobe />
+              </span>
+              <div>
+                <h3 className="text-base font-black text-emerald-950">
+                  Territorial Scope: Services Offered to Users in India (DPDP Act, Section 3)
+                </h3>
+                <p className="text-xs text-emerald-800 font-medium">
+                  Dedicated civic platform serving citizens, residents, and organizations across all 28 States and 8 Union Territories
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-700 leading-relaxed">
+              <strong>SoSign explicitly declares that it offers its digital civic petition, community advocacy, democratic participation, and public interest campaign services to users located in India.</strong> In strict compliance with <strong>Section 3(a) and Section 3(b) of the Digital Personal Data Protection (DPDP) Act, 2023</strong>, this policy governs the processing of digital personal data within the territory of India:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-xs">
+              <div className="p-3 bg-white/95 rounded-xl border border-emerald-200 space-y-1 shadow-2xs">
+                <strong className="text-emerald-900 block font-bold">Pan-India Civic Service</strong>
+                <p className="text-slate-600 text-[11px]">Empowering citizens, grassroots organizers, students, and resident welfare associations (RWAs) across India to advocate for civic reforms.</p>
+              </div>
+              <div className="p-3 bg-white/95 rounded-xl border border-emerald-200 space-y-1 shadow-2xs">
+                <strong className="text-emerald-900 block font-bold">Indian Public Infrastructure</strong>
+                <p className="text-slate-600 text-[11px]">Deeply integrated with Indian digital public rails: DigiLocker, UIDAI Aadhaar verification, PAN, Voter ID (EPIC), and RBI-regulated payment gateways (UPI, RuPay).</p>
+              </div>
+              <div className="p-3 bg-white/95 rounded-xl border border-emerald-200 space-y-1 shadow-2xs">
+                <strong className="text-emerald-900 block font-bold">In-Country Data Sovereignty</strong>
+                <p className="text-slate-600 text-[11px]">Primary databases, signature ledgers, and KYC proofs are hosted inside Indian data centers (AWS ap-south-1 Mumbai / NIC Cloud) subject to Indian laws.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Section 1: Data Fiduciary Identity & Scope */}
           <section className="space-y-3">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              1. Identity of the Data Fiduciary & Regulatory Scope
+              1. Identity of the Data Fiduciary & Services Offered to Users in India
             </h2>
             <p>
-              This Privacy Notice is issued pursuant to <strong>Section 5 of the Digital Personal Data Protection (DPDP) Act, 2023</strong> by <strong>LEO MEO IT Solution</strong> (&ldquo;SoSign&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;Data Fiduciary&rdquo;). SoSign operates the civic petition and digital democracy platform accessible at <a href="https://sosign.in" className="text-[#3650AD] font-semibold underline">sosign.in</a> and its affiliated applications.
+              This Privacy Notice is issued pursuant to <strong>Section 5 of the Digital Personal Data Protection (DPDP) Act, 2023</strong> by <strong>LEO MEO IT Solution</strong> (&ldquo;SoSign&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;Data Fiduciary&rdquo;). SoSign operates the civic petition and digital democracy platform accessible at <a href="https://sosign.in" className="text-[#3650AD] font-semibold underline">sosign.in</a> and its affiliated mobile and web applications.
             </p>
             <p>
-              This document governs how we process the personal data of registered citizens, petition starters, signers, donors, visitors, and respondents (&ldquo;Data Principals&rdquo;). By accessing our services, creating an account, or signing a petition, you acknowledge the processing practices detailed herein.
+              <strong>SoSign specifically offers its goods and services to users located in India.</strong> This document governs how we process the personal data of registered citizens, petition creators, signers, donors, visitors, and civic respondents (&ldquo;Data Principals&rdquo;) located across the territory of India. By accessing our services, creating an account, or signing a petition, you acknowledge the processing practices detailed herein under Indian legal jurisdiction.
             </p>
           </section>
 
-          {/* Section 2: Personal Data Inventory (Data Minimization) */}
+          {/* Section 2: Why We Are Collecting Your Data */}
           <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              2. Comprehensive Personal Data Inventory & Collection
+              2. Why We Collect Your Personal Data (Explicit & Legitimate Purposes)
+            </h2>
+            <p className="text-slate-700">
+              In strict adherence to the <strong>Purpose Limitation principle (Section 6 of the DPDP Act, 2023)</strong>, SoSign collects personal data only for clear, specific, transparent, and lawful purposes directly necessary to operate a credible civic democracy platform in India. We collect personal data for the following specific purposes:
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {/* Purpose 1 */}
+              <div className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-blue-100 text-[#3650AD] flex items-center justify-center font-black text-xs shrink-0">1</span>
+                  <span>Providing & Operating Civic Advocacy Services in India</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  To provide our petition creation and civic engagement services to users throughout India, enabling individuals, student groups, RWAs, and civil society organizations to launch public campaigns, mobilize community support, and build democratic momentum.
+                </p>
+              </div>
+
+              {/* Purpose 2 */}
+              <div className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-black text-xs shrink-0">2</span>
+                  <span>Citizen Account Registration, Authentication & Security</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  To create your account profile, securely verify your credentials via email/mobile OTP, manage passwords using bcrypt (10 rounds), maintain encrypted authentication sessions, and protect your account from unauthorized access, impersonation, or identity theft.
+                </p>
+              </div>
+
+              {/* Purpose 3 */}
+              <div className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-xs shrink-0">3</span>
+                  <span>Verifying Genuine Citizen Signatures & Democratic Legitimacy</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  To record verified digital signatures when you sign a petition. Government ministries, elected representatives, and municipal authorities require verifiable evidence that petition signers are authentic citizens, ensuring every campaign carries real democratic weight.
+                </p>
+              </div>
+
+              {/* Purpose 4 */}
+              <div className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-rose-100 text-[#F43676] flex items-center justify-center font-black text-xs shrink-0">4</span>
+                  <span>Eliminating Duplicate Signatures, Automated Bots & Campaign Fraud</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  To maintain strict anti-fraud safeguards. We verify account uniqueness and utilize cryptographic hashing to prevent automated bots, scripts, fake email generators, or malicious actors from artificially inflating signatures or rigging petition counts.
+                </p>
+              </div>
+
+              {/* Purpose 5 */}
+              <div className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-black text-xs shrink-0">5</span>
+                  <span>Voluntary Sovereign KYC Verification (Aadhaar, PAN, Voter ID)</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  To allow citizens to optionally verify their identity or constituency via DigiLocker, UIDAI Aadhaar OTP, Income Tax PAN, or Voter ID. <strong>We NEVER store 12-digit plaintext Aadhaar numbers or biometrics</strong>; only masked records (<code className="bg-slate-200 px-1 py-0.5 rounded text-[10px]">XXXXXXXX1234</code>) are retained.
+                </p>
+              </div>
+
+              {/* Purpose 6 */}
+              <div className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0">6</span>
+                  <span>Presenting Petitions to Government Authorities & Decision-Makers</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  To compile verified petition dossiers—including verified signature totals, general geographic spread by state/city, and public comments—to be formally submitted to government ministries, MPs, MLAs, municipal commissioners, educational institutions, or corporate leadership.
+                </p>
+              </div>
+
+              {/* Purpose 7 */}
+              <div className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center font-black text-xs shrink-0">7</span>
+                  <span>Service Communications, OTPs & Milestone Alerts</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  To send transactional messages, mobile OTP verification codes, petition milestone updates (e.g., reaching 500 or 10,000 signatures), responses from decision-makers, campaign victory announcements, and critical account security advisories.
+                </p>
+              </div>
+
+              {/* Purpose 8 */}
+              <div className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-xs shrink-0">8</span>
+                  <span>Crowdfunding & Payments via Indian Systems (UPI / NetBanking)</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  To securely process voluntary crowdfunding contributions and platform subscriptions via RBI-regulated payment aggregators (supporting UPI, RuPay, debit/credit cards, and NetBanking), generating statutory tax invoices compliant with Indian GST and IT rules.
+                </p>
+              </div>
+
+              {/* Purpose 9 */}
+              <div className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-black text-xs shrink-0">9</span>
+                  <span>Mandatory Statutory & Legal Compliance in India</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  To satisfy statutory legal mandates under Indian law, including Section 6 affirmative consent logs under the DPDP Act 2023, the Information Technology Act 2000, and CERT-In directions mandating 180-day retention of cybersecurity logs.
+                </p>
+              </div>
+
+              {/* Purpose 10 */}
+              <div className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                  <span className="w-6 h-6 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-black text-xs shrink-0">10</span>
+                  <span>Statutory Grievance Redressal & Citizen Rights Execution</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  To investigate, document, and resolve user inquiries, content objections, petition reports, and statutory privacy requests (data access, correction, erasure) handled by our Data Protection & Grievance Redressal Officer in Mumbai within statutory timelines.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-950 flex items-start gap-2.5">
+              <span className="text-amber-600 text-base shrink-0 mt-0.5">🛡️</span>
+              <p className="leading-relaxed">
+                <strong>Strict Prohibition on Secondary Use & Commercial Sale (Section 6(1)):</strong> SoSign <strong>never sells, rents, leases, trades, or monetizes</strong> citizen personal data to commercial data brokers, advertising exchanges, or political marketing consultancies. Data is processed exclusively for the stated civic purposes above.
+              </p>
+            </div>
+          </section>
+
+          {/* Section 3: Personal Data Inventory (Data Minimization) */}
+          <section className="space-y-4 pt-2">
+            <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
+              <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
+              3. Comprehensive Personal Data Inventory (What Data We Collect)
             </h2>
             <p className="text-xs text-slate-600">
               Under the principle of <strong>Data Minimization (Section 6, DPDP Act)</strong>, we collect only the personal data strictly necessary to fulfill explicit civic advocacy and account verification purposes:
@@ -233,11 +405,11 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 3: Lawful Basis of Processing */}
+          {/* Section 4: Lawful Basis of Processing */}
           <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              3. Lawful Grounds for Processing (DPDP Act, Sections 6 & 7)
+              4. Lawful Grounds for Processing (DPDP Act, Sections 6 & 7)
             </h2>
             <p>
               We process personal data only when a recognized lawful basis exists under the DPDP Act, 2023:
@@ -288,11 +460,11 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 4: Third-Party Data Processors */}
+          {/* Section 5: Third-Party Data Processors */}
           <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              4. Third-Party Data Processors & Infrastructure Partners
+              5. Third-Party Data Processors & Infrastructure Partners
             </h2>
             <p>
               In accordance with <strong>Section 8(2) of the DPDP Act</strong>, SoSign engages only qualified Data Processors bound by strict contractual obligations to process personal data solely on our instructions with equivalent cybersecurity safeguards:
@@ -332,11 +504,11 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          {/* Section 5: Data Retention & Disposal Schedule */}
+          {/* Section 6: Data Retention & Disposal Schedule */}
           <section className="space-y-3 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              5. Data Retention Periods & Disposal Schedule (Section 8(7))
+              6. Data Retention Periods & Disposal Schedule (Section 8(7))
             </h2>
             <p>
               Under <strong>Section 8(7) of the DPDP Act</strong>, a Data Fiduciary must erase personal data upon withdrawal of consent or as soon as the purpose for which it was collected is no longer served. Our standardized retention schedule is as follows:
@@ -381,11 +553,11 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 6: Children's Personal Data */}
+          {/* Section 7: Children's Personal Data */}
           <section className="space-y-3 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              6. Protection of Children&apos;s Personal Data (Section 9)
+              7. Protection of Children&apos;s Personal Data (Section 9)
             </h2>
             <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-2 text-xs text-amber-900">
               <div className="flex items-center gap-2 font-bold text-amber-950 text-sm">
@@ -404,11 +576,11 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 7: Citizen Rights (Data Principal Rights) */}
+          {/* Section 8: Citizen Rights (Data Principal Rights) */}
           <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              7. Your Statutory Rights as a Data Principal (Sections 11, 12, 13)
+              8. Your Statutory Rights as a Data Principal (Sections 11, 12, 13)
             </h2>
             <p>
               Under Chapter III of the DPDP Act, 2023, you have enforceable legal rights regarding your personal data. SoSign provides both self-service tools and official grievance channels to exercise these rights:
@@ -468,11 +640,11 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 8: Statutory Grievance Redressal Mechanism & Officer */}
+          {/* Section 9: Statutory Grievance Redressal Mechanism & Officer */}
           <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              8. Statutory Grievance Redressal Officer (Sections 8(10) & 13)
+              9. Statutory Grievance Redressal Officer (Sections 8(10) & 13)
             </h2>
             <p>
               As mandated by <strong>Section 8(10) and Section 13 of the Digital Personal Data Protection Act, 2023</strong>, SoSign has appointed a dedicated <strong>Data Protection & Grievance Redressal Officer</strong> to handle inquiries, complaints, and statutory data principal requests:
@@ -491,7 +663,6 @@ export default function PrivacyPage() {
                   <p><strong>Postal Address:</strong> NESCO Center, Western Express Highway, Goregaon East, Mumbai, Maharashtra 400063, India</p>
                 </div>
                 <div className="space-y-1">
-                  <p><strong>Dedicated Privacy Email:</strong> <a href="mailto:privacy@sosign.in" className="text-[#F43676] font-bold underline">privacy@sosign.in</a></p>
                   <p><strong>Official Grievance Email:</strong> <a href="mailto:grievance@sosign.in" className="text-[#3650AD] font-bold underline">grievance@sosign.in</a></p>
                   <p><strong>Helpline Number:</strong> <a href="tel:+919323677688" className="text-slate-800 font-semibold underline">+91 9323677688</a></p>
                 </div>
@@ -508,18 +679,18 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 9: Personal Data Breach Management & Response Plan (DPDP Act Sec 2(u), 8(5) & 8(6)) */}
+          {/* Section 10: Personal Data Breach Management & Response Plan (DPDP Act Sec 2(u), 8(5) & 8(6)) */}
           <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              9. Personal Data Breach Management & Statutory Response Plan (Sections 2(u), 8(5) & 8(6))
+              10. Personal Data Breach Management & Statutory Response Plan (Sections 2(u), 8(5) & 8(6))
             </h2>
 
-            {/* Subsection 9.1: Statutory Definition */}
+            {/* Subsection 10.1: Statutory Definition */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
               <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
                 <FaShieldHalved className="text-[#3650AD]" />
-                9.1 What Counts as a Personal Data Breach? [DPDP Act Section 2(u)]
+                10.1 What Counts as a Personal Data Breach? [DPDP Act Section 2(u)]
               </h3>
               <p className="text-xs text-slate-700 leading-relaxed">
                 Under <strong>Section 2(u) of the Digital Personal Data Protection Act, 2023</strong>, a <em>&quot;personal data breach&quot;</em> is strictly defined as:
@@ -532,11 +703,11 @@ export default function PrivacyPage() {
               </p>
             </div>
 
-            {/* Subsection 9.2: 5-Stage Breach Response Plan */}
+            {/* Subsection 10.2: 5-Stage Breach Response Plan */}
             <div className="space-y-3">
               <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
                 <FaScaleBalanced className="text-[#F43676]" />
-                9.2 Five-Stage Data Breach Incident Response Plan (SOP)
+                10.2 Five-Stage Data Breach Incident Response Plan (SOP)
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
@@ -576,11 +747,11 @@ export default function PrivacyPage() {
               </div>
             </div>
 
-            {/* Subsection 9.3: Statutory Intimations */}
+            {/* Subsection 10.3: Statutory Intimations */}
             <div className="p-4 bg-blue-50/60 border border-blue-200 rounded-2xl space-y-2 text-xs">
               <h3 className="font-bold text-blue-900 uppercase tracking-wider flex items-center gap-2">
                 <FaEnvelope className="text-blue-600" />
-                9.3 Mandatory Notifications to Users & Data Protection Board of India (Section 8(6))
+                10.3 Mandatory Notifications to Users & Data Protection Board of India (Section 8(6))
               </h3>
               <p className="text-slate-700">
                 In strict adherence to <strong>Section 8(6) of the DPDP Act</strong> and <strong>CERT-In Directions</strong>, whenever a breach is confirmed:
@@ -595,11 +766,11 @@ export default function PrivacyPage() {
               </ul>
             </div>
 
-            {/* Subsection 9.4: Rapid Harm Reduction */}
+            {/* Subsection 10.4: Rapid Harm Reduction */}
             <div className="p-4 bg-rose-50/60 border border-rose-200 rounded-2xl space-y-2 text-xs">
               <h3 className="font-bold text-rose-900 uppercase tracking-wider flex items-center gap-2">
                 <FaLock className="text-rose-600" />
-                9.4 Proactive Harm Reduction Safeguards (Section 8(5))
+                10.4 Proactive Harm Reduction Safeguards (Section 8(5))
               </h3>
               <p className="text-slate-700">
                 To prevent downstream damage following an incident, our rapid harm reduction protocols immediately execute:
@@ -621,11 +792,11 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 10: Child Data Protection & Verifiable Parental Consent (DPDP Act Section 9) */}
+          {/* Section 11: Child Data Protection & Verifiable Parental Consent (DPDP Act Section 9) */}
           <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              10. Child Data Safeguards & Parental Consent (Section 9)
+              11. Child Data Safeguards & Parental Consent (Section 9)
             </h2>
             <p className="text-xs text-slate-700 leading-relaxed">
               In strict adherence to <strong>Section 9 of the Digital Personal Data Protection Act, 2023</strong>, SoSign enforces rigorous safeguards to protect children (defined under Indian law as individuals under 18 years of age):
@@ -654,11 +825,11 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 11: Vendor & Data Processor Governance (Sections 8(2) & 8(7)) */}
+          {/* Section 12: Vendor & Data Processor Governance (Sections 8(2) & 8(7)) */}
           <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              11. Vendor & Data Processor Governance (Sections 8(2) & 8(7))
+              12. Vendor & Data Processor Governance (Sections 8(2) & 8(7))
             </h2>
             <p className="text-xs text-slate-700 leading-relaxed">
               When SoSign engages third-party vendors (Data Processors) such as payment gateways, SMS/email relays, or government KYC gateways, we mandate strict compliance under <strong>Section 8(2)</strong>:
@@ -671,11 +842,11 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          {/* Section 12: Cross-Border Data Transfer & Localization (Section 16) */}
+          {/* Section 13: Cross-Border Data Transfer & Localization (Section 16) */}
           <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              12. Cross-Border Personal Data Transfers & Localization (Section 16)
+              13. Cross-Border Personal Data Transfers & Localization (Section 16)
             </h2>
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
               <p className="text-slate-700">
@@ -689,11 +860,11 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 13: Internal Policies & Data Retention Schedule */}
+          {/* Section 14: Internal Policies & Data Retention Schedule */}
           <section className="space-y-4 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              13. Internal Data Protection Policies & Retention Schedule (DRAS)
+              14. Internal Data Protection Policies & Retention Schedule (DRAS)
             </h2>
             <p className="text-xs text-slate-700">
               SoSign maintains formal internal policies, including an <strong>Internal Data Protection Policy (IDPP)</strong>, <strong>Vendor Security Policy</strong>, and a strict <strong>Data Retention & Archival Schedule (DRAS)</strong>:
@@ -743,11 +914,11 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* Section 14: Updates to this Policy */}
+          {/* Section 15: Updates to this Policy */}
           <section className="space-y-3 pt-2">
             <h2 className="text-xl font-extrabold text-[#002050] flex items-center gap-2.5 pb-2 border-b border-gray-100">
               <span className="w-2 h-6 bg-[#F43676] rounded-full"></span>
-              14. Changes to this Privacy Notice
+              15. Changes to this Privacy Notice
             </h2>
             <p>
               We periodically review this policy to reflect platform updates, statutory notifications, or rules framed under the DPDP Act. When material revisions occur, we notify users via banner notice, email notification, or account alerts before changes take effect.

@@ -325,13 +325,13 @@ function ContactFormContent() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-blue-100 pt-1">
             <div className="p-3.5 bg-white/5 rounded-xl border border-white/10">
               <span className="font-bold text-white block mb-1">Grievance Redressal Officer</span>
-              <p>Office of Data Protection & Grievance</p>
+              <p className="font-semibold text-white">Mr. Narendra Kumar</p>
               <p className="text-blue-200">LEO MEO IT Solution (SoSign Division)</p>
             </div>
             <div className="p-3.5 bg-white/5 rounded-xl border border-white/10">
               <span className="font-bold text-white block mb-1">Direct Grievance Contact</span>
               <p>Email: <a href="mailto:grievance@sosign.in" className="text-pink-300 font-bold underline">grievance@sosign.in</a></p>
-              <p>Privacy: <a href="mailto:privacy@sosign.in" className="text-emerald-300 font-bold underline">privacy@sosign.in</a></p>
+              <p>Helpline: <a href="tel:+919323677688" className="text-emerald-300 font-bold underline">+91 9323677688</a></p>
             </div>
             <div className="p-3.5 bg-white/5 rounded-xl border border-white/10">
               <span className="font-bold text-white block mb-1">Statutory Response SLA</span>

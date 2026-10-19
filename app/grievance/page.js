@@ -339,10 +339,6 @@ export default function GrievancePage() {
                   <span>Official Grievance: <a href="mailto:grievance@sosign.in" className="text-[#3650AD] font-bold underline">grievance@sosign.in</a></span>
                 </p>
                 <p className="flex items-center gap-2">
-                  <FaEnvelope className="text-[#F43676]" />
-                  <span>Privacy Cell: <a href="mailto:privacy@sosign.in" className="text-[#F43676] font-bold underline">privacy@sosign.in</a></span>
-                </p>
-                <p className="flex items-center gap-2">
                   <FaPhone className="text-emerald-600" />
                   <span>Helpline: <a href="tel:+919323677688" className="text-slate-900 font-semibold underline">+91 9323677688</a></span>
                 </p>
