@@ -19,6 +19,7 @@ import {
   FaPlusCircle,
   FaCube,
   FaCamera,
+  FaEye,
 } from "react-icons/fa";
 
 import AddSchoolModal from "./AddSchoolModal";
@@ -100,11 +101,13 @@ export default function SchoolStallMapWidget({
   const [approvedReports, setApprovedReports] = useState([]);
   
   // School states (DB schools + Google Places auto-populated schools)
+  const [allDbSchools, setAllDbSchools] = useState([]);
   const [dbSchools, setDbSchools] = useState([]);
   const [googlePlacesSchools, setGooglePlacesSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedReportModal, setSelectedReportModal] = useState(null);
+  const [activeReportImageIndex, setActiveReportImageIndex] = useState(0);
   const [defendModalReport, setDefendModalReport] = useState(null);
   const [isAddSchoolModalOpen, setIsAddSchoolModalOpen] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -134,26 +137,40 @@ export default function SchoolStallMapWidget({
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // Combine DB schools & Google Places schools (deduplicating by normalized name)
+  // Reset active report image index when selectedReportModal changes
+  useEffect(() => {
+    setActiveReportImageIndex(0);
+  }, [selectedReportModal]);
+
+  // Combine DB schools & Google Places schools (deduplicating by normalized name + city)
   const schools = useMemo(() => {
     const mapByName = new Map();
+    const sourceDbSchools = allDbSchools.length > 0 ? allDbSchools : dbSchools;
 
     // 1. Add DB schools first (retains violation linking)
-    dbSchools.forEach((s) => {
-      const key = s.name.toLowerCase().trim();
+    sourceDbSchools.forEach((s) => {
+      const key = `${s.name.toLowerCase().trim()}_${(s.city || "").toLowerCase().trim()}`;
       mapByName.set(key, s);
     });
 
     // 2. Add Google Places schools for missing schools
     googlePlacesSchools.forEach((s) => {
-      const key = s.name.toLowerCase().trim();
+      const key = `${s.name.toLowerCase().trim()}_${(s.city || "").toLowerCase().trim()}`;
       if (!mapByName.has(key)) {
         mapByName.set(key, s);
       }
     });
 
-    return Array.from(mapByName.values());
-  }, [dbSchools, googlePlacesSchools]);
+    const all = Array.from(mapByName.values());
+    if (!selectedCity) return all;
+
+    const normCity = selectedCity.toLowerCase().trim();
+    return all.filter((s) => {
+      const c = (s.city || "").toLowerCase().trim();
+      const a = (s.address || "").toLowerCase().trim();
+      return c.includes(normCity) || normCity.includes(c) || a.includes(normCity);
+    });
+  }, [allDbSchools, dbSchools, googlePlacesSchools, selectedCity]);
 
   // Fetch petition title if not passed directly
   useEffect(() => {
@@ -222,17 +239,20 @@ export default function SchoolStallMapWidget({
   useEffect(() => {
     if (!mapLoaded || !mapInstanceRef.current || typeof window === "undefined" || !window.google || !window.google.maps || !window.google.maps.places) return;
 
+    // When viewing "All Maharashtra", use the full statewide database catalog + accumulated places
+    if (!selectedCity) return;
+
     const map = mapInstanceRef.current;
     const service = new window.google.maps.places.PlacesService(map);
 
     const center = getCityCenter(selectedCity);
     const searchLocation = new window.google.maps.LatLng(center[0], center[1]);
-    const queryStr = selectedCity ? `schools in ${selectedCity}, Maharashtra` : "schools in Maharashtra";
+    const queryStr = `schools in ${selectedCity}, Maharashtra`;
 
     const request = {
       query: queryStr,
       location: searchLocation,
-      radius: selectedCity ? 12000 : 35000,
+      radius: 15000,
     };
 
     service.textSearch(request, (results, status) => {
@@ -244,14 +264,26 @@ export default function SchoolStallMapWidget({
             _id: place.place_id,
             name: place.name,
             address: place.formatted_address || place.vicinity || selectedCity || "Maharashtra",
-            city: selectedCity || "Maharashtra",
+            city: selectedCity,
             location: {
               coordinates: [lng, lat],
             },
             isGooglePlace: true,
           };
         });
-        setGooglePlacesSchools(gSchools);
+
+        // Accumulate discovered Google Places schools across districts
+        setGooglePlacesSchools((prev) => {
+          const map = new Map();
+          prev.forEach((s) => map.set(`${s.name.toLowerCase().trim()}_${(s.city || "").toLowerCase().trim()}`, s));
+          gSchools.forEach((s) => {
+            const key = `${s.name.toLowerCase().trim()}_${(s.city || "").toLowerCase().trim()}`;
+            if (!map.has(key)) {
+              map.set(key, s);
+            }
+          });
+          return Array.from(map.values());
+        });
       }
     });
   }, [mapLoaded, selectedCity]);
@@ -403,9 +435,6 @@ export default function SchoolStallMapWidget({
         const sortedCities = Array.from(combinedSet);
 
         setCities(sortedCities);
-        if (!selectedCity && sortedCities.length > 0) {
-          setSelectedCity(sortedCities[0]);
-        }
       } catch (err) {
         console.error("Error fetching cities:", err);
         setCities(MAHARASHTRA_DISTRICTS.map((d) => d.name));
@@ -413,7 +442,7 @@ export default function SchoolStallMapWidget({
     };
 
     fetchCities();
-  }, [backendUrl, selectedCity]);
+  }, [backendUrl]);
 
   // Fetch DB Schools & Reports for selected city
   useEffect(() => {
@@ -450,7 +479,11 @@ export default function SchoolStallMapWidget({
               uniqueSchoolsMap.set(key, s);
             }
           });
-          setDbSchools(Array.from(uniqueSchoolsMap.values()));
+          const list = Array.from(uniqueSchoolsMap.values());
+          if (!selectedCity) {
+            setAllDbSchools(list);
+          }
+          setDbSchools(list);
         }
       } catch (err) {
         console.error("Error fetching stall map data:", err);
@@ -1302,22 +1335,95 @@ export default function SchoolStallMapWidget({
                 </p>
               </div>
 
-              {selectedReportModal.imageUrl && (
-                <div className="space-y-1">
-                  <p className="font-bold text-gray-700">Photo Evidence:</p>
-                  <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-xs max-h-56 bg-gray-50 flex items-center justify-center">
-                    <img
-                      src={
-                        selectedReportModal.imageUrl.startsWith("http")
-                          ? selectedReportModal.imageUrl
-                          : `${backendUrl}/${selectedReportModal.imageUrl.replace(/^\//, "")}`
-                      }
-                      alt={selectedReportModal.shopName}
-                      className="w-full h-full object-cover"
-                    />
+              {/* Photo Evidence Section */}
+              {(() => {
+                const reportImages = (
+                  Array.isArray(selectedReportModal.images) && selectedReportModal.images.length > 0
+                    ? selectedReportModal.images
+                    : selectedReportModal.imageUrl
+                    ? [selectedReportModal.imageUrl]
+                    : selectedReportModal.image
+                    ? [selectedReportModal.image]
+                    : []
+                ).filter(Boolean);
+
+                if (reportImages.length === 0) {
+                  return (
+                    <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-3 text-center text-gray-400 text-[11px] font-medium">
+                      📷 No photo evidence uploaded with this report
+                    </div>
+                  );
+                }
+
+                const activeImg = reportImages[activeReportImageIndex] || reportImages[0];
+                const activeSrc = activeImg.startsWith("http")
+                  ? activeImg
+                  : `${backendUrl}/${activeImg.replace(/^\//, "")}`;
+
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-gray-700 flex items-center gap-1">
+                        <span>📸 Photo Evidence</span>
+                        <span className="text-[10px] text-[#F43676] font-extrabold bg-pink-50 px-2 py-0.5 rounded-full border border-pink-100">
+                          {reportImages.length} {reportImages.length === 1 ? "Photo" : "Photos"}
+                        </span>
+                      </p>
+                      {reportImages.length > 1 && (
+                        <span className="text-[10px] text-gray-400 font-medium">
+                          Click thumbnail to switch
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-xs max-h-60 bg-gray-900/5 flex items-center justify-center relative group">
+                      <img
+                        src={activeSrc}
+                        alt={selectedReportModal.shopName}
+                        className="w-full max-h-60 object-contain rounded-2xl bg-black/5"
+                      />
+                      <a
+                        href={activeSrc}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute bottom-2.5 right-2.5 bg-black/70 hover:bg-black/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-xl backdrop-blur-xs flex items-center gap-1 transition-opacity opacity-0 group-hover:opacity-100 shadow-md cursor-pointer"
+                      >
+                        <FaEye className="text-[10px]" />
+                        <span>View Original</span>
+                      </a>
+                    </div>
+
+                    {reportImages.length > 1 && (
+                      <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-0.5">
+                        {reportImages.map((img, idx) => {
+                          const thumbSrc = img.startsWith("http")
+                            ? img
+                            : `${backendUrl}/${img.replace(/^\//, "")}`;
+                          const isSelected = (activeReportImageIndex || 0) === idx;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setActiveReportImageIndex(idx)}
+                              className={`w-12 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                                isSelected
+                                  ? "border-[#F43676] ring-2 ring-pink-200"
+                                  : "border-gray-200 hover:border-pink-300 opacity-70 hover:opacity-100"
+                              }`}
+                            >
+                              <img
+                                src={thumbSrc}
+                                alt={`Thumbnail ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {selectedReportModal.description && (
                 <div className="bg-gray-50 p-3 rounded-2xl border border-gray-200/80">
@@ -1332,11 +1438,14 @@ export default function SchoolStallMapWidget({
                 <button
                   type="button"
                   onClick={() => {
-                    setDefendModalReport(selectedReportModal);
+                    const reportToDefend = selectedReportModal;
+                    setSelectedReportModal(null);
+                    setDefendModalReport(reportToDefend);
                   }}
-                  className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold rounded-xl transition-colors text-center text-xs cursor-pointer"
+                  className="flex-1 py-2.5 bg-gray-100 hover:bg-pink-50 hover:text-[#F43676] text-gray-700 font-extrabold rounded-xl transition-colors text-center text-xs cursor-pointer border border-transparent hover:border-pink-200 flex items-center justify-center gap-1.5"
                 >
-                  🛡️ Stall Owner Dispute / Defend
+                  <FaShieldAlt className="text-sm text-[#F43676]" />
+                  <span>Stall Owner Dispute / Defend</span>
                 </button>
                 <button
                   type="button"
@@ -1398,8 +1507,10 @@ export default function SchoolStallMapWidget({
       {/* Stall Dispute Modal */}
       {defendModalReport && (
         <DefendStallModal
+          isOpen={true}
           report={defendModalReport}
           onClose={() => setDefendModalReport(null)}
+          onSuccess={() => setDefendModalReport(null)}
         />
       )}
     </div>

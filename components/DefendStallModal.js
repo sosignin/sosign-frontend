@@ -11,7 +11,7 @@ import {
 } from "react-icons/fa";
 import { parseGoogleLocationString } from "../utils/parseGoogleLocation";
 
-export default function DefendStallModal({ isOpen, onClose, report, onSuccess }) {
+export default function DefendStallModal({ isOpen = true, onClose, report, onSuccess }) {
   const [vendorName, setVendorName] = useState("");
   const [vendorContact, setVendorContact] = useState("");
   const [reason, setReason] = useState("not_within_50m");

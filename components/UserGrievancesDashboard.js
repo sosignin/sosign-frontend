@@ -75,12 +75,13 @@ export default function UserGrievancesDashboard({
     const total = reports.length;
     const pending = reports.filter((r) => r.status === "pending").length;
     const approved = reports.filter((r) => r.status === "approved").length;
+    const resolved = reports.filter((r) => r.status === "resolved").length;
     const rejected = reports.filter((r) => r.status === "rejected").length;
     const disputed = reports.filter(
       (r) => r.defenses && r.defenses.length > 0
     ).length;
 
-    return { total, pending, approved, rejected, disputed };
+    return { total, pending, approved, resolved, rejected, disputed };
   }, [reports]);
 
   // Filter reports
@@ -89,6 +90,7 @@ export default function UserGrievancesDashboard({
       // Tab filter
       if (activeTab === "pending" && r.status !== "pending") return false;
       if (activeTab === "approved" && r.status !== "approved") return false;
+      if (activeTab === "resolved" && r.status !== "resolved") return false;
       if (activeTab === "rejected" && r.status !== "rejected") return false;
       if (activeTab === "disputed" && (!r.defenses || r.defenses.length === 0))
         return false;
@@ -273,7 +275,8 @@ export default function UserGrievancesDashboard({
           {[
             { id: "all", label: `All (${stats.total})` },
             { id: "pending", label: `Under Review (${stats.pending})` },
-            { id: "approved", label: `Verified (${stats.approved})` },
+            { id: "approved", label: `Active Violations (${stats.approved})` },
+            { id: "resolved", label: `Stall Removed / Safe (${stats.resolved})` },
             { id: "disputed", label: `Disputed (${stats.disputed})` },
             { id: "rejected", label: `Rejected (${stats.rejected})` },
           ].map((tab) => (
@@ -356,6 +359,7 @@ export default function UserGrievancesDashboard({
           {filteredReports.map((item) => {
             const isApproved = item.status === "approved";
             const isPending = item.status === "pending";
+            const isResolved = item.status === "resolved";
             const isRejected = item.status === "rejected";
             const hasDefenses = item.defenses && item.defenses.length > 0;
             const trackingId =
@@ -407,6 +411,13 @@ export default function UserGrievancesDashboard({
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-700 border border-rose-200">
                         <FaExclamationTriangle className="text-[9px] text-rose-600" />
                         <span>Violation Verified • Notice Issued</span>
+                      </span>
+                    )}
+
+                    {isResolved && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <FaCheckCircle className="text-[9px] text-emerald-600" />
+                        <span>Stall Removed • Safe Zone Restored</span>
                       </span>
                     )}
 
@@ -496,6 +507,32 @@ export default function UserGrievancesDashboard({
                       <div className="text-xs text-rose-700 bg-rose-50/50 p-2.5 rounded-xl border border-rose-100">
                         <strong>Review Note: </strong>
                         {item.rejectionReason}
+                      </div>
+                    )}
+
+                    {/* Resolution note if stall was closed/removed */}
+                    {isResolved && (
+                      <div className="text-xs text-emerald-800 bg-emerald-50/90 p-3 rounded-xl border border-emerald-200 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                          <FaCheckCircle className="text-emerald-600 shrink-0 text-sm" />
+                          <span>Action Complete: Stall Closed / Removed — School Restored to Safe Zone</span>
+                        </div>
+                        {item.resolutionNote && (
+                          <div className="text-[11px] text-emerald-700/90 pl-5">
+                            <strong>Authority Action: </strong>
+                            {item.resolutionNote}
+                          </div>
+                        )}
+                        {item.resolvedAt && (
+                          <div className="text-[10px] text-emerald-600/80 pl-5">
+                            Safe Status Restored on{" "}
+                            {new Date(item.resolvedAt).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
