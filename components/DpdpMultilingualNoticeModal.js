@@ -448,16 +448,21 @@ export default function DpdpMultilingualNoticeModal({ isOpen, onClose, initialLa
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl space-y-5 border border-indigo-100 max-h-[90vh] overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dpdp-modal-title"
+        className="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl space-y-5 border border-indigo-100 max-h-[90vh] overflow-y-auto"
+      >
         {/* Header */}
         <div className="flex items-start justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-[#3650AD] flex items-center justify-center text-xl shadow-sm shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-[#3650AD] flex items-center justify-center text-xl shadow-sm shrink-0" aria-hidden="true">
               <FaShieldAlt />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-black text-gray-900">
+                <h3 id="dpdp-modal-title" className="text-lg font-black text-gray-900">
                   DPDP Act Statutory Privacy Notice
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
@@ -471,10 +476,12 @@ export default function DpdpMultilingualNoticeModal({ isOpen, onClose, initialLa
           </div>
 
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close statutory notice dialog"
             className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition cursor-pointer"
           >
-            <FaTimes className="text-xs" />
+            <FaTimes className="text-xs" aria-hidden="true" />
           </button>
         </div>
 

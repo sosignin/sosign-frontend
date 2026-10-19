@@ -104,12 +104,16 @@ const NotificationCenter = () => {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 hover:text-[#F43676] transition-colors"
+        aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        className="relative p-2 text-gray-600 hover:text-[#F43676] transition-colors cursor-pointer"
       >
-        <FaBell className="text-xl" />
+        <FaBell className="text-xl" aria-hidden="true" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-[#F43676] rounded-full">
+          <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-[#F43676] rounded-full" aria-hidden="true">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}

@@ -38,6 +38,7 @@ const quickLinksCol2 = [
   // { name: "Help Center", href: "/help" },
   { name: "How to Start a Petition", href: "/help#start-petition" },
   { name: "How to Report a Food Stall", href: "/help#report-stall" },
+  { name: "Accessibility Statement", href: "/accessibility-statement" },
 ];
 
 export default function Footer() {
@@ -270,6 +271,8 @@ export default function Footer() {
             <Link href="/copyright-policy" className="hover:text-white transition">Copyright Policy</Link>
             <span>•</span>
             <Link href="/hyperlinking-policy" className="hover:text-white transition">Hyperlinking Policy</Link>
+            <span>•</span>
+            <Link href="/accessibility-statement" className="hover:text-white transition">Accessibility Statement</Link>
             <span>•</span>
             <Link href="/help" className="hover:text-white transition">Help Center</Link>
             <span>•</span>

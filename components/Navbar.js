@@ -179,9 +179,15 @@ export default function Navbar() {
                 onMouseEnter={() => setCampaignDropdown(true)}
                 onMouseLeave={() => setCampaignDropdown(false)}
               >
-                <button className="flex items-center gap-1 text-[#302d55] font-semibold text-xs md:text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1">
+                <button
+                  type="button"
+                  onClick={() => setCampaignDropdown(!campaignDropdown)}
+                  aria-expanded={campaignDropdown}
+                  aria-haspopup="true"
+                  className="flex items-center gap-1 text-[#302d55] font-semibold text-xs md:text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1 cursor-pointer"
+                >
                   Start Campaign
-                  <FaChevronDown className="text-[10px]" />
+                  <FaChevronDown className="text-[10px]" aria-hidden="true" />
                 </button>
                 <AnimatePresence>
                   {campaignDropdown && (
@@ -238,9 +244,15 @@ export default function Navbar() {
                 onMouseEnter={() => setPagesDropdown(true)}
                 onMouseLeave={() => setPagesDropdown(false)}
               >
-                <button className="flex items-center gap-1 text-[#302d55] font-semibold text-xs md:text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1">
+                <button
+                  type="button"
+                  onClick={() => setPagesDropdown(!pagesDropdown)}
+                  aria-expanded={pagesDropdown}
+                  aria-haspopup="true"
+                  className="flex items-center gap-1 text-[#302d55] font-semibold text-xs md:text-sm hover:text-[#F43676] transition-all duration-200 border-b-2 border-transparent hover:border-[#F43676] pb-1 cursor-pointer"
+                >
                   Pages
-                  <FaChevronDown className="text-[10px]" />
+                  <FaChevronDown className="text-[10px]" aria-hidden="true" />
                 </button>
                 <AnimatePresence>
                   {pagesDropdown && (
@@ -306,12 +318,13 @@ export default function Navbar() {
                 href="https://www.facebook.com/sosign.in/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                aria-label="Visit SoSign on Facebook"
+                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center cursor-pointer"
               >
                 <div className="relative w-3.5 h-3.5 overflow-hidden">
                   <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
-                    <FaFacebookF className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
-                    <FaFacebookF className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
+                    <FaFacebookF className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" aria-hidden="true" />
+                    <FaFacebookF className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" aria-hidden="true" />
                   </div>
                 </div>
               </a>
@@ -320,12 +333,13 @@ export default function Navbar() {
                 href="https://x.com/sosign_in"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                aria-label="Visit SoSign on X (Twitter)"
+                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center cursor-pointer"
               >
                 <div className="relative w-3.5 h-3.5 overflow-hidden">
                   <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
-                    <FaXTwitter className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
-                    <FaXTwitter className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
+                    <FaXTwitter className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" aria-hidden="true" />
+                    <FaXTwitter className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" aria-hidden="true" />
                   </div>
                 </div>
               </a>
@@ -334,12 +348,13 @@ export default function Navbar() {
                 href="http://t.me/sosign_in"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                aria-label="Join SoSign on Telegram"
+                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center cursor-pointer"
               >
                 <div className="relative w-3.5 h-3.5 overflow-hidden">
                   <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
-                    <FaTelegramPlane className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
-                    <FaTelegramPlane className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
+                    <FaTelegramPlane className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" aria-hidden="true" />
+                    <FaTelegramPlane className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" aria-hidden="true" />
                   </div>
                 </div>
               </a>
@@ -348,12 +363,13 @@ export default function Navbar() {
                 href="https://www.instagram.com/sosign_in"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                aria-label="Visit SoSign on Instagram"
+                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center cursor-pointer"
               >
                 <div className="relative w-3.5 h-3.5 overflow-hidden">
                   <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
-                    <FaInstagram className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
-                    <FaInstagram className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
+                    <FaInstagram className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" aria-hidden="true" />
+                    <FaInstagram className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" aria-hidden="true" />
                   </div>
                 </div>
               </a>
@@ -362,12 +378,13 @@ export default function Navbar() {
                 href="https://www.youtube.com/@sosign-in"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center"
+                aria-label="Visit SoSign on YouTube"
+                className="group w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center cursor-pointer"
               >
                 <div className="relative w-3.5 h-3.5 overflow-hidden">
                   <div className="flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-3.5">
-                    <FaYoutube className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" />
-                    <FaYoutube className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" />
+                    <FaYoutube className="text-xs text-[#3d3d5c] h-3.5 flex items-center justify-center" aria-hidden="true" />
+                    <FaYoutube className="text-xs text-[#F43676] h-3.5 flex items-center justify-center" aria-hidden="true" />
                   </div>
                 </div>
               </a>
@@ -379,19 +396,26 @@ export default function Navbar() {
               {/* Search Button and Overlay */}
               <div className="relative" ref={searchRef}>
                 <button
+                  type="button"
                   onClick={toggleSearch}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${searchOpen
+                  aria-label={searchOpen ? "Close petition search" : "Open petition search"}
+                  aria-expanded={searchOpen}
+                  aria-controls="navbar-search-dialog"
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${searchOpen
                     ? "bg-[#e02a60] text-white"
                     : "bg-[#F43676] text-white hover:bg-[#e02a60]"
                     }`}
                 >
-                  {searchOpen ? <FaTimes className="text-xs" /> : <FaSearch className="text-xs" />}
+                  {searchOpen ? <FaTimes className="text-xs" aria-hidden="true" /> : <FaSearch className="text-xs" aria-hidden="true" />}
                 </button>
 
                 {/* Search Overlay */}
                 <AnimatePresence>
                   {searchOpen && (
                     <motion.div
+                      id="navbar-search-dialog"
+                      role="dialog"
+                      aria-label="Search Petitions"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -399,15 +423,18 @@ export default function Navbar() {
                       className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-[62px] sm:top-11 w-auto sm:w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
                     >
                       {/* Search Input */}
-                      <form onSubmit={handleSearchSubmit} className="p-3 sm:p-4 border-b border-gray-100">
+                      <form onSubmit={handleSearchSubmit} role="search" className="p-3 sm:p-4 border-b border-gray-100">
                         <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
-                          <FaSearch className="text-gray-400 text-sm flex-shrink-0" />
+                          <FaSearch className="text-gray-400 text-sm flex-shrink-0" aria-hidden="true" />
+                          <label htmlFor="navbar-search-input" className="sr-only">Search petitions</label>
                           <input
-                            type="text"
+                            id="navbar-search-input"
+                            type="search"
                             placeholder="Search petitions..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             autoFocus
+                            aria-label="Search petitions"
                             className="flex-1 bg-transparent outline-none text-sm text-[#302d55] placeholder-gray-400 min-w-0"
                           />
                           {searchLoading && (
@@ -490,18 +517,21 @@ export default function Navbar() {
               <div className="relative">
                 <motion.button
                   onClick={toggleDropdown}
-                  className="flex items-center gap-1.5 min-w-0 text-[#302d55] font-medium text-xs hover:text-[#F43676] transition-colors duration-200 py-1.5 px-1"
+                  aria-expanded={dropdownOpen}
+                  aria-haspopup="true"
+                  aria-label={`User account menu for ${user.name || "User"}`}
+                  className="flex items-center gap-1.5 min-w-0 text-[#302d55] font-medium text-xs hover:text-[#F43676] transition-colors duration-200 py-1.5 px-1 cursor-pointer"
                   whileHover={{ scale: 1.05 }}
                 >
                   {/* Profile Picture with fallback */}
                   {user.profilePicture || user.photoURL ? (
                     <img
                       src={user.profilePicture || user.photoURL}
-                      alt={user.name || "Profile"}
+                      alt={user.name || "Profile picture"}
                       className="w-7 h-7 rounded-full border-2 border-[#F43676] object-cover"
                     />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-r from-[#F43676] to-[#e02a60] flex items-center justify-center text-white text-[10px] font-bold border-2 border-[#F43676]">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-r from-[#F43676] to-[#e02a60] flex items-center justify-center text-white text-[10px] font-bold border-2 border-[#F43676]" aria-hidden="true">
                       {(user.name || "U").charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -541,13 +571,6 @@ export default function Navbar() {
                       >
                         My Petitions
                       </Link>
-                      {/* <Link
-                        href="/my-grievances"
-                        className="block px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        My Reported Food Stalls
-                      </Link> */}
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-[#302d55] text-sm hover:bg-gray-50 hover:text-[#F43676] transition-colors"
@@ -564,7 +587,7 @@ export default function Navbar() {
                   href="/login"
                   className="bg-[#F43676] text-white px-5 py-2 rounded-full font-semibold text-sm hover:bg-[#e02a60] transition-colors duration-200 flex items-center gap-1.5"
                 >
-                  <FaUserCircle className="text-sm" />
+                  <FaUserCircle className="text-sm" aria-hidden="true" />
                   Login
                 </Link>
               </motion.div>
@@ -572,10 +595,13 @@ export default function Navbar() {
 
             {/* Mobile Menu Button */}
             <button
-              className="lg:hidden w-7 h-7 flex items-center justify-center text-[#302d55]"
+              className="lg:hidden w-7 h-7 flex items-center justify-center text-[#302d55] cursor-pointer"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-nav-menu"
             >
-              {mobileMenuOpen ? <FaTimes className="text-lg" /> : <FaBars className="text-lg" />}
+              {mobileMenuOpen ? <FaTimes className="text-lg" aria-hidden="true" /> : <FaBars className="text-lg" aria-hidden="true" />}
             </button>
           </div>
         </div>
