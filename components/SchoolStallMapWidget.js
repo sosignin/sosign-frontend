@@ -20,12 +20,16 @@ import {
   FaCube,
   FaCamera,
   FaEye,
+  FaCrosshairs,
+  FaCompass,
 } from "react-icons/fa";
 
+import { useRouter } from "next/navigation";
 import AddSchoolModal from "./AddSchoolModal";
 import DefendStallModal from "./DefendStallModal";
 import UserGrievancesDashboard from "./UserGrievancesDashboard";
 import SubmitStallReportModal from "./SubmitStallReportModal";
+import { useAuth } from "../context/AuthContext";
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
@@ -86,6 +90,25 @@ const getCityCenter = (city) => {
   return found ? [found.lat, found.lng] : MAHARASHTRA_CENTER;
 };
 
+const calculateDistanceInMeters = (lat1, lon1, lat2, lon2) => {
+  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return Infinity;
+  const R = 6371e3; // Earth radius in meters
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+    Math.cos(phi1) *
+      Math.cos(phi2) *
+      Math.sin(deltaLambda / 2) *
+      Math.sin(deltaLambda / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return Math.round(R * c);
+};
+
 export default function SchoolStallMapWidget({
   petitionId,
   petitionTitle,
@@ -99,6 +122,8 @@ export default function SchoolStallMapWidget({
   const [cities, setCities] = useState([]);
   const [selectedCity, setSelectedCity] = useState("");
   const [approvedReports, setApprovedReports] = useState([]);
+  const [resolvedReports, setResolvedReports] = useState([]);
+  const [showResolvedOnMap, setShowResolvedOnMap] = useState(true);
   
   // School states (DB schools + Google Places auto-populated schools)
   const [allDbSchools, setAllDbSchools] = useState([]);
@@ -106,6 +131,8 @@ export default function SchoolStallMapWidget({
   const [googlePlacesSchools, setGooglePlacesSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  const router = useRouter();
+  const { user } = useAuth();
   const [selectedReportModal, setSelectedReportModal] = useState(null);
   const [activeReportImageIndex, setActiveReportImageIndex] = useState(0);
   const [defendModalReport, setDefendModalReport] = useState(null);
@@ -120,6 +147,10 @@ export default function SchoolStallMapWidget({
   const [mapStyle, setMapStyle] = useState("street"); // 'street' or 'satellite'
   const [is3DView, setIs3DView] = useState(false);
   const [isStreetViewActive, setIsStreetViewActive] = useState(false);
+  const [streetViewPos, setStreetViewPos] = useState(null);
+  const [streetViewPov, setStreetViewPov] = useState({ heading: 165, pitch: 0 });
+  const [streetViewPin, setStreetViewPin] = useState(null);
+  const [internalReportPrefill, setInternalReportPrefill] = useState(null);
 
   // Civic Portal Experience States (Inspired by Reference Images)
   const [activeMainTab, setActiveMainTab] = useState("map"); // 'map' | 'complaints'
@@ -413,9 +444,16 @@ export default function SchoolStallMapWidget({
     if (nextState) {
       streetView.setPosition(mapInstanceRef.current.getCenter());
       streetView.setPov({ heading: 165, pitch: 0 });
+      streetView.setOptions({ disableDoubleClickZoom: true });
       streetView.setVisible(true);
+      const center = mapInstanceRef.current.getCenter();
+      if (center) {
+        setStreetViewPos({ lat: center.lat(), lng: center.lng() });
+      }
+      setStreetViewPov({ heading: 165, pitch: 0 });
     } else {
       streetView.setVisible(false);
+      setStreetViewPin(null);
     }
   };
 
@@ -451,9 +489,14 @@ export default function SchoolStallMapWidget({
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [reportsRes, schoolsRes] = await Promise.all([
+        const [reportsRes, resolvedRes, schoolsRes] = await Promise.all([
           fetch(
             `${backendUrl}/api/stall-reports/approved/${petitionId}${
+              selectedCity ? `?city=${encodeURIComponent(selectedCity)}` : ""
+            }`
+          ),
+          fetch(
+            `${backendUrl}/api/stall-reports/resolved/${petitionId}${
               selectedCity ? `?city=${encodeURIComponent(selectedCity)}` : ""
             }`
           ),
@@ -467,6 +510,11 @@ export default function SchoolStallMapWidget({
         if (reportsRes.ok) {
           const rData = await reportsRes.json();
           setApprovedReports(rData.reports || []);
+        }
+
+        if (resolvedRes.ok) {
+          const resData = await resolvedRes.json();
+          setResolvedReports(resData.reports || []);
         }
 
         if (schoolsRes.ok) {
@@ -518,7 +566,12 @@ export default function SchoolStallMapWidget({
 
     try {
       // 1. Initialize Google Map Instance with Street View, 3D & Rotation Controls Enabled
-      if (!mapInstanceRef.current) {
+      const isMapDivValid =
+        mapInstanceRef.current &&
+        mapRef.current &&
+        mapInstanceRef.current.getDiv() === mapRef.current;
+
+      if (!isMapDivValid) {
         mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
           center: centerObj,
           zoom: targetZoom,
@@ -531,14 +584,34 @@ export default function SchoolStallMapWidget({
           tilt: is3DView ? 45 : 0,
         });
 
-        // Listen for native Street View visibility changes
+        // Listen for native Street View visibility and movement changes
         const sv = mapInstanceRef.current.getStreetView();
+        sv.setOptions({ disableDoubleClickZoom: true });
         sv.addListener("visible_changed", () => {
-          setIsStreetViewActive(sv.getVisible());
+          const visible = sv.getVisible();
+          setIsStreetViewActive(visible);
+          if (visible) {
+            sv.setOptions({ disableDoubleClickZoom: true });
+            const pos = sv.getPosition();
+            if (pos) setStreetViewPos({ lat: pos.lat(), lng: pos.lng() });
+            const pov = sv.getPov();
+            if (pov) setStreetViewPov({ heading: pov.heading, pitch: pov.pitch });
+          } else {
+            setStreetViewPin(null);
+          }
+        });
+        sv.addListener("position_changed", () => {
+          const pos = sv.getPosition();
+          if (pos) setStreetViewPos({ lat: pos.lat(), lng: pos.lng() });
+        });
+        sv.addListener("pov_changed", () => {
+          const pov = sv.getPov();
+          if (pov) setStreetViewPov({ heading: pov.heading, pitch: pov.pitch });
         });
       } else {
         mapInstanceRef.current.panTo(centerObj);
         mapInstanceRef.current.setZoom(targetZoom);
+        window.google.maps.event.trigger(mapInstanceRef.current, "resize");
       }
 
       const map = mapInstanceRef.current;
@@ -559,6 +632,8 @@ export default function SchoolStallMapWidget({
       }
       googleLinesRef.current = [];
 
+      const plottedResolvedReportIds = new Set();
+
       // Plot All Schools (DB + Google Maps) with 50m Radius Geofences
       schools.forEach((school) => {
         if (!school.location?.coordinates) return;
@@ -566,17 +641,33 @@ export default function SchoolStallMapWidget({
         const lat = school.location.coordinates[1];
 
         const schoolReports = approvedReports.filter(
-          (r) => r.schoolId?._id === school._id || r.schoolId === school._id
+          (r) =>
+            (r.schoolId?._id && String(r.schoolId._id) === String(school._id)) ||
+            (r.schoolId && String(r.schoolId) === String(school._id)) ||
+            (r.schoolId?.name && school.name && r.schoolId.name.trim().toLowerCase() === school.name.trim().toLowerCase())
         );
         const hasViolation = schoolReports.length > 0;
 
+        const schoolResolvedReports = resolvedReports.filter(
+          (r) =>
+            (r.schoolId?._id && String(r.schoolId._id) === String(school._id)) ||
+            (r.schoolId && String(r.schoolId) === String(school._id)) ||
+            (r.schoolId?.name && school.name && r.schoolId.name.trim().toLowerCase() === school.name.trim().toLowerCase())
+        );
+        const hasResolved = schoolResolvedReports.length > 0;
+        const isRestoredSafe = !hasViolation && hasResolved;
+
         // 1. 50m Radius Geofence Circle around School
+        const circleStroke = hasViolation ? "#F43676" : isRestoredSafe ? "#059669" : "#10b981";
+        const circleFill = hasViolation ? "#F43676" : isRestoredSafe ? "#10b981" : "#10b981";
+        const circleOpacity = hasViolation ? 0.25 : isRestoredSafe ? 0.22 : 0.12;
+
         const circle = new window.google.maps.Circle({
-          strokeColor: hasViolation ? "#F43676" : "#10b981",
+          strokeColor: circleStroke,
           strokeOpacity: 0.9,
-          strokeWeight: hasViolation ? 2.5 : 1.5,
-          fillColor: hasViolation ? "#F43676" : "#10b981",
-          fillOpacity: hasViolation ? 0.25 : 0.12,
+          strokeWeight: hasViolation ? 2.5 : isRestoredSafe ? 2.5 : 1.5,
+          fillColor: circleFill,
+          fillOpacity: circleOpacity,
           map: map,
           center: { lat, lng },
           radius: 50, // Exact 50 Meters Radius!
@@ -584,9 +675,10 @@ export default function SchoolStallMapWidget({
         googleCirclesRef.current.push(circle);
 
         // 2. Custom SVG School Marker Pin
+        const schoolPinColor = hasViolation ? "#F43676" : isRestoredSafe ? "#059669" : "#3B82F6";
         const schoolIconSvg = `
           <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38">
-            <circle cx="19" cy="19" r="17" fill="${hasViolation ? "#F43676" : "#3B82F6"}" stroke="#ffffff" stroke-width="3"/>
+            <circle cx="19" cy="19" r="17" fill="${schoolPinColor}" stroke="#ffffff" stroke-width="3"/>
             <text x="19" y="24" font-size="18" text-anchor="middle">🏫</text>
           </svg>`;
 
@@ -601,16 +693,44 @@ export default function SchoolStallMapWidget({
           },
         });
 
+        let badgeText = "🛡️ Clean School Zone";
+        let badgeBg = "#d1fae5";
+        let badgeColor = "#065f46";
+        if (hasViolation) {
+          badgeText = "🚨 50m Violation Detected";
+          badgeBg = "#ffe4e6";
+          badgeColor = "#be123c";
+        } else if (isRestoredSafe) {
+          badgeText = `🛡️ School Zone Restored Safe (${schoolResolvedReports.length} ${schoolResolvedReports.length === 1 ? "Stall" : "Stalls"} Removed)`;
+          badgeBg = "#ecfdf5";
+          badgeColor = "#065f46";
+        }
+
+        const historySnippet = isRestoredSafe
+          ? `<div style="font-size:10px; color:#334155; border-top:1px dashed #cbd5e1; padding-top:6px; margin-top:6px;">
+               <strong style="color:#0f172a; display:block; margin-bottom:3px;">📜 Stalls Removed History:</strong>
+               ${schoolResolvedReports.map(r => `<div style="margin-bottom:2px;">&bull; <s style="color:#dc2626;">${r.shopName}</s> <span style="color:#059669; font-weight:700;">(${r.distanceFromSchoolMeters}m &bull; ${r.resolutionNote || 'Removed'})</span></div>`).join('')}
+             </div>`
+          : '';
+
         const popupContent = `
-          <div style="padding:8px; font-family: system-ui, sans-serif; max-width:240px; color:#0f172a;">
-            <span style="background:${hasViolation ? "#ffe4e6" : "#d1fae5"}; color:${hasViolation ? "#be123c" : "#065f46"}; font-size:10px; font-weight:800; padding:2px 8px; border-radius:999px; text-transform:uppercase; display:inline-block; margin-bottom:6px;">
-              ${hasViolation ? "🚨 50m Violation Detected" : "🛡️ Clean School Zone"}
+          <div style="padding:10px; font-family: system-ui, sans-serif; max-width:270px; color:#0f172a;">
+            <span style="background:${badgeBg}; color:${badgeColor}; font-size:10px; font-weight:800; padding:2px 8px; border-radius:999px; text-transform:uppercase; display:inline-block; margin-bottom:6px;">
+              ${badgeText}
             </span>
             <h3 style="margin:0 0 4px 0; font-size:14px; font-weight:800; color:#0f172a; line-height:1.3;">${school.name}</h3>
             <p style="margin:0 0 6px 0; font-size:11px; color:#64748b;">${school.address || school.city}</p>
-            <div style="font-size:11px; font-weight:700; color:#F43676; background:#fff1f2; padding:6px; border-radius:8px; border:1px solid #fecdd3;">
-              Strict 50m Buffer Zone Active
+            <div style="font-size:11px; font-weight:700; color:${isRestoredSafe ? '#059669' : hasViolation ? '#F43676' : '#2563eb'}; background:${isRestoredSafe ? '#ecfdf5' : hasViolation ? '#fff1f2' : '#eff6ff'}; padding:6px; border-radius:8px; border:1px solid ${isRestoredSafe ? '#a7f3d0' : hasViolation ? '#fecdd3' : '#bfdbfe'};">
+              ${isRestoredSafe ? '✅ Safe School Zone: Stalls Removed & Buffer Cleared' : 'Strict 50m Buffer Zone Active'}
             </div>
+            ${historySnippet}
+            ${isRestoredSafe && schoolResolvedReports[0] ? `
+              <div style="margin-top:6px;">
+                <button id="view-school-res-btn-${school._id}" style="width:100%; padding:5px 8px; background:#059669; color:white; border:none; border-radius:6px; font-size:10px; font-weight:700; cursor:pointer;">
+                  🛡️ View Removal Photos &amp; Audit Details &rarr;
+                </button>
+              </div>
+            ` : ''}
           </div>
         `;
 
@@ -625,6 +745,13 @@ export default function SchoolStallMapWidget({
           zoomToSchool(school);
           if (hasViolation) {
             setSelectedReportModal(schoolReports[0]);
+          } else if (isRestoredSafe && schoolResolvedReports[0]) {
+            setTimeout(() => {
+              const sBtn = document.getElementById(`view-school-res-btn-${school._id}`);
+              if (sBtn) {
+                sBtn.onclick = () => setSelectedReportModal({ ...schoolResolvedReports[0], isResolvedModal: true });
+              }
+            }, 100);
           }
         });
 
@@ -690,46 +817,251 @@ export default function SchoolStallMapWidget({
             googleLinesRef.current.push(line);
           });
         }
+
+        // 4. Plot Confirmed Removed Stall Markers directly on the map
+        if (showResolvedOnMap && hasResolved) {
+          schoolResolvedReports.forEach((report) => {
+            if (!report.location?.coordinates) return;
+            plottedResolvedReportIds.add(String(report._id));
+            const resLng = report.location.coordinates[0];
+            const resLat = report.location.coordinates[1];
+
+            const resStallIconSvg = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 34 34">
+                <circle cx="17" cy="17" r="15" fill="#059669" stroke="#ffffff" stroke-width="3"/>
+                <text x="17" y="22" font-size="16" text-anchor="middle">✅</text>
+              </svg>`;
+
+            const resStallMarker = new window.google.maps.Marker({
+              position: { lat: resLat, lng: resLng },
+              map: map,
+              title: `Removed Stall: ${report.shopName}`,
+              icon: {
+                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(resStallIconSvg),
+                scaledSize: new window.google.maps.Size(34, 34),
+                anchor: new window.google.maps.Point(17, 17),
+              },
+            });
+
+            const resStallPopup = `
+              <div style="padding:10px; font-family: system-ui, sans-serif; max-width:260px; color:#0f172a;">
+                <span style="background:#059669; color:white; font-size:9px; font-weight:800; padding:2px 8px; border-radius:999px; text-transform:uppercase; display:inline-block; margin-bottom:4px;">
+                  ✅ Stall Removed &bull; Zone Safe
+                </span>
+                <h4 style="margin:2px 0 2px 0; font-size:13px; font-weight:800; text-decoration:line-through; color:#475569;">
+                  ${report.shopName}
+                </h4>
+                <p style="margin:0 0 4px 0; font-size:11px; color:#065f46; font-weight:700;">
+                  Removed from 50m gate of ${school.name} (${report.distanceFromSchoolMeters}m away)
+                </p>
+                <div style="font-size:10px; color:#334155; background:#f0fdf4; padding:6px 8px; border-radius:8px; border:1px solid #bbf7d0; margin-bottom:6px;">
+                  <strong>Action Resolution:</strong> ${report.resolutionNote || 'Stall removed/permanently closed.'}
+                </div>
+                ${report.images && report.images.length > 0 ? `
+                  <button id="view-res-btn-${report._id}" style="width:100%; padding:6px; background:#059669; color:white; border:none; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer;">
+                    📸 View Removal Evidence (${report.images.length} photos)
+                  </button>
+                ` : ''}
+              </div>
+            `;
+
+            const resStallInfoWindow = new window.google.maps.InfoWindow({
+              content: resStallPopup,
+            });
+
+            resStallMarker.addListener("click", () => {
+              if (activeInfoWindowRef.current) activeInfoWindowRef.current.close();
+              resStallInfoWindow.open(map, resStallMarker);
+              activeInfoWindowRef.current = resStallInfoWindow;
+              setTimeout(() => {
+                const btn = document.getElementById(`view-res-btn-${report._id}`);
+                if (btn) {
+                  btn.onclick = () => setSelectedReportModal({ ...report, isResolvedModal: true });
+                }
+              }, 100);
+            });
+
+            googleMarkersRef.current.push(resStallMarker);
+
+            // Dashed connector line for removed stall
+            const line = new window.google.maps.Polyline({
+              path: [
+                { lat, lng },
+                { lat: resLat, lng: resLng },
+              ],
+              geodesic: true,
+              strokeColor: "#059669",
+              strokeOpacity: 0.8,
+              strokeWeight: 2.5,
+              strokePattern: [10, 5],
+              map: map,
+            });
+            googleLinesRef.current.push(line);
+          });
+        }
       });
+
+      // 5. Also plot any remaining resolved stalls not directly mapped in schools loop
+      if (showResolvedOnMap) {
+        resolvedReports.forEach((report) => {
+          if (plottedResolvedReportIds.has(String(report._id))) return;
+          if (!report.location?.coordinates) return;
+          const resLng = report.location.coordinates[0];
+          const resLat = report.location.coordinates[1];
+
+          const resStallIconSvg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 34 34">
+              <circle cx="17" cy="17" r="15" fill="#059669" stroke="#ffffff" stroke-width="3"/>
+              <text x="17" y="22" font-size="16" text-anchor="middle">✅</text>
+            </svg>`;
+
+          const resStallMarker = new window.google.maps.Marker({
+            position: { lat: resLat, lng: resLng },
+            map: map,
+            title: `Removed Stall: ${report.shopName}`,
+            icon: {
+              url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(resStallIconSvg),
+              scaledSize: new window.google.maps.Size(34, 34),
+              anchor: new window.google.maps.Point(17, 17),
+            },
+          });
+
+          const schoolName = report.schoolId?.name || "Nearby School";
+          const resStallPopup = `
+            <div style="padding:10px; font-family: system-ui, sans-serif; max-width:260px; color:#0f172a;">
+              <span style="background:#059669; color:white; font-size:9px; font-weight:800; padding:2px 8px; border-radius:999px; text-transform:uppercase; display:inline-block; margin-bottom:4px;">
+                ✅ Stall Removed &bull; Zone Safe
+              </span>
+              <h4 style="margin:2px 0 2px 0; font-size:13px; font-weight:800; text-decoration:line-through; color:#475569;">
+                ${report.shopName}
+              </h4>
+              <p style="margin:0 0 4px 0; font-size:11px; color:#065f46; font-weight:700;">
+                Removed near ${schoolName} (${report.distanceFromSchoolMeters}m away)
+              </p>
+              <div style="font-size:10px; color:#334155; background:#f0fdf4; padding:6px 8px; border-radius:8px; border:1px solid #bbf7d0; margin-bottom:6px;">
+                <strong>Action Resolution:</strong> ${report.resolutionNote || 'Stall removed/permanently closed.'}
+              </div>
+              ${report.images && report.images.length > 0 ? `
+                <button id="view-res-btn-${report._id}" style="width:100%; padding:6px; background:#059669; color:white; border:none; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer;">
+                  📸 View Removal Evidence (${report.images.length} photos)
+                </button>
+              ` : ''}
+            </div>
+          `;
+
+          const resStallInfoWindow = new window.google.maps.InfoWindow({
+            content: resStallPopup,
+          });
+
+          resStallMarker.addListener("click", () => {
+            if (activeInfoWindowRef.current) activeInfoWindowRef.current.close();
+            resStallInfoWindow.open(map, resStallMarker);
+            activeInfoWindowRef.current = resStallInfoWindow;
+            setTimeout(() => {
+              const btn = document.getElementById(`view-res-btn-${report._id}`);
+              if (btn) {
+                btn.onclick = () => setSelectedReportModal({ ...report, isResolvedModal: true });
+              }
+            }, 100);
+          });
+
+          googleMarkersRef.current.push(resStallMarker);
+        });
+      }
     } catch (err) {
       console.warn("Google Maps rendering exception:", err);
     }
-  }, [mapLoaded, selectedCity, schools, approvedReports, mapStyle, is3DView]);
+  }, [mapLoaded, selectedCity, schools, approvedReports, resolvedReports, showResolvedOnMap, mapStyle, is3DView, activeMainTab]);
+
+  // When activeMainTab switches to 'map', ensure Google Maps triggers resize to render tiles immediately without blank canvas
+  useEffect(() => {
+    if (activeMainTab === "map" && mapInstanceRef.current && window.google?.maps) {
+      const timer = setTimeout(() => {
+        window.google.maps.event.trigger(mapInstanceRef.current, "resize");
+        const center = mapInstanceRef.current.getCenter();
+        if (center) {
+          mapInstanceRef.current.panTo(center);
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [activeMainTab]);
 
   // Compute school stats
   const violatedSchoolsCount = schools.filter((s) =>
-    approvedReports.some((r) => r.schoolId?._id === s._id || r.schoolId === s._id)
+    approvedReports.some(
+      (r) =>
+        (r.schoolId?._id && String(r.schoolId._id) === String(s._id)) ||
+        (r.schoolId && String(r.schoolId) === String(s._id)) ||
+        (r.schoolId?.name && s.name && r.schoolId.name.trim().toLowerCase() === s.name.trim().toLowerCase())
+    )
   ).length;
+
+  const restoredSchoolsCount = schools.filter((s) => {
+    const hasViolation = approvedReports.some(
+      (r) =>
+        (r.schoolId?._id && String(r.schoolId._id) === String(s._id)) ||
+        (r.schoolId && String(r.schoolId) === String(s._id)) ||
+        (r.schoolId?.name && s.name && r.schoolId.name.trim().toLowerCase() === s.name.trim().toLowerCase())
+    );
+    const hasResolved = resolvedReports.some(
+      (r) =>
+        (r.schoolId?._id && String(r.schoolId._id) === String(s._id)) ||
+        (r.schoolId && String(r.schoolId) === String(s._id)) ||
+        (r.schoolId?.name && s.name && r.schoolId.name.trim().toLowerCase() === s.name.trim().toLowerCase())
+    );
+    return !hasViolation && hasResolved;
+  }).length;
 
   const cleanSchoolsCount = schools.length - violatedSchoolsCount;
 
   // Filter schools based on search query & status filter
   const filteredSchools = schools.filter((s) => {
+    const schoolResolvedStalls = resolvedReports.filter(
+      (r) =>
+        (r.schoolId?._id && String(r.schoolId._id) === String(s._id)) ||
+        (r.schoolId && String(r.schoolId) === String(s._id)) ||
+        (r.schoolId?.name && s.name && r.schoolId.name.trim().toLowerCase() === s.name.trim().toLowerCase())
+    );
+    const matchesStallName = searchQuery && schoolResolvedStalls.some(
+      (r) => (r.shopName || "").toLowerCase().includes(searchQuery.toLowerCase())
+    );
     const matchesSearch =
       !searchQuery ||
+      matchesStallName ||
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.city && s.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (s.address && s.address.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const hasViolation = approvedReports.some(
-      (r) => r.schoolId?._id === s._id || r.schoolId === s._id
+      (r) =>
+        (r.schoolId?._id && String(r.schoolId._id) === String(s._id)) ||
+        (r.schoolId && String(r.schoolId) === String(s._id)) ||
+        (r.schoolId?.name && s.name && r.schoolId.name.trim().toLowerCase() === s.name.trim().toLowerCase())
     );
+    const hasResolved = schoolResolvedStalls.length > 0;
 
     if (statusFilter === "violated") return matchesSearch && hasViolation;
-    if (statusFilter === "clear") return matchesSearch && !hasViolation;
+    if (statusFilter === "clear") return matchesSearch && !hasViolation && !hasResolved;
+    if (statusFilter === "restored") return matchesSearch && hasResolved;
     return matchesSearch;
   });
 
   const handleViewReportOnMap = (report) => {
     setActiveMainTab("map");
-    const lat = report.location?.coordinates?.[1];
-    const lng = report.location?.coordinates?.[0];
-    if (lat && lng && mapInstanceRef.current && window.google) {
-      const pos = new window.google.maps.LatLng(lat, lng);
-      mapInstanceRef.current.panTo(pos);
-      mapInstanceRef.current.setZoom(19);
-      setSelectedReportModal(report);
-    }
+    setTimeout(() => {
+      if (mapInstanceRef.current && window.google?.maps) {
+        window.google.maps.event.trigger(mapInstanceRef.current, "resize");
+        const lat = report.location?.coordinates?.[1];
+        const lng = report.location?.coordinates?.[0];
+        if (lat && lng) {
+          const pos = new window.google.maps.LatLng(lat, lng);
+          mapInstanceRef.current.panTo(pos);
+          mapInstanceRef.current.setZoom(19);
+          setSelectedReportModal(report);
+        }
+      }
+    }, 60);
   };
 
   const handleOpenGrievance = () => {
@@ -744,6 +1076,112 @@ export default function SchoolStallMapWidget({
     }
     if (onOpenReportModal) {
       onOpenReportModal();
+    } else {
+      setIsInternalReportModalOpen(true);
+    }
+  };
+
+  // Double-click anywhere in 360° Street View to drop pin and show small report button
+  useEffect(() => {
+    const container = mapRef.current;
+    if (!container || !isStreetViewActive) return;
+
+    const handleDblClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const rect = container.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const sv = mapInstanceRef.current?.getStreetView();
+      const pos = sv?.getPosition();
+      const pov = sv?.getPov() || { heading: 0, pitch: 0, zoom: 1 };
+      const camLat = pos ? pos.lat() : streetViewPos?.lat || MAHARASHTRA_CENTER[0];
+      const camLng = pos ? pos.lng() : streetViewPos?.lng || MAHARASHTRA_CENTER[1];
+
+      // Calculate heading of the clicked spot on screen
+      const zoom = sv?.getZoom() || 1;
+      const fov = 90 / Math.pow(2, Math.max(0, zoom - 1));
+      const relX = (clickX - rect.width / 2) / (rect.width / 2);
+      const clickHeading = (pov.heading + relX * (fov / 2) + 360) % 360;
+
+      // Project ~15m forward along the clicked heading
+      const headingRad = (clickHeading * Math.PI) / 180;
+      const dMeters = 15;
+      const R = 6378137;
+      const dLat = ((dMeters * Math.cos(headingRad)) / R) * (180 / Math.PI);
+      const dLng = ((dMeters * Math.sin(headingRad)) / (R * Math.cos((camLat * Math.PI) / 180))) * (180 / Math.PI);
+      const pinLat = Number((camLat + dLat).toFixed(6));
+      const pinLng = Number((camLng + dLng).toFixed(6));
+
+      // Find nearest school to this pin
+      let nearestSchool = null;
+      let minDistance = Infinity;
+      schools.forEach((s) => {
+        if (s.location?.coordinates && Array.isArray(s.location.coordinates)) {
+          const sLng = s.location.coordinates[0];
+          const sLat = s.location.coordinates[1];
+          const dist = calculateDistanceInMeters(sLat, sLng, pinLat, pinLng);
+          if (dist < minDistance) {
+            minDistance = dist;
+            nearestSchool = s;
+          }
+        }
+      });
+
+      setStreetViewPin({
+        x: clickX,
+        y: clickY,
+        lat: pinLat,
+        lng: pinLng,
+        heading: Math.round(clickHeading),
+        nearestSchool,
+        distanceToSchool: minDistance !== Infinity ? minDistance : null,
+        isInside50m: minDistance <= 50,
+      });
+    };
+
+    container.addEventListener("dblclick", handleDblClick, true);
+    return () => {
+      container.removeEventListener("dblclick", handleDblClick, true);
+    };
+  }, [isStreetViewActive, schools, streetViewPos]);
+
+  const handleReportPinnedStall = () => {
+    if (!streetViewPin) return;
+
+    if (!canReport) {
+      if (onScrollToSign) {
+        onScrollToSign();
+      } else {
+        const el = document.getElementById("sign-petition-section");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+
+    const nearest = streetViewPin.nearestSchool;
+    const dist = streetViewPin.distanceToSchool;
+
+    const prefill = {
+      latitude: streetViewPin.lat,
+      longitude: streetViewPin.lng,
+      city: selectedCity || nearest?.city || "Maharashtra",
+      landmark: `Spotted in 360° Street View (Heading ${streetViewPin.heading}°)`,
+      school: nearest,
+      schoolId: nearest?._id,
+      shopName: "",
+      description: nearest
+        ? `Reported illegal food stall spotted in 360° Street View near ${nearest.name} (~${dist}m away).`
+        : `Reported illegal food stall spotted in 360° Street View.`,
+    };
+
+    setInternalReportPrefill(prefill);
+    setStreetViewPin(null);
+
+    if (onOpenReportModal) {
+      onOpenReportModal(prefill);
     } else {
       setIsInternalReportModalOpen(true);
     }
@@ -788,7 +1226,7 @@ export default function SchoolStallMapWidget({
 
           {/* Subtitle */}
           <p className="text-xs sm:text-sm text-pink-50 font-normal leading-relaxed">
-            Report fast food stalls, pan shops, or tobacco vendors operating within 50 metres of school gates. Automated geofencing alerts local authorities for prompt action.
+            Report fast/junk food stalls, pan shops, or tobacco vendors operating within 50 metres of school gates. Automated geofencing alerts local authorities for prompt action.
           </p>
 
           {/* Action Buttons */}
@@ -889,6 +1327,7 @@ export default function SchoolStallMapWidget({
           >
             <span>📋 My Reported Stalls</span>
           </button>
+
         </div>
 
         <div className="flex items-center gap-2">
@@ -904,15 +1343,16 @@ export default function SchoolStallMapWidget({
       </div>
 
       {/* 5. TAB 1: CITIZEN COMPLAINTS DASHBOARD VIEW */}
-      {activeMainTab === "complaints" ? (
+      <div className={activeMainTab === "complaints" ? "block" : "hidden"}>
         <UserGrievancesDashboard
           onOpenReportModal={handleOpenGrievance}
           onViewOnMap={handleViewReportOnMap}
           embedded={true}
         />
-      ) : (
-        /* 6. TAB 2: INTERACTIVE MAP & SCHOOL BUFFER MONITOR */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      </div>
+
+      {/* 6. TAB 2: INTERACTIVE MAP & SCHOOL BUFFER MONITOR (DIRECT MAP VIEW) */}
+      <div className={activeMainTab === "map" ? "grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" : "hidden"}>
           {/* LEFT COLUMN: Map Canvas & Toolbar */}
           <div className="lg:col-span-7 space-y-3 lg:sticky lg:top-20">
             {/* Google Maps Places Autocomplete Search Bar */}
@@ -953,11 +1393,38 @@ export default function SchoolStallMapWidget({
                     <span className="w-3 h-3 rounded-full border-2 border-dashed border-[#F43676] bg-pink-100/50 inline-block"></span>
                     <span>50m Zone</span>
                   </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block border border-white"></span>
+                    <span>Safe Zone</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="text-[10px]">✅</span>
+                    <span>Removed</span>
+                  </span>
                 </div>
               </div>
 
               {/* View Switchers */}
               <div className="flex flex-wrap items-center gap-1 bg-white p-1 rounded-xl border border-pink-200 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowResolvedOnMap(!showResolvedOnMap)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all flex items-center gap-1 cursor-pointer ${
+                    showResolvedOnMap
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs"
+                      : "text-gray-600 hover:bg-emerald-50 hover:text-emerald-700"
+                  }`}
+                  title="Toggle plotting of confirmed removed stalls"
+                >
+                  <FaShieldAlt className="text-xs" />
+                  <span>{showResolvedOnMap ? "Hide Removed" : "Show Removed Stalls"}</span>
+                  {resolvedReports.length > 0 && (
+                    <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full text-[9px] font-black">
+                      {resolvedReports.length}
+                    </span>
+                  )}
+                </button>
+
                 <button
                   type="button"
                   onClick={() => toggleMapStyle("street")}
@@ -1026,6 +1493,72 @@ export default function SchoolStallMapWidget({
                   <span>360°</span>
                 </button>
               </div>
+
+              {/* 360° Double-Click Dropped Pin & Small Report Button */}
+              {isStreetViewActive && streetViewPin && (
+                <div
+                  className="absolute z-40 -translate-x-1/2 -translate-y-full pointer-events-auto select-none"
+                  style={{ left: streetViewPin.x, top: streetViewPin.y }}
+                >
+                  {/* Small Compact Report Card */}
+                  <div className="bg-white/95 backdrop-blur-md px-3 py-2 rounded-xl border border-pink-200 shadow-xl min-w-[180px] max-w-[240px] text-xs space-y-1.5 mb-1.5 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="flex items-center justify-between gap-1 border-b border-gray-100 pb-1">
+                      <span className="font-extrabold text-gray-900 text-[11px] truncate flex items-center gap-1">
+                        <span className="text-[#F43676]">📍</span>
+                        <span>Spotted Stall</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setStreetViewPin(null)}
+                        className="text-gray-400 hover:text-gray-700 text-xs p-0.5 cursor-pointer"
+                        title="Remove Pin"
+                      >
+                        <FaTimes className="text-[10px]" />
+                      </button>
+                    </div>
+
+                    {streetViewPin.nearestSchool && (
+                      <div className="text-[10px] text-gray-600 truncate">
+                        <span>Near: </span>
+                        <strong className="text-gray-800">{streetViewPin.nearestSchool.name}</strong>
+                        {streetViewPin.distanceToSchool !== null && (
+                          <span className={streetViewPin.isInside50m ? " text-rose-600 font-bold block" : " text-gray-500 font-medium block"}>
+                            {streetViewPin.isInside50m ? `🚨 ${streetViewPin.distanceToSchool}m from Gate` : `${streetViewPin.distanceToSchool}m to School`}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Small Report Button */}
+                    <button
+                      type="button"
+                      onClick={handleReportPinnedStall}
+                      className="w-full py-1.5 px-3 bg-gradient-to-r from-[#F43676] to-[#e02a60] hover:from-[#e02a60] text-white font-black text-[11px] rounded-lg shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <FaStore className="text-[10px]" />
+                      <span>Report This Stall</span>
+                    </button>
+                  </div>
+
+                  {/* Teardrop Pin Marker pointing to spot */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-7 h-7 rounded-full bg-[#F43676] text-white flex items-center justify-center text-xs shadow-md border-2 border-white animate-bounce">
+                      📍
+                    </div>
+                    <div className="w-1.5 h-1.5 bg-[#F43676] rounded-full -mt-0.5" />
+                  </div>
+                </div>
+              )}
+
+              {/* Discreet double-click hint when in 360° View */}
+              {isStreetViewActive && !streetViewPin && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                  <div className="bg-black/65 backdrop-blur-md text-white text-[10px] font-semibold px-3 py-1 rounded-full border border-white/20 shadow-md flex items-center gap-1.5">
+                    <span>💡</span>
+                    <span>Double-click on any stall to drop a pin &amp; report</span>
+                  </div>
+                </div>
+              )}
 
               {/* Floating Action Banner for Searched Location */}
               {searchedLocation && (
@@ -1100,32 +1633,32 @@ export default function SchoolStallMapWidget({
           {/* RIGHT COLUMN: Stats, District Selector & Monitored School Cards */}
           <div className="lg:col-span-5 space-y-4">
             {/* Metric Cards */}
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="bg-pink-50/40 p-3 rounded-2xl border border-pink-100 text-center space-y-0.5">
-                <span className="text-xl font-black text-gray-900">{schools.length}</span>
-                <span className="block text-[10px] font-bold text-gray-600 flex items-center justify-center gap-1">
-                  <FaSchool className="text-[#F43676]" /> Monitored Schools
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="bg-rose-50/70 p-2.5 rounded-2xl border border-rose-200 text-center space-y-0.5">
+                <span className="text-lg sm:text-xl font-black text-rose-600">{approvedReports.length}</span>
+                <span className="block text-[9px] font-bold text-rose-800 flex items-center justify-center gap-1">
+                  <FaExclamationTriangle className="text-rose-500" /> Active Violations
                 </span>
               </div>
 
-              <div className="bg-rose-50/60 p-3 rounded-2xl border border-rose-200 text-center space-y-0.5">
-                <span className="text-xl font-black text-rose-600">{approvedReports.length}</span>
-                <span className="block text-[10px] font-bold text-rose-800 flex items-center justify-center gap-1">
-                  <FaExclamationTriangle className="text-rose-500" /> Active 50m Violations
+              <div className="bg-emerald-50/70 p-2.5 rounded-2xl border border-emerald-200 text-center space-y-0.5">
+                <span className="text-lg sm:text-xl font-black text-emerald-700">{resolvedReports.length}</span>
+                <span className="block text-[9px] font-bold text-emerald-800 flex items-center justify-center gap-1">
+                  <FaCheckCircle className="text-emerald-600" /> Stalls Removed
                 </span>
               </div>
 
-              <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-200 text-center space-y-0.5">
-                <span className="text-xl font-black text-emerald-700">{cleanSchoolsCount}</span>
-                <span className="block text-[10px] font-bold text-emerald-800 flex items-center justify-center gap-1">
-                  <FaCheckCircle className="text-emerald-600" /> Safe School Zones
+              <div className="bg-teal-50/60 p-2.5 rounded-2xl border border-teal-200 text-center space-y-0.5">
+                <span className="text-lg sm:text-xl font-black text-teal-700">{cleanSchoolsCount}</span>
+                <span className="block text-[9px] font-bold text-teal-800 flex items-center justify-center gap-1">
+                  <FaShieldAlt className="text-teal-600" /> Safe Schools
                 </span>
               </div>
 
-              <div className="bg-pink-50/50 p-3 rounded-2xl border border-pink-100 text-center space-y-0.5">
-                <span className="text-xl font-black text-[#d81b60]">36</span>
-                <span className="block text-[10px] font-bold text-[#F43676] flex items-center justify-center gap-1">
-                  <FaCity className="text-[#F43676]" /> Districts Covered
+              <div className="bg-pink-50/50 p-2.5 rounded-2xl border border-pink-100 text-center space-y-0.5">
+                <span className="text-lg sm:text-xl font-black text-gray-900">{schools.length}</span>
+                <span className="block text-[9px] font-bold text-gray-600 flex items-center justify-center gap-1">
+                  <FaSchool className="text-[#F43676]" /> Mapped Schools
                 </span>
               </div>
             </div>
@@ -1180,8 +1713,9 @@ export default function SchoolStallMapWidget({
               <div className="flex items-center gap-1">
                 {[
                   { id: "all", label: `All (${schools.length})` },
-                  { id: "violated", label: "🚨 Violations" },
-                  { id: "clear", label: "🛡️ Safe" },
+                  { id: "violated", label: `🚨 Violations (${violatedSchoolsCount})` },
+                  { id: "restored", label: `✅ Restored Safe (${resolvedReports.length})` },
+                  { id: "clear", label: `🛡️ Clean (${cleanSchoolsCount})` },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -1189,7 +1723,11 @@ export default function SchoolStallMapWidget({
                     onClick={() => setStatusFilter(tab.id)}
                     className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                       statusFilter === tab.id
-                        ? "bg-[#F43676] text-white font-extrabold shadow-xs"
+                        ? tab.id === "restored"
+                          ? "bg-emerald-600 text-white font-black shadow-xs"
+                          : tab.id === "violated"
+                          ? "bg-rose-600 text-white font-black shadow-xs"
+                          : "bg-[#F43676] text-white font-black shadow-xs"
                         : "bg-gray-100 text-gray-600 hover:bg-pink-50 hover:text-[#F43676]"
                     }`}
                   >
@@ -1219,17 +1757,30 @@ export default function SchoolStallMapWidget({
               <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
                 {filteredSchools.map((school) => {
                   const schoolReports = approvedReports.filter(
-                    (r) => r.schoolId?._id === school._id || r.schoolId === school._id
+                    (r) =>
+                      (r.schoolId?._id && String(r.schoolId._id) === String(school._id)) ||
+                      (r.schoolId && String(r.schoolId) === String(school._id)) ||
+                      (r.schoolId?.name && school.name && r.schoolId.name.trim().toLowerCase() === school.name.trim().toLowerCase())
                   );
                   const hasViolation = schoolReports.length > 0;
+                  const schoolResolvedReports = resolvedReports.filter(
+                    (r) =>
+                      (r.schoolId?._id && String(r.schoolId._id) === String(school._id)) ||
+                      (r.schoolId && String(r.schoolId) === String(school._id)) ||
+                      (r.schoolId?.name && school.name && r.schoolId.name.trim().toLowerCase() === school.name.trim().toLowerCase())
+                  );
+                  const hasResolved = schoolResolvedReports.length > 0;
+                  const isRestoredSafe = !hasViolation && hasResolved;
 
                   return (
                     <div
                       key={school._id}
                       onClick={() => zoomToSchool(school)}
-                      className={`p-3 rounded-2xl border transition-all cursor-pointer hover:border-pink-300 hover:shadow-md ${
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${
                         hasViolation
-                          ? "bg-gradient-to-br from-pink-50/90 via-white to-pink-50/40 border-pink-300 shadow-xs"
+                          ? "bg-gradient-to-br from-pink-50/90 via-white to-pink-50/40 border-pink-300 shadow-xs hover:border-pink-400"
+                          : isRestoredSafe
+                          ? "bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/40 border-emerald-300 shadow-xs hover:border-emerald-400"
                           : "bg-white border-gray-200/80 hover:border-pink-200 shadow-2xs"
                       }`}
                     >
@@ -1239,6 +1790,8 @@ export default function SchoolStallMapWidget({
                             className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                               hasViolation
                                 ? "bg-gradient-to-r from-[#F43676] to-[#e02a60] text-white shadow-xs"
+                                : isRestoredSafe
+                                ? "bg-emerald-600 text-white shadow-xs"
                                 : "bg-emerald-50 text-emerald-600 border border-emerald-200"
                             }`}
                           >
@@ -1262,8 +1815,12 @@ export default function SchoolStallMapWidget({
                               <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
                               <span>{schoolReports.length} Violation</span>
                             </span>
+                          ) : isRestoredSafe ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[9px] inline-flex items-center gap-1">
+                              <span>🛡️ Zone Safe</span>
+                            </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[9px]">
+                            <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold text-[9px]">
                               Protected Zone
                             </span>
                           )}
@@ -1286,9 +1843,43 @@ export default function SchoolStallMapWidget({
                             }}
                             className="w-full text-[11px] font-bold bg-pink-50 hover:bg-pink-100 text-[#F43676] py-1.5 rounded-xl border border-pink-200 transition-colors flex items-center justify-center gap-1 cursor-pointer"
                           >
-                            <span>View Verified Photos & Evidence</span>
+                            <span>View Verified Photos &amp; Evidence</span>
                             <FaChevronRight className="text-[9px]" />
                           </button>
+                        </div>
+                      )}
+
+                      {isRestoredSafe && (
+                        <div className="mt-2 pt-2 border-t border-emerald-100/90 space-y-1.5">
+                          <div className="bg-emerald-50/70 p-2 rounded-xl border border-emerald-100 text-[10px] space-y-0.5">
+                            <div className="font-extrabold text-emerald-900 flex items-center justify-between">
+                              <span className="truncate">
+                                ✅ Removed: <s className="text-gray-500 font-semibold">{schoolResolvedReports[0].shopName}</s>
+                              </span>
+                              <span className="text-[9px] font-bold bg-emerald-600 text-white px-1.5 py-0.2 rounded-md shrink-0">
+                                {schoolResolvedReports[0].distanceFromSchoolMeters}m Away
+                              </span>
+                            </div>
+                            <p className="text-emerald-700 font-medium italic text-[10px]">
+                              &ldquo;{schoolResolvedReports[0].resolutionNote || "Stall removed / closed. School zone safe."}&rdquo;
+                            </p>
+                          </div>
+                          {schoolResolvedReports[0].images && schoolResolvedReports[0].images.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedReportModal({
+                                  ...schoolResolvedReports[0],
+                                  isResolvedModal: true,
+                                });
+                              }}
+                              className="w-full text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 py-1.5 rounded-xl border border-emerald-200 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <span>View Removal Photos &amp; Resolution Audit</span>
+                              <FaChevronRight className="text-[9px]" />
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1298,19 +1889,28 @@ export default function SchoolStallMapWidget({
             )}
           </div>
         </div>
-      )}
 
-      {/* Report Modal Popup for Evidence */}
+      {/* Report Modal Popup for Evidence / Resolution Details */}
       {selectedReportModal && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[99999] flex items-center justify-center p-4">
           <div className="bg-white border border-pink-100 rounded-3xl max-w-lg w-full p-6 text-gray-900 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 font-extrabold text-[10px] uppercase">
-                  🚨 Active Violation
-                </span>
+                {selectedReportModal.isResolvedModal || selectedReportModal.status === "resolved" ? (
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px] uppercase">
+                    ✅ Stall Removed &bull; Zone Safe
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 font-extrabold text-[10px] uppercase">
+                    🚨 Active Violation
+                  </span>
+                )}
                 <h3 className="font-extrabold text-base text-gray-900">
-                  {selectedReportModal.shopName}
+                  {selectedReportModal.isResolvedModal || selectedReportModal.status === "resolved" ? (
+                    <span className="line-through text-gray-500">{selectedReportModal.shopName}</span>
+                  ) : (
+                    selectedReportModal.shopName
+                  )}
                 </h3>
               </div>
               <button
@@ -1323,13 +1923,24 @@ export default function SchoolStallMapWidget({
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="bg-pink-50/50 p-3 rounded-2xl border border-pink-100 space-y-1">
+              <div className={`${
+                selectedReportModal.isResolvedModal || selectedReportModal.status === "resolved"
+                  ? "bg-emerald-50/60 border-emerald-100"
+                  : "bg-pink-50/50 border-pink-100"
+              } p-3 rounded-2xl border space-y-1`}>
                 <p className="font-bold text-gray-900">
                   School: {selectedReportModal.schoolId?.name || "Target School"}
                 </p>
                 <p className="text-gray-600 font-medium">
-                  Reported Distance: <strong className="text-[#F43676]">{selectedReportModal.distanceFromSchoolMeters} meters</strong> from school entrance (Inside prohibited 50m zone).
+                  Distance: <strong className={selectedReportModal.isResolvedModal || selectedReportModal.status === "resolved" ? "text-emerald-700" : "text-[#F43676]"}>
+                    {selectedReportModal.distanceFromSchoolMeters} meters
+                  </strong> from school entrance {selectedReportModal.isResolvedModal || selectedReportModal.status === "resolved" ? "(Cleared from 50m zone)" : "(Inside prohibited 50m zone)"}.
                 </p>
+                {selectedReportModal.resolutionNote && (
+                  <p className="text-emerald-800 font-semibold bg-emerald-100/70 p-2 rounded-xl border border-emerald-200 mt-1">
+                    🛡️ Action Resolution: &ldquo;{selectedReportModal.resolutionNote}&rdquo;
+                  </p>
+                )}
                 <p className="text-gray-500 text-[11px]">
                   City: {selectedReportModal.city || selectedReportModal.schoolId?.city || "Maharashtra"}
                 </p>
@@ -1435,22 +2046,35 @@ export default function SchoolStallMapWidget({
               )}
 
               <div className="pt-2 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const reportToDefend = selectedReportModal;
-                    setSelectedReportModal(null);
-                    setDefendModalReport(reportToDefend);
-                  }}
-                  className="flex-1 py-2.5 bg-gray-100 hover:bg-pink-50 hover:text-[#F43676] text-gray-700 font-extrabold rounded-xl transition-colors text-center text-xs cursor-pointer border border-transparent hover:border-pink-200 flex items-center justify-center gap-1.5"
-                >
-                  <FaShieldAlt className="text-sm text-[#F43676]" />
-                  <span>Stall Owner Dispute / Defend</span>
-                </button>
+                {!(selectedReportModal.isResolvedModal || selectedReportModal.status === "resolved") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!user) {
+                        setSelectedReportModal(null);
+                        const currentPath = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
+                        const loginUrl = currentPath ? `/login?redirect=${encodeURIComponent(currentPath)}` : "/login";
+                        router.push(loginUrl);
+                        return;
+                      }
+                      const reportToDefend = selectedReportModal;
+                      setSelectedReportModal(null);
+                      setDefendModalReport(reportToDefend);
+                    }}
+                    className="flex-1 py-2.5 bg-gray-100 hover:bg-pink-50 hover:text-[#F43676] text-gray-700 font-extrabold rounded-xl transition-colors text-center text-xs cursor-pointer border border-transparent hover:border-pink-200 flex items-center justify-center gap-1.5"
+                  >
+                    <FaShieldAlt className="text-sm text-[#F43676]" />
+                    <span>Stall Owner Dispute / Defend</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setSelectedReportModal(null)}
-                  className="px-5 py-2.5 bg-[#F43676] text-white font-extrabold rounded-xl hover:bg-[#e02a60] transition-colors cursor-pointer"
+                  className={`px-5 py-2.5 ${
+                    selectedReportModal.isResolvedModal || selectedReportModal.status === "resolved"
+                      ? "w-full bg-emerald-600 hover:bg-emerald-700"
+                      : "bg-[#F43676] hover:bg-[#e02a60]"
+                  } text-white font-extrabold rounded-xl transition-colors cursor-pointer`}
                 >
                   Close
                 </button>
@@ -1465,9 +2089,14 @@ export default function SchoolStallMapWidget({
         <SubmitStallReportModal
           petitionId={petitionId}
           isOpen={isInternalReportModalOpen}
-          onClose={() => setIsInternalReportModalOpen(false)}
+          initialData={internalReportPrefill}
+          onClose={() => {
+            setIsInternalReportModalOpen(false);
+            setInternalReportPrefill(null);
+          }}
           onSuccess={() => {
             setIsInternalReportModalOpen(false);
+            setInternalReportPrefill(null);
             setActiveMainTab("complaints");
           }}
         />

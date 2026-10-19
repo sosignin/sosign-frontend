@@ -191,6 +191,7 @@ export default function PetitionDetailClient({ initialPetition }) {
     const [signConsentAccepted, setSignConsentAccepted] = useState(false);
     const [showMultilingualNotice, setShowMultilingualNotice] = useState(false);
     const [isStallModalOpen, setIsStallModalOpen] = useState(false);
+    const [stallModalPrefill, setStallModalPrefill] = useState(null);
     const [isPetitionReportModalOpen, setIsPetitionReportModalOpen] = useState(false);
     const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
     const [selectedClaimSigner, setSelectedClaimSigner] = useState(null);
@@ -1041,7 +1042,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                                 signElement.scrollIntoView({ behavior: "smooth", block: "center" });
                             }
                         }}
-                        onOpenReportModal={() => {
+                        onOpenReportModal={(prefill) => {
                             if (!user) {
                                 setShowLoginModal(true);
                             } else if (!signatureStatus.hasSigned && !signatureStatus.isCreator) {
@@ -1050,6 +1051,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                                     signElement.scrollIntoView({ behavior: "smooth", block: "center" });
                                 }
                             } else {
+                                setStallModalPrefill(prefill || null);
                                 setIsStallModalOpen(true);
                             }
                         }}
@@ -2806,7 +2808,11 @@ export default function PetitionDetailClient({ initialPetition }) {
                 <SubmitStallReportModal
                     petitionId={petition._id}
                     isOpen={isStallModalOpen}
-                    onClose={() => setIsStallModalOpen(false)}
+                    initialData={stallModalPrefill}
+                    onClose={() => {
+                        setIsStallModalOpen(false);
+                        setStallModalPrefill(null);
+                    }}
                     token={typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user"))?.token || "" : ""}
                 />
             )}

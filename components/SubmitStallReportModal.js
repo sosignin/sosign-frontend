@@ -135,6 +135,24 @@ export default function SubmitStallReportModal({
     }
   };
 
+  // Synchronize initialData prop when modal opens or prefill data updates
+  useEffect(() => {
+    if (isOpen && initialData) {
+      if (initialData.city) setSelectedCity(initialData.city);
+      if (initialData.taluka) setTaluka(initialData.taluka);
+      if (initialData.villageTown) setVillageTown(initialData.villageTown);
+      if (initialData.landmark) setLandmark(initialData.landmark);
+      if (initialData.shopName) setShopName(initialData.shopName);
+      if (initialData.latitude) setLatitude(String(initialData.latitude));
+      if (initialData.longitude) setLongitude(String(initialData.longitude));
+      if (initialData.description) setDescription(initialData.description);
+      if (initialData.school) {
+        setSelectedSchoolId(initialData.school._id || "");
+        setCustomSchool(initialData.school);
+      }
+    }
+  }, [isOpen, initialData]);
+
   // Fetch Cities
   useEffect(() => {
     if (!isOpen) return;
