@@ -706,7 +706,7 @@ export default function SchoolStallMapWidget({
           badgeColor = "#065f46";
         }
 
-        const historySnippet = isRestoredSafe
+        const historySnippet = hasResolved
           ? `<div style="font-size:10px; color:#334155; border-top:1px dashed #cbd5e1; padding-top:6px; margin-top:6px;">
                <strong style="color:#0f172a; display:block; margin-bottom:3px;">📜 Stalls Removed History:</strong>
                ${schoolResolvedReports.map(r => `<div style="margin-bottom:2px;">&bull; <s style="color:#dc2626;">${r.shopName}</s> <span style="color:#059669; font-weight:700;">(${r.distanceFromSchoolMeters}m &bull; ${r.resolutionNote || 'Removed'})</span></div>`).join('')}
@@ -1013,7 +1013,21 @@ export default function SchoolStallMapWidget({
     return !hasViolation && hasResolved;
   }).length;
 
-  const cleanSchoolsCount = schools.length - violatedSchoolsCount;
+  const cleanSchoolsCount = schools.filter((s) => {
+    const hasViolation = approvedReports.some(
+      (r) =>
+        (r.schoolId?._id && String(r.schoolId._id) === String(s._id)) ||
+        (r.schoolId && String(r.schoolId) === String(s._id)) ||
+        (r.schoolId?.name && s.name && r.schoolId.name.trim().toLowerCase() === s.name.trim().toLowerCase())
+    );
+    const hasResolved = resolvedReports.some(
+      (r) =>
+        (r.schoolId?._id && String(r.schoolId._id) === String(s._id)) ||
+        (r.schoolId && String(r.schoolId) === String(s._id)) ||
+        (r.schoolId?.name && s.name && r.schoolId.name.trim().toLowerCase() === s.name.trim().toLowerCase())
+    );
+    return !hasViolation && !hasResolved;
+  }).length;
 
   // Filter schools based on search query & status filter
   const filteredSchools = schools.filter((s) => {
@@ -1043,7 +1057,7 @@ export default function SchoolStallMapWidget({
 
     if (statusFilter === "violated") return matchesSearch && hasViolation;
     if (statusFilter === "clear") return matchesSearch && !hasViolation && !hasResolved;
-    if (statusFilter === "restored") return matchesSearch && hasResolved;
+    if (statusFilter === "restored") return matchesSearch && !hasViolation && hasResolved;
     return matchesSearch;
   });
 
@@ -1714,7 +1728,7 @@ export default function SchoolStallMapWidget({
                 {[
                   { id: "all", label: `All (${schools.length})` },
                   { id: "violated", label: `🚨 Violations (${violatedSchoolsCount})` },
-                  { id: "restored", label: `✅ Restored Safe (${resolvedReports.length})` },
+                  { id: "restored", label: `✅ Restored Safe (${restoredSchoolsCount})` },
                   { id: "clear", label: `🛡️ Clean (${cleanSchoolsCount})` },
                 ].map((tab) => (
                   <button
@@ -1817,7 +1831,7 @@ export default function SchoolStallMapWidget({
                             </span>
                           ) : isRestoredSafe ? (
                             <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[9px] inline-flex items-center gap-1">
-                              <span>🛡️ Zone Safe</span>
+                              <span>🛡️ Zone Safe{schoolResolvedReports.length > 1 ? ` (${schoolResolvedReports.length} Removed)` : ""}</span>
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold text-[9px]">
@@ -1828,58 +1842,92 @@ export default function SchoolStallMapWidget({
                       </div>
 
                       {hasViolation && (
-                        <div className="mt-2 pt-2 border-t border-pink-100/80 space-y-1.5">
-                          <p className="text-[10px] text-gray-700 font-bold flex items-center justify-between">
-                            <span>Reported: {schoolReports[0].shopName}</span>
-                            <span className="text-[9px] font-extrabold bg-[#F43676] px-1.5 py-0.5 rounded-full text-white">
-                              {schoolReports[0].distanceFromSchoolMeters}m Away
-                            </span>
-                          </p>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedReportModal(schoolReports[0]);
-                            }}
-                            className="w-full text-[11px] font-bold bg-pink-50 hover:bg-pink-100 text-[#F43676] py-1.5 rounded-xl border border-pink-200 transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                          >
-                            <span>View Verified Photos &amp; Evidence</span>
-                            <FaChevronRight className="text-[9px]" />
-                          </button>
+                        <div className="mt-2 pt-2 border-t border-pink-100/80 space-y-2">
+                          {schoolReports.map((rep) => (
+                            <div key={rep._id} className="space-y-1">
+                              <p className="text-[10px] text-gray-700 font-bold flex items-center justify-between">
+                                <span>Reported: {rep.shopName}</span>
+                                <span className="text-[9px] font-extrabold bg-[#F43676] px-1.5 py-0.5 rounded-full text-white">
+                                  {rep.distanceFromSchoolMeters}m Away
+                                </span>
+                              </p>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedReportModal(rep);
+                                }}
+                                className="w-full text-[11px] font-bold bg-pink-50 hover:bg-pink-100 text-[#F43676] py-1.5 rounded-xl border border-pink-200 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                <span>View Verified Photos &amp; Evidence</span>
+                                <FaChevronRight className="text-[9px]" />
+                              </button>
+                            </div>
+                          ))}
+
+                          {/* Previous Removed Stalls history if active violation is also present */}
+                          {hasResolved && (
+                            <div className="mt-2 pt-2 border-t border-pink-100 space-y-1">
+                              <span className="text-[10px] font-extrabold text-emerald-800 flex items-center gap-1">
+                                <FaCheckCircle className="text-emerald-600 text-[10px]" />
+                                <span>Previous Stalls Removed ({schoolResolvedReports.length}):</span>
+                              </span>
+                              {schoolResolvedReports.map((resReport) => (
+                                <div key={resReport._id} className="bg-emerald-50/60 p-1.5 rounded-lg border border-emerald-100 text-[10px]">
+                                  <div className="font-semibold text-emerald-900 flex items-center justify-between">
+                                    <span className="truncate">
+                                      ✅ <s className="text-gray-500">{resReport.shopName}</s>
+                                    </span>
+                                    <span className="text-[9px] text-emerald-700 font-bold shrink-0">
+                                      {resReport.distanceFromSchoolMeters}m
+                                    </span>
+                                  </div>
+                                  {resReport.resolutionNote && (
+                                    <p className="text-[9px] text-emerald-700 italic truncate mt-0.5">&ldquo;{resReport.resolutionNote}&rdquo;</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
 
                       {isRestoredSafe && (
-                        <div className="mt-2 pt-2 border-t border-emerald-100/90 space-y-1.5">
-                          <div className="bg-emerald-50/70 p-2 rounded-xl border border-emerald-100 text-[10px] space-y-0.5">
-                            <div className="font-extrabold text-emerald-900 flex items-center justify-between">
-                              <span className="truncate">
-                                ✅ Removed: <s className="text-gray-500 font-semibold">{schoolResolvedReports[0].shopName}</s>
-                              </span>
-                              <span className="text-[9px] font-bold bg-emerald-600 text-white px-1.5 py-0.2 rounded-md shrink-0">
-                                {schoolResolvedReports[0].distanceFromSchoolMeters}m Away
-                              </span>
-                            </div>
-                            <p className="text-emerald-700 font-medium italic text-[10px]">
-                              &ldquo;{schoolResolvedReports[0].resolutionNote || "Stall removed / closed. School zone safe."}&rdquo;
-                            </p>
-                          </div>
-                          {schoolResolvedReports[0].images && schoolResolvedReports[0].images.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedReportModal({
-                                  ...schoolResolvedReports[0],
-                                  isResolvedModal: true,
-                                });
-                              }}
-                              className="w-full text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 py-1.5 rounded-xl border border-emerald-200 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        <div className="mt-2 pt-2 border-t border-emerald-100/90 space-y-2">
+                          {schoolResolvedReports.map((resReport) => (
+                            <div
+                              key={resReport._id}
+                              className="bg-emerald-50/70 p-2 rounded-xl border border-emerald-100 text-[10px] space-y-1"
                             >
-                              <span>View Removal Photos &amp; Resolution Audit</span>
-                              <FaChevronRight className="text-[9px]" />
-                            </button>
-                          )}
+                              <div className="font-extrabold text-emerald-900 flex items-center justify-between">
+                                <span className="truncate">
+                                  ✅ Removed: <s className="text-gray-500 font-semibold">{resReport.shopName}</s>
+                                </span>
+                                <span className="text-[9px] font-bold bg-emerald-600 text-white px-1.5 py-0.2 rounded-md shrink-0">
+                                  {resReport.distanceFromSchoolMeters}m Away
+                                </span>
+                              </div>
+                              <p className="text-emerald-700 font-medium italic text-[10px]">
+                                &ldquo;{resReport.resolutionNote || "Stall removed / closed. School zone safe."}&rdquo;
+                              </p>
+                              {resReport.images && resReport.images.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedReportModal({
+                                      ...resReport,
+                                      isResolvedModal: true,
+                                    });
+                                  }}
+                                  className="w-full text-[10px] font-bold bg-emerald-100/80 hover:bg-emerald-200 text-emerald-800 py-1.5 rounded-lg border border-emerald-300 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <span>View Removal Photos &amp; Resolution Audit</span>
+                                  <FaChevronRight className="text-[9px]" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
