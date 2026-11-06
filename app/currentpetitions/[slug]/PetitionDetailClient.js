@@ -1060,7 +1060,7 @@ export default function PetitionDetailClient({ initialPetition }) {
             )}
 
             {/* 2. Petition Image and Sign Section BELOW */}
-            <div className="w-full mt-6 overflow-hidden">
+            <div className="w-full mt-6 overflow-x-clip">
                 <div className="max-w-[1500px] mx-auto">
                     {Boolean(petition.isVictory || petition.status === "victory") && (
                         <div className="mb-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-4 md:p-5 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 border border-emerald-400/30">
@@ -1084,7 +1084,7 @@ export default function PetitionDetailClient({ initialPetition }) {
                     )}
                     <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr]">
                         {/* Image with title overlay at bottom */}
-                        <div className="relative min-h-[320px] lg:min-h-[480px] overflow-hidden lg:col-start-1 rounded-2xl">
+                        <div className="relative h-[70vh] min-h-[320px] max-h-[640px] self-start overflow-hidden lg:sticky lg:top-6 lg:col-start-1 rounded-2xl">
                             {heroImage ? (
                                 <>
                                     {/* Main image */}
